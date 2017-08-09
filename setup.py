@@ -19,11 +19,11 @@ with open(version_py, 'w') as fh:
 
 setup(
     name='plotpot',
-    version="1.0-r{ver}".format(ver=version_git),
-    description='Plot potentiostat data from various instruments',
+    version="".format(ver=version_git),
+    description='Plot potentiostat data created with Convpot',
     author='Alexander Pohl',
-    author_email='a.h.pohl@gmail.com',
-    url='ssh://syno.ahpohl.com:2222/volume1/git_repos/plotpot.git',
+    author_email='alex@ahpohl.com',
+    url='https://github.com/ahpohl/plotpot.git',
     license='MIT',
     packages=find_packages(),
 )
