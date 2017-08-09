@@ -1,0 +1,2 @@
+# plotpot
+Plot potentiostat data
