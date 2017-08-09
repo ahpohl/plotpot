@@ -20,7 +20,7 @@ with open(version_py, 'w') as fh:
 setup(
     name='plotpot',
     version="".format(ver=version_git),
-    description='Plot potentiostat data created with Convpot',
+    description='A python module for plotting potentiostat data',
     author='Alexander Pohl',
     author_email='alex@ahpohl.com',
     url='https://github.com/ahpohl/plotpot.git',
