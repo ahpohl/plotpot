@@ -2,13 +2,11 @@
 
 Plotpot is a Python module that plots potentiostatic data automatically imported with [Convpot](https://github.com/ahpohl/convpot). It keeps a journal with meta information such as mass of active material, capacity etc. for later use.
 
-Plotpot.py has the ability to export the raw data in [csv format](https://en.wikipedia.org/wiki/Comma-separated_values) for further processing with e.g. [Microcal Origin](http://www.originlab.com/) or similar software.
-
 ## Getting Started
 
 ### Prerequisites
 
-To use Plotpot you will need to install the following software and Python packages:
+Plotpot is based on the following software and Python packages:
 
 * [Convpot](https://github.com/ahpohl/convpot)
 * [Python](https://www.python.org/)
@@ -30,6 +28,8 @@ blah
 ```
 
 ## Usage
+
+Plotpot.py has the ability to export the raw data in [csv format](https://en.wikipedia.org/wiki/Comma-separated_values) for further processing with e.g. [Microcal Origin](http://www.originlab.com/) or similar software.
 
 ### Single file
 
