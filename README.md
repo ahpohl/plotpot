@@ -20,9 +20,9 @@ To get the Python environment running under Windows I recommend to use a scienti
 
 To install Plotpot follow these steps (tested under Windows 7 64 bit as a normal user):
 
-* Download and install the [latest Convpot](https://github.com/ahpohl/convpot/releases/latest) package. Add Convpot to the PATH of the current user.
+* Download and install the [latest Convpot](https://github.com/ahpohl/convpot/releases/latest) package. During installation choose to add Convpot to the PATH of the current user.
 * Download and install [Anaconda](https://www.continuum.io/downloads). Choose the Python 3 64 bit version and install "Just for me".
-* Create a new virtual Python environment just for running Plotpot. Open an Anaconda Promt and type:
+* Create a new virtual Python environment just for running Plotpot. Open an "Anaconda Prompt" and type:
 ```
 blah
 ```
