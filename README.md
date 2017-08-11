@@ -6,10 +6,9 @@ Plotpot is a Python module that plots potentiostatic data automatically imported
 
 ### Prerequisites
 
-Plotpot is based on the following software and Python packages:
+Plotpot is based on the following software:
 
 * [Convpot](https://github.com/ahpohl/convpot)
-* [Python](https://www.python.org/)
 * [NumPy](http://www.numpy.org/)
 * [SciPy](https://scipy.org/)
 * [Matplotlib](https://matplotlib.org/)
