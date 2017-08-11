@@ -1,25 +1,95 @@
-A sample Python project
-=======================
+Plotpot
+=======
 
-A sample project that exists as an aid to the `Python Packaging User Guide
-<https://packaging.python.org>`_'s `Tutorial on Packaging and Distributing
-Projects <https://packaging.python.org/en/latest/distributing.html>`_.
+Plotpot is a Python module that plots potentiostatic data automatically
+imported with `Convpot <https://github.com/ahpohl/convpot>`__. It keeps
+a journal with meta information such as mass of active material,
+capacity etc. for later use.
 
-This projects does not aim to cover best practices for Python project
-development as a whole. For example, it does not provide guidance or tool
-recommendations for version control, documentation, or testing.
+Getting Started
+---------------
 
-----
+Prerequisites
+~~~~~~~~~~~~~
 
-This is the README file for the project.
+Plotpot is based on the following software:
 
-The file should use UTF-8 encoding and be written using `reStructuredText
-<http://docutils.sourceforge.net/rst.html>`_. It
-will be used to generate the project webpage on PyPI and will be displayed as
-the project homepage on common code-hosting services, and should be written for
-that purpose.
+-  `Convpot <https://github.com/ahpohl/convpot>`__
+-  `NumPy <http://www.numpy.org/>`__
+-  `SciPy <https://scipy.org/>`__
+-  `Matplotlib <https://matplotlib.org/>`__
 
-Typical contents for this file would include an overview of the project, basic
-usage examples, etc. Generally, including the project changelog in here is not
-a good idea, although a simple "What's New" section for the most recent version
-may be appropriate.
+To get the Python environment running under Windows I recommend to use a
+scientific Python distribution such as
+`Anaconda <https://www.continuum.io/downloads>`__ or `Enthought
+Canopy <https://www.enthought.com/products/canopy/>`__, which include
+precompiled versions of NumPy, SciPy and Matplotlib.
+
+Installing
+~~~~~~~~~~
+
+To install Plotpot follow these steps (tested under Windows 7 64 bit as
+a normal user):
+
+-  Download and install the `latest
+   Convpot <https://github.com/ahpohl/convpot/releases/latest>`__
+   package. During installation choose to add Convpot to the PATH of the
+   current user.
+-  Download and install
+   `Anaconda <https://www.continuum.io/downloads>`__. Choose the Python
+   3 64 bit version and install "Just for me".
+-  Create a new virtual Python environment just for running Plotpot.
+   Open an "Anaconda Prompt" and type:
+
+   ::
+
+       blah
+
+Usage
+-----
+
+Plotpot.py has the ability to export the raw data in `csv
+format <https://en.wikipedia.org/wiki/Comma-separated_values>`__ for
+further processing with e.g. `Microcal
+Origin <http://www.originlab.com/>`__ or similar software.
+
+Single file
+~~~~~~~~~~~
+
+Command-line Options
+~~~~~~~~~~~~~~~~~~~~
+
+-  **--help or -h** - show convpot help
+-  **--version or -V** - show the version header
+-  **--verbose or -v** - print verbose output, can be given multiple
+   times to increase verbosity
+-  **--info or -i** - display supported instruments
+-  **--timer** - benchmark the program run time, useful for very large
+   files
+-  **--output FILE** - give alternative output filename. The default is
+   the name of the first input file
+-  **--merge FILE** - a file with filenames to merge one by line. A "!"
+   denotes a comment.
+-  **--smooth LEVEL** - smooth current and voltage data (level 1-4).
+   Useful for dQ/dV plots which show artefacts due to noise.
+
+Authors
+-------
+
+-  **Alexander Pohl** - *Initial work*
+
+See also the list of
+`CONTRIBUTORS <https://github.com/ahpohl/convpot/blob/master/CONTRIBUTORS.md>`__
+who participated in this project.
+
+Changelog
+---------
+
+All notable changes and releases are documented in the
+`CHANGELOG <https://github.com/ahpohl/convpot/blob/master/CHANGELOG.md>`__.
+
+License
+-------
+
+This project is licensed under the MIT license - see the
+`LICENSE <LICENSE>`__ file for details
