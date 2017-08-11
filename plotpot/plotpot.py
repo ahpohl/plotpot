@@ -1,26 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-'''
-Karlsruhe Institute of Technology (KIT)
-Institute of Nanotechnology
-
-Dr. Alexander Pohl
-Postdoctoral Research Fellow
-
-Hermann-von-Helmholtz-Platz 1
-Building 640
-76344 Eggenstein-Leopoldshafen, Germany
-
-Phone: +49 721 608-26377
-Fax: +49 721 608-28298
-Email: alexander.pohl@kit.edu
-Web: http://www.kit.edu/
-
-KIT - University of the State of Baden-Wuerttemberg and
-National Research Center of the Helmholtz Association
-'''
-
 import sys, os
 import subprocess
 from distutils.spawn import find_executable

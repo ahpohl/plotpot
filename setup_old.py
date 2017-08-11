@@ -4,7 +4,7 @@ import os, subprocess
 version_py = os.path.join(os.path.dirname(__file__), 'plotpot/version.py')
 
 try:
-    version_git = subprocess.check_output(["git", "describe", "--always", "--dirty"]).rstrip().decode('utf-8')
+    version_git = subprocess.check_output(["git", "describe", "--tags", "--dirty"]).rstrip().decode('utf-8')
 except:
     with open(version_py, 'r') as fh:
         version_git = fh.read().strip().split('=')[-1].replace('"','')

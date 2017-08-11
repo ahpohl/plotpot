@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse, os
-from version import __version__
+#from version import __version__
 
 # determine system
 SYSTEM = os.name
@@ -31,7 +31,7 @@ or Excel. Cycles can be split into separate files using the --zip option.""",
 
 parser.add_argument('filename', nargs='?', default=None,  # make filename optional
                 help="Name of data file")
-parser.add_argument('-V', '--version', action='version', version=__version__)
+parser.add_argument('-V', '--version', action='version', version="version-git")
 
 parser.add_argument('--debug', action='store_true',
                 help="turn on debugging")
