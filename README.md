@@ -16,7 +16,7 @@ Plotpot is based on the following software and Python packages:
 
 ### Installing
 
-To get the Python environment running under Windows I recommend to use a scientific Python distribution such as [Anaconda](https://www.continuum.io/downloads), which includes precompiled versions of NumPy, SciPy and Matplotlib.
+To get the Python environment running under Windows I recommend to use a scientific Python distribution which includes precompiled versions of NumPy, SciPy and Matplotlib.
 
 To install Plotpot follow these steps (tested under Windows 7 64 bit as normal user):
 
