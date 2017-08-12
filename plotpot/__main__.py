@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-from __init__ import __version__
+from plotpot.__init__ import __version__
 
 ### check if prerequisites numpy, scipy and matplotlib are installed.
 def check_prerequisites():
