@@ -2,20 +2,8 @@
 import sys, os
 from globals import args
 import numpy as np
-
-# import matplotlib
-try:
-    import matplotlib.pyplot as plt
-except ImportError as error:
-    print("Please install Python Matplotlib from http://matplotlib.sourceforge.net/")
-    sys.exit(error)
-
-# import smooth    
-try:
-    from smooth import smooth
-except ImportError as error:
-    print("Please download smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth")
-    sys.exit(error)
+import matplotlib.pyplot as plt
+from smooth import smooth
 
 # data array 
 """

@@ -2,7 +2,7 @@
 from globals import args
 import os
 import zipfile, tempfile, shutil
-import csv
+#import csv
 import numpy as np
 
 # ignore division by zero errors

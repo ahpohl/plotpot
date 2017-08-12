@@ -4,13 +4,7 @@
 import sys, os
 import subprocess
 from distutils.spawn import find_executable
-
-# import numpy
-try:
-    import numpy as np
-except ImportError as error:
-    print("Please install Python Numpy from http://numpy.scipy.org/")
-    sys.exit(error)
+import numpy as np
     
 # import own files
 from globals import parser,args
@@ -22,12 +16,7 @@ from journal import JournalSqlite
 
 # begin main program
     
-def main():
-    
-    # print usage if no filename is given
-    if not args.filename and not args.journal:
-        parser.print_usage()
-        parser.exit()
+def plotpot():
         
     #disable division by zero warnings
     np.seterr(divide='ignore')
@@ -274,6 +263,3 @@ def main():
         fig.show_plots()
     
     return
-    
-if __name__ == '__main__':
-    main()

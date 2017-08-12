@@ -4,7 +4,7 @@ from journal import DatabaseManager
 import os
 import numpy as np
 import sqlite3
-import sys
+#import sys
 import csv
 
 # functions and classes for manipulating the journal file

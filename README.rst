@@ -16,14 +16,13 @@ Plotpot is based on the following software:
 
 -  `Convpot <https://github.com/ahpohl/convpot>`__
 -  `NumPy <http://www.numpy.org/>`__
--  `SciPy <https://scipy.org/>`__
 -  `Matplotlib <https://matplotlib.org/>`__
 
 To get the Python environment running under Windows I recommend to use a
 scientific Python distribution such as
 `Anaconda <https://www.continuum.io/downloads>`__ or `Enthought
-Canopy <https://www.enthought.com/products/canopy/>`__, which include
-precompiled versions of NumPy, SciPy and Matplotlib.
+Canopy <https://www.enthought.com/products/canopy/>`__, which include 
+a precompiled version of NumPy and Matplotlib.
 
 Installing
 ~~~~~~~~~~
@@ -49,7 +48,7 @@ a normal user):
 
    ::
 
-       conda create -n plotpot-env numpy scipy matplotlib
+       conda create -n plotpot-env numpy matplotlib
        activate plotpot-env
 
 -  Download and install Plotpot by typing:
@@ -58,13 +57,13 @@ a normal user):
 
        pip install plotpot
 
-If all goes well you should be able to type ``plotpot.py`` and get a
+If all goes well you should be able to type ``plotpot`` and get a
 usage message without errors about missing packages.
 
 Usage
 -----
 
-Plotpot.py has the ability to export the raw data in `csv
+Plotpot has the ability to export the raw data in `csv
 format <https://en.wikipedia.org/wiki/Comma-separated_values>`__ for
 further processing with e.g. `Microcal
 Origin <http://www.originlab.com/>`__ or similar software.
