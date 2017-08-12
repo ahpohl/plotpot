@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from globals import args
 import sqlite3
 import datetime
 import csv
 import numpy as np
-import sys
 
 # functions and classes for manipulating the journal file
 class DatabaseManager(object):
@@ -73,7 +71,9 @@ class AskFileDetails(object):
 # class to read and manipilate journal sqlite database
 class JournalSqlite(DatabaseManager, AskFileDetails):
     
-    def __init__(self, journalDbPath, massStor):
+    def __init__(self, args, journalDbPath, massStor):
+        self.args = args
+        self.journalDbPath = journalDbPath
         DatabaseManager.__init__(self, journalDbPath)
         AskFileDetails.__init__(self, massStor)
         self.__CreateSchema()
@@ -174,6 +174,7 @@ class JournalSqlite(DatabaseManager, AskFileDetails):
             data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
         
         # output sql query
+        print("Journal file: %s" % self.journalDbPath)
         if len(data) > 0:
             self.__PrintSql(data, header)
     
@@ -196,7 +197,7 @@ class JournalSqlite(DatabaseManager, AskFileDetails):
         dataSql = list(dataSql)
         dataSql[7] = str(datetime.datetime.fromtimestamp(dataSql[7])) # sec since epoch
         
-        fh = open(args.filename.split('.')[0]+'_journal.csv', 'w')
+        fh = open(self.args.filename.split('.')[0]+'_journal.csv', 'w')
         header = "%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
                 "file_name", "mass", 
                 "capacity", "area", "volume", "file_size", 

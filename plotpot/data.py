@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-from globals import args
-from journal import DatabaseManager
+from plotpot.journal import DatabaseManager
 import os
 import numpy as np
 import sqlite3
-import sys
+#import sys
 import csv
 
 # functions and classes for manipulating the journal file
 class DataSqlite(DatabaseManager):
     
-    def __init__(self, dataDbPath):
+    def __init__(self, args, dataDbPath):
         DatabaseManager.__init__(self, dataDbPath)
+        self.args = args
         
     def writeMergeFileSummary(self):
         listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Localtime", "Comment"]
@@ -20,7 +20,7 @@ class DataSqlite(DatabaseManager):
         metadata = self.fetchall()
         
         # insert massStor (mass, cap and area)    
-        with open(args.filename.split('.')[0]+'_files.csv', 'w',  newline='') as fh:
+        with open(self.args.filename.split('.')[0]+'_files.csv', 'w',  newline='') as fh:
             header = "%s,%s,%s,%s,%s,%s\n" % (
                 "file_ID", "file_name", "file_size", 
                 "data_points", "start_datetime", 
@@ -49,7 +49,7 @@ class DataSqlite(DatabaseManager):
         return self.fetchone()[0]
     
     def getData(self):
-        if args.counter:
+        if self.args.counter:
             listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
                 "DateTime","Current","Voltage2","Capacity","Energy","dQdV","Aux_Channel"]
         else:
@@ -77,12 +77,12 @@ class DataSqlite(DatabaseManager):
         
         previousSize = int(self.fetchone()[0])
         currentSize = 0
-        with open(args.filename, 'r') as fh:
+        with open(self.args.filename, 'r') as fh:
             fh.seek(0, os.SEEK_END)
             currentSize = fh.tell()
             fh.close()
             
-        if args.debug:
+        if self.args.debug:
             print("currentSize: %ld, previousSize: %ld" % (currentSize, previousSize))
         
         if currentSize == previousSize:
