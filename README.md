@@ -31,7 +31,10 @@ conda update anaconda
 conda create -n plotpot-env numpy scipy matplotlib
 activate plotpot-env
 ```
-* Download and install Plotpot by typing `pip install plotpot`
+* Download and install Plotpot by typing:
+```
+pip install plotpot
+```
 
 If all goes well you should be able to type `plotpot.py` and get a usage message without errors about missing packages.
 
