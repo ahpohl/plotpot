@@ -59,8 +59,8 @@ setup(
 		'Programming Language :: Python :: 3.6',
 		
 		# Operating systems
-		'Operating System :: Microsoft :: Windows :: Windows 7',
-		'Operating System :: POSIX :: Linux',
+		'Operating System :: OS Independent',
+		
     ],
 
     # What does your project relate to?
@@ -68,7 +68,7 @@ setup(
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(exclude=['docs']),
+    packages=find_packages(),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -105,9 +105,9 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    #entry_points={
-    #    'console_scripts': [
-    #        'sample=sample:main',
-    #    ],
-    #},
+    entry_points={
+        'console_scripts': [
+            'plotpot=plotpot.plotpot:main',
+        ],
+    },
 )
