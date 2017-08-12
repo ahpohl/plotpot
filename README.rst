@@ -38,12 +38,28 @@ a normal user):
 -  Download and install
    `Anaconda <https://www.continuum.io/downloads>`__. Choose the Python
    3 64 bit version and install "Just for me".
--  Create a new virtual Python environment just for running Plotpot.
-   Open an "Anaconda Prompt" and type:
+-  Update Anaconda. Open an "Anaconda Prompt" and type:
 
    ::
 
-       blah
+       conda update conda
+       conda update anaconda
+
+-  Create a new virtual Python environment just for running Plotpot:
+
+   ::
+
+       conda create -n plotpot-env numpy scipy matplotlib
+       activate plotpot-env
+
+-  Download and install Plotpot by typing:
+
+   ::
+
+       pip install plotpot
+
+If all goes well you should be able to type ``plotpot.py`` and get a
+usage message without errors about missing packages.
 
 Usage
 -----
