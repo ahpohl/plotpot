@@ -2,7 +2,7 @@
 
 import sys
 import argparse
-#from version import __version__
+from __init__ import __version__
 
 ### check if prerequisites numpy, scipy and matplotlib are installed.
 def check_prerequisites():
@@ -61,7 +61,7 @@ def main():
     
     parser.add_argument('filename', nargs='?', default=None,  # make filename optional
                     help="Name of data file")
-    parser.add_argument('-V', '--version', action='version', version="version-git")
+    parser.add_argument('-V', '--version', action='version', version=__version__)
     
     parser.add_argument('--debug', action='store_true',
                     help="turn on debugging")
