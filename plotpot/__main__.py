@@ -2,7 +2,11 @@
 
 import sys
 import argparse
-from plotpot.__init__ import __version__
+
+try:
+    from plotpot.version import version
+except:
+    sys.exit("Version not found. Package not installed properly.")
 
 ### check if prerequisites numpy, scipy and matplotlib are installed.
 def check_prerequisites():
@@ -61,7 +65,7 @@ def main():
     
     parser.add_argument('filename', nargs='?', default=None,  # make filename optional
                     help="Name of data file")
-    parser.add_argument('-V', '--version', action='version', version=__version__)
+    parser.add_argument('-V', '--version', action='version', version=version)
     
     parser.add_argument('--debug', action='store_true',
                     help="turn on debugging")

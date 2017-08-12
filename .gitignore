@@ -102,3 +102,6 @@ ENV/
 
 # jEdit backup copies
 *~
+
+# git version
+version.py
