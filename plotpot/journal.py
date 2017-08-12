@@ -73,6 +73,7 @@ class JournalSqlite(DatabaseManager, AskFileDetails):
     
     def __init__(self, args, journalDbPath, massStor):
         self.args = args
+        self.journalDbPath = journalDbPath
         DatabaseManager.__init__(self, journalDbPath)
         AskFileDetails.__init__(self, massStor)
         self.__CreateSchema()
@@ -173,6 +174,7 @@ class JournalSqlite(DatabaseManager, AskFileDetails):
             data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
         
         # output sql query
+        print("Journal file: %s" % self.journalDbPath)
         if len(data) > 0:
             self.__PrintSql(data, header)
     

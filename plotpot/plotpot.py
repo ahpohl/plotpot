@@ -26,7 +26,7 @@ class Plotpot(object):
         np.seterr(divide='ignore')
         
         # create global database in program directroy
-        envCfg = os.environ.get('PLOTPOT_PATH')
+        envCfg = os.environ.get('PLOTPOT_JOURNAL')
         fileCfg = "plotpot-journal.dat"
         if envCfg:
             journalDbPath = os.path.join(envCfg, fileCfg)
