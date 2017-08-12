@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from globals import args
 import os
 import zipfile, tempfile, shutil
 #import csv
@@ -9,14 +8,15 @@ import numpy as np
 np.seterr(divide='ignore')
 
 # export class
-class export:
+class export(object):
     
-    def __init__(self, data, cycles, stats, massStor):
+    def __init__(self, args, data, cycles, stats, massStor):
         self.data = data
         self.cycles = cycles
         self.stats = stats
         self.massStor = massStor
         self.expStats = self._calcStatistics()
+        self.args = args
         
     def get_stats(self):
         return self.expStats
@@ -175,7 +175,7 @@ class export:
     
     def writeDataTable(self):
         
-        with open(args.filename.split('.')[0]+'_data.csv', 'w') as fh:
+        with open(self.args.filename.split('.')[0]+'_data.csv', 'w') as fh:
             header = "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
                 "data_point", "cycle_index", "step_index", 
                 "test_time", "step_time", "datetime", 
@@ -197,7 +197,7 @@ class export:
             # m / A = [ mg / cm² ]
             loading = self.massStor['mass'] / self.massStor['area']
         
-        with open(args.filename.split('.')[0]+'_statistics.csv', 'w') as fh:
+        with open(self.args.filename.split('.')[0]+'_statistics.csv', 'w') as fh:
         
             # export massStor
             header = """Mass,Capacity,Area,Volume,Loading
@@ -246,7 +246,7 @@ mg,mAh/g,cm²,µL,mg/cm²\n"""
             
         cwd = os.getcwd() # save current directory
         os.chdir(tempfile.gettempdir()) # change to tmp dir
-        filestem = args.filename.split('.')[0] # create filename
+        filestem = self.args.filename.split('.')[0] # create filename
         if not os.path.exists(filestem):
             os.makedirs(filestem) # create directory
         path = os.path.abspath(filestem) # change to directory

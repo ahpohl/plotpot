@@ -2,52 +2,41 @@
 
 import sys
 import argparse
+from distutils.spawn import find_executable
+from plotpot.plotpot import Plotpot
 
+# check if prerequisites are installed
 try:
     from plotpot.__version__ import version
-except:
-    sys.exit("Version info not found.")
-
-### check if prerequisites numpy, scipy and matplotlib are installed.
-def check_prerequisites():
+except ImportError as error:
+    print("Package not installed with pip.")
+    sys.exit(error)
     
-    # import numpy
-    try:
-        import numpy as np
-    except ImportError as error:
-        print("Please install Python Numpy from http://numpy.scipy.org/")
-        sys.exit(error)
-        
-    # import matplotlib
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError as error:
-        print("Please install Python Matplotlib from http://matplotlib.sourceforge.net/")
-        sys.exit(error)
+try:
+    import numpy as np
+except ImportError as error:
+    print("Please install Python Numpy from http://numpy.scipy.org/")
+    sys.exit(error)
     
-    # import smooth    
-    try:
-        from plotpot import smooth
-    except ImportError as error:
-        print("Please download smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth")
-        sys.exit(error)
+try:
+    import matplotlib.pyplot as plt
+except ImportError as error:
+    print("Please install Python Matplotlib from http://matplotlib.sourceforge.net/")
+    sys.exit(error)
+    
+convpot_program = find_executable("convpot")
+if not convpot_program:
+    print("Please install Convpot from https://github.com/ahpohl/convpot/")
+    sys.exit()
 
 def main():
-    
-    # check prerequisities
-    try:
-        check_prerequisites()
-    except:
-        sys.exit()
     
     # parse command line options
     parser = argparse.ArgumentParser(usage='%(prog)s [-h] [options] filename',
                     formatter_class=argparse.RawDescriptionHelpFormatter,
-                    description="""The script plots data from Arbin (*.res), Biologic (*.mpt), Ivium (*.idf)
-    and Gamry (*.DTA) potentiostats. It has the capability to select cycles 
-    to be plotted and save images of the plots in PNG format. The results can
-    be exported in csv format for plotting in external programs like Origin 
-    or Excel. Cycles can be split into separate files using the --zip option.""",
+                    description="""Plotpot is a Python module that plots potentiostatic data automatically imported
+with Convpot. It keeps a journal with meta information such as mass of active
+material, capacity etc. for later use.""",
                     epilog="""explanation of the --plot option:
       1   Voltage vs. specific capacity
       2   Voltage + current vs. time
@@ -116,6 +105,9 @@ def main():
     if not args.filename and not args.journal:
         parser.print_usage()
         parser.exit()
+    
+    # run main program
+    Plotpot(args)
 
     return
 

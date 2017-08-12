@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys, os
-from globals import args
 import numpy as np
 import matplotlib.pyplot as plt
-from smooth import smooth
 
 # data array 
 """
@@ -25,12 +23,13 @@ from smooth import smooth
 
 class plot(object):
 
-    def __init__(self, plots, data, cycles, stats, massStor):
+    def __init__(self, args, plots, data, cycles, stats, massStor):
         self.data = data
         self.cycles = cycles
         self.stats = stats
         self.massStor = massStor
-        self.plots = plots     
+        self.plots = plots
+        self.args = args
     
     def draw(self):
         """call plotting functions"""
@@ -73,12 +72,12 @@ class plot(object):
     def savefigure(self):
         """This function saves figures."""
 
-        if args.counter:
+        if self.args.counter:
             ext = '_ce.png'
         else:
             ext = '.png'
         
-        stem = args.filename.split('.')[0]
+        stem = self.args.filename.split('.')[0]
         
         filename = {1: '_voltage_vs_capacity',
                     2: '_voltage_current_vs_time',
@@ -302,7 +301,7 @@ class plot(object):
         ax1 = fig.add_subplot(111)
         
         dictLevel = {'0': 0, '1': 3, '2': 5, '3': 9, '4': 15} # level odd integer >= 3
-        level = dictLevel[str(args.smooth)]
+        level = dictLevel[str(self.args.smooth)]
         lim = level / 2.0 # float division 
         
         for cyc in self.cycles:
@@ -317,7 +316,7 @@ class plot(object):
             
             if ch.shape[0] > 0:
                 if level > 0:
-                    ych = smooth(ch[:,10], window_len=level, window='hamming')
+                    ych = self.smooth(ch[:,10], window_len=level, window='hamming')
                     ax1.plot(ch[:,7], ych[lim:-lim], 'k-', label='')
                 # disable smooth
                 else:
@@ -325,7 +324,7 @@ class plot(object):
                 
             if dc.shape[0] > 0:
                 if level > 0:
-                    ydc = smooth(dc[:,10], window_len=level, window='hamming')
+                    ydc = self.smooth(dc[:,10], window_len=level, window='hamming')
                     ax1.plot(dc[:,7], ydc[lim:-lim], 'k-', label='')
                 else:
                     ax1.plot(dc[:,7], dc[:,10], 'k-', label='')
@@ -447,3 +446,61 @@ class plot(object):
         ax1.set_ylabel('Voltage [V]')
     
         return
+    
+    def smooth(self, x, window_len=11, window='hanning'):
+        """smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth
+        smooth the data using a window with requested size.
+        
+        This method is based on the convolution of a scaled window with the signal.
+        The signal is prepared by introducing reflected copies of the signal 
+        (with the window size) in both ends so that transient parts are minimized
+        in the begining and end part of the output signal.
+        
+        input:
+            x: the input signal 
+            window_len: the dimension of the smoothing window; should be an odd integer
+            window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+                flat window will produce a moving average smoothing.
+    
+        output:
+            the smoothed signal
+            
+        example:
+    
+        t=linspace(-2,2,0.1)
+        x=sin(t)+randn(len(t))*0.1
+        y=smooth(x)
+        
+        see also: 
+        
+        np.hanning, np.hamming, np.bartlett, np.blackman, np.convolve
+        scipy.signal.lfilter
+     
+        TODO: the window parameter could be the window itself if an array instead of a string
+        NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+        """
+    
+        if x.ndim != 1:
+            raise ValueError("smooth only accepts 1 dimension arrays.")
+    
+        if x.size < window_len:
+            raise ValueError("Input vector needs to be bigger than window size.")
+    
+    
+        if window_len<3:
+            return x
+    
+    
+        if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+            raise ValueError("Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
+    
+    
+        s=np.r_[x[window_len-1:0:-1],x,x[-1:-window_len:-1]]
+        #print(len(s))
+        if window == 'flat': #moving average
+            w=np.ones(window_len,'d')
+        else:
+            w=eval('np.'+window+'(window_len)')
+    
+        y=np.convolve(w/w.sum(),s,mode='valid')
+        return y
