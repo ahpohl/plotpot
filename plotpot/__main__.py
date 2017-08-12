@@ -4,9 +4,9 @@ import sys
 import argparse
 
 try:
-    from plotpot.version import version
+    from plotpot.__version__ import version
 except:
-    sys.exit("Version not found. Package not installed properly.")
+    sys.exit("Version info not found.")
 
 ### check if prerequisites numpy, scipy and matplotlib are installed.
 def check_prerequisites():

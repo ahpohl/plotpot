@@ -10,23 +10,6 @@ from setuptools import setup #, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
-import re
-
-# source version
-def read(*names, **kwargs):
-    with open(
-        path.join(path.dirname(__file__), *names),
-        encoding=kwargs.get("encoding", "utf8")
-    ) as fp:
-        return fp.read()
-
-def find_version(*file_paths):
-    version_file = read(*file_paths)
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-                              version_file, re.M)
-    if version_match:
-        return version_match.group(1)
-    raise RuntimeError("Unable to find version string.")
 
 here = path.abspath(path.dirname(__file__))
 
@@ -40,11 +23,9 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    #version='1.0.0',
-    #version=find_version("plotpot", "__init__.py"),
     
     # use setuptools_scm package to get version from git
-    use_scm_version={'write_to': 'plotpot/version.py'},
+    use_scm_version={'write_to': 'plotpot/__version__.py'},
     setup_requires=['setuptools_scm'],
     
     description='Plot potentiostatic data',
