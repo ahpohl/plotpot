@@ -99,19 +99,19 @@ Plots are selected with the ``--plot`` option, *e.g.*
        
 It is possible to give a comma separated list of plots and ranges separated with "-". If no plots are selected, the voltage versus specific capacity (1) is plotted by default. Plotpot currently supports the following plot types:
 
-    1.  Voltage vs. specific capacity
-    2.  Voltage and current vs. time
-    3.  Auxiliary channel, e.g. temperature vs. time
-    4.  Specific capacity [mAh/g] per cycle
-    5.  Specific energy [Wh/kg] per cycle
-    6.  Volumetric energy [Wh/L] per cyclet
-    7.  Coulombic efficiency per cycle
-    8.  Mean voltages and hysteresis per cycle
-    9.  dQ/dV vs. voltage
-    10. C-rate per cycle
-    11. Specific current density [mA/g] per cycle
-    12. Current density [mA/cm²] per cycle
-    13. Specific capacity as charge/dischage circle
+1.  Voltage vs. specific capacity
+2.  Voltage and current vs. time
+3.  Auxiliary channel, e.g. temperature vs. time
+4.  Specific capacity [mAh/g] per cycle
+5.  Specific energy [Wh/kg] per cycle
+6.  Volumetric energy [Wh/L] per cyclet
+7.  Coulombic efficiency per cycle
+8.  Mean voltages and hysteresis per cycle
+9.  dQ/dV vs. voltage
+10. C-rate per cycle
+11. Specific current density [mA/g] per cycle
+12. Current density [mA/cm²] per cycle
+13. Specific capacity as charge/dischage circle
 
 Export data
 ~~~~~~~~~~~
@@ -127,13 +127,19 @@ This generates files in `csv format <https://en.wikipedia.org/wiki/Comma-separat
 The journal
 ~~~~~~~~~~~
 
-On first execution, a journal file `plotpot-journal.dat` is created in the directory of the plotpot executable. This file keeps a record of mass, capacity, area and volume of the electrode. If run again with the same data file, you have the possible to use the previously entered values or enter new ones. The content of the journal can be printed out with
+On first execution, a journal file ``plotpot-journal.dat`` is created in the directory of the plotpot executable. The folder location can be changed by setting the ``PLOTPOT_JOURNAL`` environment variable to a full path as described in the `wiki <https://github.com/ahpohl/plotpot/wiki/Set-the-location-of-the-Plotpot-journal-file>`__. 
+
+The journal file keeps a record of mass, capacity, area and volume of the electrode. If run again with the same data file, you have the possibility to use the previously entered values or enter new ones. The content of the journal can be printed out with
 
 ::
    
     plotpot --journal
        
-A particular entry can be removed from the journal with ``plotpot --journal --delete <row>``.
+A particular entry can be removed from the journal with
+
+::
+
+    plotpot --journal --delete <row>
 
 Authors
 -------
