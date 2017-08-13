@@ -65,10 +65,7 @@ Usage
 
 An example plot generated with ``plotpot arbintest.res`` looks like this:
 
-    .. image:: https://github.com/ahpohl/plotpot/blob/master/resources/arbintest.png
-        :alt: voltage vs. capacity plot
-        :width: 50%
-        :align: center
+   .. image:: https://github.com/ahpohl/plotpot/blob/master/resources/arbintest.png
 
 Select data
 ~~~~~~~~~~~
