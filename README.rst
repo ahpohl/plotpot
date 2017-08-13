@@ -63,48 +63,94 @@ usage message without errors about missing packages.
 Usage
 -----
 
-Plotpot has the ability to export the raw data in `csv
-format <https://en.wikipedia.org/wiki/Comma-separated_values>`__ for
-further processing with e.g. `Microcal
-Origin <http://www.originlab.com/>`__ or similar software.
+An example plot generated with ``plotpot arbintest.res`` looks like this:
 
-Single file
+    .. image:: https://github.com/ahpohl/plotpot/blob/master/resources/arbintest.png
+        :alt: voltage vs. capacity plot
+        :width: 50%
+        :align: center
+
+Select data
 ~~~~~~~~~~~
 
-Command-line Options
-~~~~~~~~~~~~~~~~~~~~
+By default all available data is plotted. The range can be selected by
 
--  **--help or -h** - show convpot help
--  **--version or -V** - show the version header
--  **--verbose or -v** - print verbose output, can be given multiple
-   times to increase verbosity
--  **--info or -i** - display supported instruments
--  **--timer** - benchmark the program run time, useful for very large
-   files
--  **--output FILE** - give alternative output filename. The default is
-   the name of the first input file
--  **--merge FILE** - a file with filenames to merge one by line. A "!"
-   denotes a comment.
--  **--smooth LEVEL** - smooth current and voltage data (level 1-4).
-   Useful for dQ/dV plots which show artefacts due to noise.
+* cycle number (``--cycles``)
+* time (in hours) (``--time``)
+* data points (``--data``)
+
+For example to plot data up to cycle 10:
+
+::
+
+    potplot --cycles 10 arbintest.py
+    
+To plot from cycle 3 to 6:
+
+::
+
+    potplot --cycles 3,6 arbintest.py
+
+Select plots
+~~~~~~~~~~~~
+
+Plots are selected with the ``--plot`` option, *e.g.*
+
+::
+   
+    potplot --plot 1,4-5 arbintest.res
+       
+It is possible to give a comma separated list of plots and ranges separated with "-". If no plots are selected, the voltage versus specific capacity (1) is plotted by default. Plotpot currently supports the following plot types:
+
+1. Voltage vs. specific capacity
+2. Voltage and current vs. time
+3. Auxiliary channel, e.g. temperature vs. time
+4. Specific capacity [mAh/g] per cycle
+5. Specific energy [Wh/kg] per cycle
+6. Volumetric energy [Wh/L] per cyclet
+7. Coulombic efficiency per cycle
+8. Mean voltages and hysteresis per cycle
+9. dQ/dV vs. voltage
+10. C-rate per cycle
+11. Specific current density [mA/g] per cycle
+12. Current density [mA/cm²] per cycle
+13. Specific capacity as charge/dischage circle
+
+Export data
+~~~~~~~~~~~
+
+The raw data, statistics and data per cycle are exported with
+
+::
+
+    plotpot --export arbintest.res
+
+This generates files in `csv format <https://en.wikipedia.org/wiki/Comma-separated_values>`__ for further processing with e.g. `Microcal Origin <http://www.originlab.com/>`__ or similar software. Data per cycle is packed into a zip archive and png snapshots of the plots genererated on screen are created.
+
+The journal
+~~~~~~~~~~~
+
+On first execution, a journal file `plotpot-journal.dat` is created in the directory of the plotpot executable. This file keeps a record of mass, capacity, area and volume of the electrode. If run again with the same data file, you have the possible to use the previously entered values or enter new ones. The content of the journal can be printed out with
+
+   ::
+   
+       plotpot --journal
+       
+A particular entry can be removed from the journal with ``plotpot --journal --delete <row>``.
 
 Authors
 -------
 
 -  **Alexander Pohl** - *Initial work*
 
-See also the list of
-`CONTRIBUTORS <https://github.com/ahpohl/convpot/blob/master/CONTRIBUTORS.md>`__
-who participated in this project.
+See also the list of `CONTRIBUTORS <CONTRIBUTORS.rst>`__ who participated in this project.
 
 Changelog
 ---------
 
-All notable changes and releases are documented in the
-`CHANGELOG <https://github.com/ahpohl/convpot/blob/master/CHANGELOG.md>`__.
+All notable changes and releases are documented in the `CHANGELOG <CHANGELOG.rst>`__.
 
 License
 -------
 
-This project is licensed under the MIT license - see the
-`LICENSE <LICENSE>`__ file for details
+This project is licensed under the MIT license - see the `LICENSE <LICENSE.txt>`__ file for details
