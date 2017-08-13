@@ -30,28 +30,28 @@ Installing
 To install Plotpot follow these steps (tested under Windows 7 64 bit as
 a normal user):
 
--  Download and install the `latest
+1. Download and install the `latest
    Convpot <https://github.com/ahpohl/convpot/releases/latest>`__
    package. During installation choose to add Convpot to the PATH of the
    current user.
--  Download and install
+2. Download and install
    `Anaconda <https://www.continuum.io/downloads>`__. Choose the Python
    3 64 bit version and install "Just for me".
--  Update Anaconda. Open an "Anaconda Prompt" and type:
+3. Update Anaconda. Open an "Anaconda Prompt" and type:
 
    ::
 
        conda update conda
        conda update anaconda
 
--  Create a new virtual Python environment just for running Plotpot:
+4. Create a new virtual Python environment just for running Plotpot:
 
    ::
 
        conda create -n plotpot-env numpy matplotlib
        activate plotpot-env
 
--  Download and install Plotpot by typing:
+5. Download and install Plotpot by typing:
 
    ::
 
