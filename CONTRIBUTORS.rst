@@ -1,0 +1,6 @@
+Convpot contributors (sorted alphabetically)
+============================================
+
+-  **`Alexander Pohl <https://github.com/ahpohl>`__**
+
+-  initial work
