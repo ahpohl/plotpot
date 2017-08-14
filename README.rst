@@ -146,14 +146,14 @@ Authors
 
 -  **Alexander Pohl** - *Initial work*
 
-See also the list of `CONTRIBUTORS <CONTRIBUTORS.rst>`__ who participated in this project.
+See also the list of `CONTRIBUTORS <https://github.com/ahpohl/plotpot/blob/master/CONTRIBUTORS.rst>`__ who participated in this project.
 
 Changelog
 ---------
 
-All notable changes and releases are documented in the `CHANGELOG <CHANGELOG.rst>`__.
+All notable changes and releases are documented in the `CHANGELOG <https://github.com/ahpohl/plotpot/blob/master/CHANGELOG.rst>`__.
 
 License
 -------
 
-This project is licensed under the MIT license - see the `LICENSE <LICENSE.txt>`__ file for details
+This project is licensed under the MIT license - see the `LICENSE <https://github.com/ahpohl/plotpot/blob/master/LICENSE.txt>`__ file for details
