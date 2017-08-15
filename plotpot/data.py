@@ -49,7 +49,7 @@ class DataSqlite(DatabaseManager):
         return self.fetchone()[0]
     
     def getData(self):
-        if self.args.counter:
+        if self.args.biologic_ce:
             listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
                 "DateTime","Current","Voltage2","Capacity","Energy","dQdV","Aux_Channel"]
         else:

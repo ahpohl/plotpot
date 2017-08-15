@@ -53,59 +53,54 @@ material, capacity etc. for later use.""",
       13  Specific capacity (circle)""")
     
     parser.add_argument('filename', nargs='?', default=None,  # make filename optional
-                    help="Name of data file")
+                    help="data file name")
     parser.add_argument('-V', '--version', action='version', version=version)
-    
-    parser.add_argument('--debug', action='store_true',
-                    help="turn on debugging")
-    parser.add_argument('-q', '--quiet', action='store_true',
-                    help="do not show plots")
     parser.add_argument('-v', '--verbose', action='store_true',
                     help="be more verbose")
-    parser.add_argument('-b', '--counter', action='store_true',
-                    help="use Biologic counter electrode potential")
+    parser.add_argument('-D', '--debug', action='store_true',
+                    help="show debug messages")
+    parser.add_argument('-q', '--quiet', action='store_true',
+                    help="do not display plots")
     parser.add_argument('-e', '--export', action='store_true',
                     help="export data, statistics and figures")
     parser.add_argument('-f', '--force', action='store_true',
-                    help="overwrite sqlite file if up to date")
+                    help="skip up-to-date check")
+    parser.add_argument('-b', '--biologic-ce', action='store_true',
+                    help="use Biologic counter electrode potential")
     
     # plot group
     group_plot = parser.add_argument_group("plot arguments")
     
     group_plot.add_argument('-p', '--plot', default='1',
-                    help="select plots, [4-5,7,]{%(default)s}")
-    group_plot.add_argument('-o', '--smooth', default=0, type=int, choices=range(0,5),
-                    help="smooth level {%(default)s}, off") # Hamming window length
+                    help="select plots, default %(default)s")
+    group_plot.add_argument('-s', '--smooth', type=int, choices=range(1,5),
+                    help="smooth level") # window length
     
     # mutually exclusive arguments in plot group
     group_filter = group_plot.add_mutually_exclusive_group()
     
     group_filter.add_argument('-c', '--cycles',
-                    help="select cycles, [1,]5")
+                    help="select cycles")
     group_filter.add_argument('-t', '--time',
-                    help="select time [h], [0,]8")
+                    help="select time in hours")
     group_filter.add_argument('-d', '--data',
-                    help="select data points, [1,]100")
+                    help="select data points")
     
     # journal group
-    group_journal = parser.add_argument_group("arguments for arbin.cfg database")
+    group_journal = parser.add_argument_group("journal arguments")
     
     group_journal.add_argument("--journal", action="store_true",
-                    help="select journal table")
-    group_journal.add_argument("--config", action="store_true",
-                    help="select config table")
+                    help="show the journal table")
     group_journal.add_argument("--delete", type=int,
-                    help="delete row")
-    group_journal.add_argument("--insert", action="store_true",
-                    help="insert row")
+                    help="delete a row id from journal")
     
     args = parser.parse_args()
 
     # print usage if no filename is given
-    if not args.filename and not args.journal:
+    if not (args.filename or args.journal):
         parser.print_usage()
         parser.exit()
-    
+        
     # run main program
     Plotpot(args)
 

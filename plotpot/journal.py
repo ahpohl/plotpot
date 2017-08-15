@@ -174,7 +174,6 @@ class JournalSqlite(DatabaseManager, AskFileDetails):
             data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
         
         # output sql query
-        print("Journal file: %s" % self.journalDbPath)
         if len(data) > 0:
             self.__PrintSql(data, header)
     

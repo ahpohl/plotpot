@@ -300,9 +300,8 @@ class plot(object):
         fig.canvas.set_window_title("Figure 9 - differential capacity")
         ax1 = fig.add_subplot(111)
         
-        dictLevel = {'0': 0, '1': 3, '2': 5, '3': 9, '4': 15} # level odd integer >= 3
-        level = dictLevel[str(self.args.smooth)]
-        lim = level / 2.0 # float division 
+        # translate smooth level to window length
+        dictLevel = {'1': 5, '2': 11, '3': 17, '4': 23} # level odd integer
         
         for cyc in self.cycles:
             ch = self.data[np.logical_and(self.data[:,1] == cyc, self.data[:,2] == 1)]
@@ -315,17 +314,19 @@ class plot(object):
             dc[:,10] = -dc[:,10] # dQdV negative on discharge
             
             if ch.shape[0] > 0:
-                if level > 0:
+                if self.args.smooth:
+                    level = dictLevel[str(self.args.smooth)]
                     ych = self.smooth(ch[:,10], window_len=level, window='hamming')
-                    ax1.plot(ch[:,7], ych[lim:-lim], 'k-', label='')
+                    ax1.plot(ch[:,7], ych, 'k-', label='')
                 # disable smooth
                 else:
                     ax1.plot(ch[:,7], ch[:,10], 'k-', label='')
                 
             if dc.shape[0] > 0:
-                if level > 0:
+                if self.args.smooth:
+                    level = dictLevel[str(self.args.smooth)]
                     ydc = self.smooth(dc[:,10], window_len=level, window='hamming')
-                    ax1.plot(dc[:,7], ydc[lim:-lim], 'k-', label='')
+                    ax1.plot(dc[:,7], ydc, 'k-', label='')
                 else:
                     ax1.plot(dc[:,7], dc[:,10], 'k-', label='')
                 
@@ -477,7 +478,6 @@ class plot(object):
         scipy.signal.lfilter
      
         TODO: the window parameter could be the window itself if an array instead of a string
-        NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
         """
     
         if x.ndim != 1:
@@ -486,21 +486,20 @@ class plot(object):
         if x.size < window_len:
             raise ValueError("Input vector needs to be bigger than window size.")
     
-    
         if window_len<3:
             return x
     
-    
         if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-            raise ValueError("Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
-    
+            raise ValueError("Window is one of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
     
         s=np.r_[x[window_len-1:0:-1],x,x[-1:-window_len:-1]]
-        #print(len(s))
+        
         if window == 'flat': #moving average
             w=np.ones(window_len,'d')
         else:
             w=eval('np.'+window+'(window_len)')
     
         y=np.convolve(w/w.sum(),s,mode='valid')
-        return y
+        
+        # make 'y output lengtj' == 'y input length'
+        return y[(window_len//2):-(window_len//2)] # "//" integer division e.g. 15//2 = 7
