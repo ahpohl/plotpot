@@ -34,13 +34,13 @@ def main():
     # parse command line options
     parser = argparse.ArgumentParser(usage='%(prog)s [-h] [options] filename',
                     formatter_class=argparse.RawDescriptionHelpFormatter,
-                    description="""Plotpot is a Python module that plots potentiostatic data automatically imported
-with Convpot. It keeps a journal with meta information such as mass of active
-material, capacity etc. for later use.""",
-                    epilog="""explanation of the --plot option:
+                    description="""Plotpot is a Python module that plots potentiostatic data
+imported with Convpot. It keeps a journal with meta information 
+for later use.""",
+                    epilog="""Available plot types:
       1   Voltage vs. specific capacity
       2   Voltage + current vs. time
-      3   Auxiliary channel vs. time
+      3   Temperature vs. time
       4   Specific capacity [mAh/g]
       5   Specific energy [Wh/kg]
       6   Volumetric energy [Wh/L] 
@@ -50,7 +50,7 @@ material, capacity etc. for later use.""",
       10  C-rate
       11  Specific current density [mA/g]
       12  Current density [mA/cm²]
-      13  Specific capacity (circle)""")
+      13  Specific capacity (circle plot)""")
     
     parser.add_argument('filename', nargs='?', default=None,  # make filename optional
                     help="data file name")
@@ -68,33 +68,38 @@ material, capacity etc. for later use.""",
     parser.add_argument('-b', '--biologic-ce', action='store_true',
                     help="use Biologic counter electrode potential")
     
-    # plot group
-    group_plot = parser.add_argument_group("plot arguments")
+    # data group
+    group_data = parser.add_argument_group(title="data arguments")
     
-    group_plot.add_argument('-p', '--plot', default='1',
+    group_data.add_argument('-p', '--plot', default='1',
                     help="select plots, default %(default)s")
-    group_plot.add_argument('-s', '--smooth', type=int, choices=range(1,5),
+    group_data.add_argument('-s', '--smooth', type=int, choices=range(1,5),
                     help="smooth level") # window length
     
     # mutually exclusive arguments in plot group
-    group_filter = group_plot.add_mutually_exclusive_group()
+    group_select = group_data.add_mutually_exclusive_group()
     
-    group_filter.add_argument('-c', '--cycles',
+    group_select.add_argument('-c', '--cycles',
                     help="select cycles")
-    group_filter.add_argument('-t', '--time',
+    group_select.add_argument('-t', '--time',
                     help="select time in hours")
-    group_filter.add_argument('-d', '--data',
+    group_select.add_argument('-d', '--data',
                     help="select data points")
     
     # journal group
-    group_journal = parser.add_argument_group("journal arguments")
+    subparsers = parser.add_subparsers(title='journal subgroup', description='journal description')
     
-    group_journal.add_argument("--journal", action="store_true",
+    # create the parser for the "journal" command
+    parser_journal = subparsers.add_parser("journal", help="subcommand")
+    
+    parser_journal.add_argument("--show", action="store_true",
                     help="show the journal table")
-    group_journal.add_argument("--delete", type=int,
+    parser_journal.add_argument("--delete", type=int,
                     help="delete a row id from journal")
     
     args = parser.parse_args()
+    
+    sys.exit()
 
     # print usage if no filename is given
     if not (args.filename or args.journal):
