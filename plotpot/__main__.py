@@ -51,7 +51,19 @@ for later use.""",
       11  Specific current density [mA/g]
       12  Current density [mA/cm²]
       13  Specific capacity (circle plot)""")
+        
+    # journal subcommand
+    subparsers = parser.add_subparsers(title='journal subgroup', description='journal description')
     
+    # create the parser for the "journal" command
+    parser_journal = subparsers.add_parser("journal", help="subcommand")
+    
+    parser_journal.add_argument("--show", action="store_true",
+                    help="show the journal table")
+    parser_journal.add_argument("--delete", type=int,
+                    help="delete a row id from journal")
+    
+    # optional arguments
     parser.add_argument('filename', nargs='?', default=None,  # make filename optional
                     help="data file name")
     parser.add_argument('-V', '--version', action='version', version=version)
@@ -86,18 +98,9 @@ for later use.""",
     group_select.add_argument('-d', '--data',
                     help="select data points")
     
-    # journal group
-    subparsers = parser.add_subparsers(title='journal subgroup', description='journal description')
-    
-    # create the parser for the "journal" command
-    parser_journal = subparsers.add_parser("journal", help="subcommand")
-    
-    parser_journal.add_argument("--show", action="store_true",
-                    help="show the journal table")
-    parser_journal.add_argument("--delete", type=int,
-                    help="delete a row id from journal")
     
     args = parser.parse_args()
+    print(parser.parse_args(['a', '--help']))
     
     sys.exit()
 
