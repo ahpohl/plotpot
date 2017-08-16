@@ -60,10 +60,8 @@ def main():
  
     # optional top level arguments
     parser.add_argument('-V', '--version', action='version', version='version-git')
-    parser.add_argument('-v', '--verbose', action='store_true',
+    parser.add_argument('-v', '--verbose', action='count',
                     help="be more verbose")
-    parser.add_argument('-D', '--debug', action='store_true',
-                    help="show debug messages")
 
     # create sub-command
     subparsers = parser.add_subparsers(title='available commands', metavar='') 
@@ -107,8 +105,10 @@ def main():
     parser_journal.add_argument('-d', '--del', type=int, metavar='ID',
                     help="delete a row from journal")
     
-    # parse command line arguments
     args = parser.parse_args()
+    print(args)
+    # parse command line arguments
+    #print(parser.parse_args(['plot']))
         
     # run main program
     #Plotpot(args)
