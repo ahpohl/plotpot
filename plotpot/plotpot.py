@@ -54,19 +54,17 @@ class Plotpot(object):
         
         # update schema if needed
         journalDb.updateSchema()
-        
-        # delete journal entry    
-        if self.args.delete and self.args.journal:
-            journalDb.deleteRow("Journal_Table", self.args.delete)
+ 
+       # print plotpot journal file
+        if self.args.journal.show:
             journalDb.printJournal("Journal_Table")
             print("Journal file: %s." % journalDbPath)
-            print("Deleted row %d from journal." % self.args.delete)
             sys.exit()
-        
-        # print plotpot journal file
-        if self.args.journal:
-            journalDb.printJournal("Journal_Table")
-            print("Journal file: %s." % journalDbPath)
+       
+        # delete journal entry    
+        if self.args.journal.delete:
+            journalDb.deleteRow("Journal_Table", self.args.delete)
+            print("Deleted row %d from journal." % self.args.delete)
             sys.exit()
         
         # check if filename exists
