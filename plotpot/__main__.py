@@ -64,7 +64,8 @@ def main():
                     help="be more verbose")
 
     # create sub-command
-    subparsers = parser.add_subparsers(title='available commands', metavar='') 
+    subparsers = parser.add_subparsers(title='available commands', metavar='',
+                    dest='command') 
 
     # create the parser for the "plot" command
     parser_plot = subparsers.add_parser('plot', help='create plots')
@@ -105,11 +106,10 @@ def main():
     parser_journal.add_argument('-d', '--del', type=int, metavar='ID',
                     help="delete a row from journal")
     
-    args = parser.parse_args()
-    print(args)
     # parse command line arguments
-    #print(parser.parse_args(['plot']))
-        
+    args = parser.parse_args()
+    print(vars(args))
+            
     # run main program
     #Plotpot(args)
 
