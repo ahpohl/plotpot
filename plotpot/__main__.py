@@ -103,13 +103,13 @@ def main():
     parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
                     help="delete a row from journal")
     
-    # parse command line arguments
+    # parse command line
     args = parser.parse_args()
-    print(vars(args))
     
+    # print help if no subcommand is given
     if args.subcommand is None:
         parser.print_help()
-            
+    
     # run main program
     Plotpot(args)
 

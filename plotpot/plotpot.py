@@ -18,64 +18,64 @@ class Plotpot(object):
     
     def __init__(self, args):
         self.args = args
-        self.__RunPlotpot()        
-    
-    def __RunPlotpot(self):
-  
-        #disable division by zero warnings
-        np.seterr(divide='ignore')
         
-        # create global database in program directroy
-        envCfg = os.environ.get('PLOTPOT_JOURNAL')
-        fileCfg = "plotpot-journal.dat"
-        if envCfg:
-            journalDbPath = os.path.join(envCfg, fileCfg)
-        else:
-            journalDbPath = os.path.join(os.path.dirname(sys.argv[0]), fileCfg)
-            
-        # check if journal file exists
-        try:
-            fh = open(journalDbPath, "r")
-        except IOError as e:
-            print(e)
-            create = input("Do you want to create a new journal file (Y,n)? ")
-            if create == 'n':
-                sys.exit()
-                
         # store mass and capacity in dict
         # mass: active mass [mg]
         # cap: theoretical capacity [mAh/g]
         # area: electrode area [cm²]
         # volume: volume of electrode [µL]
-        massStor = {'mass': 0, 'cap': 0, 'area': 0, 'volume': 0}
-    			   
-        # create journal object and schema
-        journalDb = JournalSqlite(self.args, journalDbPath, massStor)
+        self.massStor = {'mass': 0, 'cap': 0, 'area': 0, 'volume': 0}
+        self.journal = self.__createJournal()
+        self.__runSubcommands()        
+    
+    def __runSubcommands(self):
+        """run plotpot subcommands"""
+        
+        if self.args.subcommand == "show":
+            self.__subcommandShow()
+
+        if self.args.subcommand == "journal":
+            self.__subcommandJournal()
+            
+        return
+    
+    def __createJournal(self):
+        """create journal database in program directory or path specified with
+           PLOTPOT_JOURNAL environment variable if the file does not exist
+           already"""
+        
+        journalPath = os.environ.get('PLOTPOT_JOURNAL')
+        journalFile = "plotpot-journal.dat"
+        
+        if journalPath:
+            journalFullPath = os.path.join(journalPath, journalFile)
+        else:
+            journalFullPath = os.path.join(os.path.dirname(sys.argv[0]), journalPath)
+            
+        # check if journal file exists
+        try:
+            fh = open(journalFullPath, "r")
+        except IOError as e:
+            print(e)
+            create = input("Do you want to create a new journal file (Y,n)? ")
+            if create == 'n':
+                sys.exit()
+        
+        # journal object and schema
+        journalDb = JournalSqlite(self.args, journalFullPath, self.massStor)
         
         # update schema if needed
-        journalDb.updateSchema()
- 
-        # print plotpot journal file
-        if self.args.subcommand == "journal":
-            journalDb.printJournal("Journal_Table")
-            print("Journal file: %s." % journalDbPath)
-            
-            # delete journal entry
-            if self.args.delete:
-                journalDb.deleteRow("Journal_Table", self.args.delete)
-                print("Deleted row %d from journal." % self.args.delete)
+        journalDb.updateSchema()        
         
-            sys.exit()
+        return journalDb
+    
+    def __createData(self):
+        """create the database object by calling Convpot to convert raw
+        data into a sqlite database if sqlite file does not already exist.
+        Check if sqlite is up-to-date and skip conversion if necessary."""
         
-        # check if filename exists
-        path = os.path.abspath(self.args.filename)
-        try:
-            fh = open(path, "r")
-        except IOError as e:
-            sys.exit(e)
-            
-        # execute external program to convert args[0] into sqlite file
-        mdbpath = find_executable("convpot") # search path
+        # search path for Convpot program
+        mdbpath = find_executable("convpot")
         
         if mdbpath == None:
             mdbpath = find_executable("convpot", sys.argv[0]) # search current dir
@@ -109,7 +109,56 @@ class Plotpot(object):
             try:
                 subprocess.check_call(mdbargs)
             except subprocess.CalledProcessError as e:
-                sys.exit(e)
+                sys.exit(e)        
+        
+        
+        return dataDb
+
+    def __subcommandJournal(self):
+        """run journal subcommand"""
+
+        # print plotpot journal file
+        if self.args.subcommand == "journal":
+            journalDb.printJournal("Journal_Table")
+            print("Journal file: %s." % journalDbPath)
+            
+            # delete journal entry
+            if self.args.delete:
+                journalDb.deleteRow("Journal_Table", self.args.delete)
+                print("Deleted row %d from journal." % self.args.delete)
+        
+            sys.exit()        
+        
+        return
+        
+    def __subcommandShow(self):
+        """run show subcommand"""
+
+        #disable division by zero warnings
+        np.seterr(divide='ignore')
+        
+        # check if filename exists
+        path = os.path.abspath(self.args.filename)
+        try:
+            fh = open(path, "r")
+        except IOError as e:
+            sys.exit(e)
+            
+        return
+        
+
+        
+        
+  
+
+        
+
+ 
+
+        
+
+            
+
             
         # parse plot option
         plots = self.plot_option()
