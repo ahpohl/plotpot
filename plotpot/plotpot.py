@@ -25,6 +25,7 @@ class Plotpot(object):
         # area: electrode area [cm²]
         # volume: volume of electrode [µL]
         self.massStor = {'mass': 0, 'cap': 0, 'area': 0, 'volume': 0}
+        
         self.journal = self.__createJournal()
         self.__runSubcommands()        
     
@@ -75,29 +76,40 @@ class Plotpot(object):
         Check if sqlite is up-to-date and skip conversion if necessary."""
         
         # search path for Convpot program
-        mdbpath = find_executable("convpot")
+        convpotPath = find_executable("convpot")
         
-        if mdbpath == None:
-            mdbpath = find_executable("convpot", sys.argv[0]) # search current dir
+        # search in current dir
+        if convpotPath is None:
+            convpotPath = find_executable("convpot", sys.argv[0])
         
-        if not mdbpath:
-            sys.exit("ERROR: Convpot not found.")
+        if not convpotPath:
+            sys.exit("ERROR: Convpot program not installed.")
             
-        # test if mdbpath is executable
-        if not os.access(mdbpath, os.X_OK):
+        # test if convpot is executable
+        if not os.access(convpotPath, os.X_OK):
             sys.exit("ERROR: Convpot program not executable.")
         
-        sqlfile = path.rsplit('.')[0]+'.sqlite'
-        sqlext = path.rsplit('.')[1]
+        # check if filename with raw data exists
+        rawFileFullPath = os.path.abspath(self.args.filename)
+        rawFileExtension = self.args.filename.rsplit('.')[1]
         
-        # create data object  
-        dataDb = DataSqlite(self.args, sqlfile)
+        try:
+            fh = open(rawFileFullPath, "r")
+        except IOError as e:
+            sys.exit(e)
+        
+        # construct sqlite filename 
+        dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'
+        
+        # create data object in current dir
+        dataDb = DataSqlite(self.args, dataFileName)
         
         # test if sqlite file needs updating
-        isUpdate = dataDb.checkFileSize(sqlfile)
+        isUpToDate = dataDb.checkFileSize(rawFileFullPath)
         
-        if (isUpdate or self.args.force) and sqlext != "sqlite":
+        if (isUpToDate or self.args.force) and rawFileExtension not "sqlite":
         
+            # TODO continue here
             mdbargs = []
             mdbargs.append(mdbpath)
         
@@ -110,7 +122,6 @@ class Plotpot(object):
                 subprocess.check_call(mdbargs)
             except subprocess.CalledProcessError as e:
                 sys.exit(e)        
-        
         
         return dataDb
 
@@ -136,30 +147,12 @@ class Plotpot(object):
 
         #disable division by zero warnings
         np.seterr(divide='ignore')
+    
+        # create raw data object
+        data = self.__createData()
         
-        # check if filename exists
-        path = os.path.abspath(self.args.filename)
-        try:
-            fh = open(path, "r")
-        except IOError as e:
-            sys.exit(e)
-            
         return
         
-
-        
-        
-  
-
-        
-
- 
-
-        
-
-            
-
-            
         # parse plot option
         plots = self.plot_option()
         
