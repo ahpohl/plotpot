@@ -55,16 +55,16 @@ class Plotpot(object):
         # update schema if needed
         journalDb.updateSchema()
  
-       # print plotpot journal file
-        if self.args.journal.show:
+        # print plotpot journal file
+        if self.args.subcommand == "journal":
             journalDb.printJournal("Journal_Table")
             print("Journal file: %s." % journalDbPath)
-            sys.exit()
-       
-        # delete journal entry    
-        if self.args.journal.delete:
-            journalDb.deleteRow("Journal_Table", self.args.delete)
-            print("Deleted row %d from journal." % self.args.delete)
+            
+            # delete journal entry
+            if self.args.delete:
+                journalDb.deleteRow("Journal_Table", self.args.delete)
+                print("Deleted row %d from journal." % self.args.delete)
+        
             sys.exit()
         
         # check if filename exists
@@ -202,7 +202,7 @@ class Plotpot(object):
         if not data.any():
             data = np.zeros((1,12))
         
-        if self.args.debug:
+        if self.args.verbose:
             print("data:")
             print(data.shape)
         
@@ -218,7 +218,7 @@ class Plotpot(object):
         if not stats.any():
             stats = np.zeros((1,13))
         
-        if self.args.debug:
+        if self.args.verbose:
             print("stats:")
             print(stats.shape)
             

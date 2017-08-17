@@ -59,59 +59,59 @@ def main():
               13  Specific capacity (circle plot)""")
  
     # optional top level arguments
-    parser.add_argument('-V', '--version', action='version', version='version-git')
+    parser.add_argument('-V', '--version', action='version', version=version)
     parser.add_argument('-v', '--verbose', action='count',
                     help="be more verbose")
 
     # create sub-command
     subparsers = parser.add_subparsers(title='available commands', metavar='',
-                    dest='command') 
+                    dest='subcommand') 
 
     # create the parser for the "plot" command
-    parser_plot = subparsers.add_parser('plot', help='create plots')
-
+    parser_show = subparsers.add_parser('show', help='show plots')
+    
     # positional plot argument
-    parser_plot.add_argument('filename', help="data file name")    
+    parser_show.add_argument('filename', help="data file name")    
     
     # optional plot arguments
-    parser_plot.add_argument('-q', '--quiet', action='store_true',
-                    help="do not display plots")
-    parser_plot.add_argument('-e', '--export', action='store_true',
+    parser_show.add_argument('-q', '--quiet', action='store_true',
+                    help="do not show plots")
+    parser_show.add_argument('-e', '--export', action='store_true',
                     help="export data, statistics and figures")
-    parser_plot.add_argument('-f', '--force', action='store_true',
+    parser_show.add_argument('-f', '--force', action='store_true',
                     help="skip up-to-date check")
-    parser_plot.add_argument('-b', '--bio-ce', action='store_true',
+    parser_show.add_argument('-b', '--bio_ce', action='store_true',
                     help="Biologic counter electrode")
-    parser_plot.add_argument('-p', '--plot', default='1', metavar='N',
+    parser_show.add_argument('-p', '--plot', default='1', metavar='N',
                     help="select plot")
-    parser_plot.add_argument('-s', '--smooth', type=int, choices=range(1,5),
-                    metavar='N', help="smooth level [%(choices)s]") # window length
+    parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,5),
+                    metavar='N', help="smooth dQ/dV plot [%(choices)s]") # window length
     
     # mutually exclusive arguments for plot command
-    group_select = parser_plot.add_mutually_exclusive_group()
+    group_select = parser_show.add_mutually_exclusive_group()
     
     group_select.add_argument('-c', '--cycles', metavar='N',
                     help="select cycles")
     group_select.add_argument('-t', '--time', metavar='N',
-                    help="select time in hours")
+                    help="select time [in hours]")
     group_select.add_argument('-d', '--data', metavar='N',
                     help="select data points")   
     
     # create the parser for the "journal" command
     parser_journal = subparsers.add_parser('journal', help='manipulate journal')
     
-    #parser_journal.add_argument('-s', '--show', action="store_true",
-    #                help="show the journal table")
-    
-    parser_journal.add_argument('-d', '--del', type=int, metavar='ID',
+    parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
                     help="delete a row from journal")
     
     # parse command line arguments
     args = parser.parse_args()
     print(vars(args))
+    
+    if args.subcommand is None:
+        parser.print_help()
             
     # run main program
-    #Plotpot(args)
+    Plotpot(args)
 
     return
 

@@ -49,7 +49,7 @@ class DataSqlite(DatabaseManager):
         return self.fetchone()[0]
     
     def getData(self):
-        if self.args.biologic_ce:
+        if self.args.bio_ce:
             listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
                 "DateTime","Current","Voltage2","Capacity","Energy","dQdV","Aux_Channel"]
         else:
@@ -82,7 +82,7 @@ class DataSqlite(DatabaseManager):
             currentSize = fh.tell()
             fh.close()
             
-        if self.args.debug:
+        if self.args.verbose:
             print("currentSize: %ld, previousSize: %ld" % (currentSize, previousSize))
         
         if currentSize == previousSize:
