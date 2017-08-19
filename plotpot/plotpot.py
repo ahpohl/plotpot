@@ -19,14 +19,11 @@ class Plotpot(object):
     def __init__(self, args):
         self.args = args
         
-        # store mass and capacity in dict
-        # mass: active mass [mg]
-        # cap: theoretical capacity [mAh/g]
-        # area: electrode area [cm²]
-        # volume: volume of electrode [µL]
-        self.massStor = {'mass': 0, 'cap': 0, 'area': 0, 'volume': 0}
+
         
         self.journal = self.__createJournal()
+        
+        # run subcommands
         self.__runSubcommands()        
     
     def __runSubcommands(self):
@@ -40,37 +37,7 @@ class Plotpot(object):
             
         return
     
-    def __createJournal(self):
-        """create journal database in program directory or path specified with
-           PLOTPOT_JOURNAL environment variable if the file does not exist
-           already"""
-        
-        journalPath = os.environ.get('PLOTPOT_JOURNAL')
-        journalFile = "plotpot-journal.dat"
-        
-        if journalPath:
-            journalFullPath = os.path.join(journalPath, journalFile)
-        else:
-            journalFullPath = os.path.join(os.path.dirname(sys.argv[0]), journalPath)
-            
-        # check if journal file exists
-        try:
-            fh = open(journalFullPath, "r")
-        except IOError as e:
-            print(e)
-            create = input("Do you want to create a new journal file (Y,n)? ")
-            if create == 'n':
-                sys.exit()
-        
-        # journal object and schema
-        journalDb = JournalSqlite(self.args, journalFullPath, self.massStor)
-        
-        # update schema if needed
-        journalDb.updateSchema()        
-        
-        return journalDb
-    
-    def __createData(self):
+    def __callConvpot(self):
         """create the database object by calling Convpot to convert raw
         data into a sqlite database if sqlite file does not already exist.
         Check if sqlite is up-to-date and skip conversion if necessary."""
@@ -107,19 +74,22 @@ class Plotpot(object):
         # test if sqlite file needs updating
         isUpToDate = dataDb.checkFileSize(rawFileFullPath)
         
-        if (isUpToDate or self.args.force) and rawFileExtension not "sqlite":
+        if (isUpToDate or self.args.force) and rawFileExtension is not "sqlite":
         
             # TODO continue here
-            mdbargs = []
-            mdbargs.append(mdbpath)
+            convpotArgs = []
+            convpotArgs.append(convpotPath)
         
+            # verbose arg
             if self.args.verbose:
-                mdbargs.append("--verbose")
+                convpotArgs.append("-{0}".format(self.args.verbose * 'v'))
+                
+            # filename arg 
+            convpotArgs.append(self.args.filename)
         
-            mdbargs.append(self.args.filename)
-        
+            # call external Convpot program
             try:
-                subprocess.check_call(mdbargs)
+                subprocess.check_call(convpotArgs)
             except subprocess.CalledProcessError as e:
                 sys.exit(e)        
         
@@ -130,7 +100,7 @@ class Plotpot(object):
 
         # print plotpot journal file
         if self.args.subcommand == "journal":
-            journalDb.printJournal("Journal_Table")
+            self.journal.printJournal("Journal_Table")
             print("Journal file: %s." % journalDbPath)
             
             # delete journal entry
@@ -148,13 +118,11 @@ class Plotpot(object):
         #disable division by zero warnings
         np.seterr(divide='ignore')
     
-        # create raw data object
-        data = self.__createData()
-        
-        return
+        # create raw data object and call convpot if necessary
+        dataDb = self.__callConvpot()
         
         # parse plot option
-        plots = self.plot_option()
+        plots = self.parsePlotOption()
         
         # read file name and start datetime
         fileNameDate = dataDb.getNameAndDate()
@@ -165,7 +133,7 @@ class Plotpot(object):
             fileNameList[0] = self.args.filename
             fileNameDate = tuple(fileNameList)
         
-        # search arbin.cfg if battery exists in file
+        # search plotpot-journal.dat if battery exists
         searchResult = journalDb.searchJournal(fileNameDate)
         
         # if entry not found, fetch data from data file (global or file table)
@@ -189,25 +157,25 @@ class Plotpot(object):
         
         # ask questions
         if any([x in [1,4,5,11] for x in plots]):
-            journalDb.ask_mass()
+            self.journal.ask_mass()
         if 10 in plots:
-            journalDb.ask_capacity()
+            self.journal.ask_capacity()
         if any([x in [12] for x in plots]):
-            journalDb.ask_area()
+            self.journal.ask_area()
         if 6 in plots:
-            journalDb.ask_volume()
+            self.journal.ask_volume()
             
         # update massStor
-        massStor = journalDb.get_mass()
+        massStor = self.journal.get_mass()
                         
         # create new record in journal file if previous record was not found, otherwise update mass
         if searchResult == None:
-            journalDb.insertRow("Journal_Table", journalEntry, massStor)
+            self.journal.insertRow("Journal_Table", journalEntry, massStor)
         else:
-            journalDb.updateColumn("Journal_Table", "Mass", massStor['mass'], journalEntry)
-            journalDb.updateColumn("Journal_Table", "Capacity", massStor['cap'], journalEntry) 
-            journalDb.updateColumn("Journal_Table", "Area", massStor['area'], journalEntry)
-            journalDb.updateColumn("Journal_Table", "Volume", massStor['volume'], journalEntry)       
+            self.journal.updateColumn("Journal_Table", "Mass", massStor['mass'], journalEntry)
+            self.journal.updateColumn("Journal_Table", "Capacity", massStor['cap'], journalEntry) 
+            self.journal.updateColumn("Journal_Table", "Area", massStor['area'], journalEntry)
+            self.journal.updateColumn("Journal_Table", "Volume", massStor['volume'], journalEntry)       
            
         if self.args.time:
             # parse time option
@@ -298,7 +266,7 @@ class Plotpot(object):
         # export  
         if self.args.export:
             print("INFO: Exporting data, statistics and figures.")
-            journalDb.writeJournalEntry(fileNameDate)
+            self.journal.writeJournalEntry(fileNameDate)
             expStat.writeStatisticsTable()
             expStat.writeDataTable()
             expStat.writeVoltageProfile()
@@ -317,7 +285,7 @@ class Plotpot(object):
         except ValueError:
             return False
     
-    def range_option(self, option):
+    def __rangeOption(self, option):
         """This function parses the a command line option which specifies
         a data range and returns a tuple with the interval"""
         
@@ -339,7 +307,7 @@ class Plotpot(object):
             
         return interval
     
-    def plot_option(self):
+    def __parsePlotOption(self):
         """This function parses the --plot option and returns a list of plots."""
         
         errormsg_not_recognised = "Error: Plot option not recognised."

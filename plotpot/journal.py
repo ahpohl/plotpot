@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os,sys
 import sqlite3
 import datetime
 import csv
@@ -27,58 +28,27 @@ class DatabaseManager(object):
     def __del__(self):
         self.conn.close()
 
-# class to ask for battery quantities such as mass
-class AskFileDetails(object):
-    
-    def __init__(self, massStor):
-        self.massStor = massStor
-        
-    def __Template(self, key, attribute, unit):
-              
-        if self.massStor[key] == 0:
-            while True:
-                try:
-                    self.massStor[key] = float(input("Please give %s in [%s]: " % (attribute, unit)))
-                    break
-                except ValueError as e:
-                    continue
-        else:
-            print("INFO: Found old record %s %s %s in journal." % (attribute, str(self.massStor[key]), unit))
-            choice = input("Do you want to use it [Y/n]? ")
-            if choice == 'n':
-                while True:
-                    try:
-                        self.massStor[key] = float(input("Please give new %s in [%s]: " % (attribute, unit)))
-                        break
-                    except ValueError as e:
-                        continue
-
-    def ask_mass(self):       
-        self.__Template("mass", "mass", "mg")
-
-    def ask_capacity(self):        
-        self.__Template("cap", "capacity", "mAh/g")
-    
-    def ask_area(self):        
-        self.__Template("area", "area of the electrode", "cm²")
-
-    def ask_volume(self):        
-        self.__Template("volume", "volume of electrode", "µL")
-
-    def get_mass(self):
-        return self.massStor
-
 # class to read and manipilate journal sqlite database
-class JournalSqlite(DatabaseManager, AskFileDetails):
+class JournalSqlite(DatabaseManager):
     
-    def __init__(self, args, journalDbPath, massStor):
+    def __init__(self, args):
         self.args = args
-        self.journalDbPath = journalDbPath
-        DatabaseManager.__init__(self, journalDbPath)
-        AskFileDetails.__init__(self, massStor)
-        self.__CreateSchema()
+        self.journal = self.__createJournal()
+        
+        DatabaseManager.__init__(self)
+        self.__createSchema()
+        
+    def setMetaInfo(self, mass, capacity, area, volume):
+        self.massStor = {'mass': mass, 
+                         'cap': capacity, 
+                         'area': area, 
+                         'volume': volume}
+        return
     
-    def __CreateSchema(self):
+    def getMetaInfo(self):
+        return self.massStor
+    
+    def __createSchema(self):
         # journal schema
         self.query('''CREATE TABLE IF NOT EXISTS Journal_Table (
             row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,6 +62,44 @@ class JournalSqlite(DatabaseManager, AskFileDetails):
             Capacity DOUBLE DEFAULT 0,
             Area DOUBLE DEFAULT 0,
             Volume DOUBLE DEFAULT 0)''')
+        
+    def __createJournal(self):
+        """create journal database in program directory or path specified with
+           PLOTPOT_JOURNAL environment variable if the file does not exist
+           already"""
+           
+        # store mass and capacity in dict
+        # mass: active mass [mg]
+        # cap: theoretical capacity [mAh/g]
+        # area: electrode area [cm²]
+        # volume: volume of electrode [µL]
+        self.massStor = {'mass': 0, 'cap': 0, 'area': 0, 'volume': 0}
+        
+        journalPath = os.environ.get('PLOTPOT_JOURNAL')
+        journalFile = "plotpot-journal.dat"
+        
+        if journalPath:
+            journalFullPath = os.path.join(journalPath, journalFile)
+        else:
+            journalFullPath = os.path.join(os.path.dirname(sys.argv[0]), journalPath)
+            
+        # check if journal file exists
+        try:
+            fh = open(journalFullPath, "r")
+        except IOError as e:
+            print(e)
+            create = input("Do you want to create a new journal file (Y,n)? ")
+            if create == 'n':
+                sys.exit()
+        
+        # journal object and schema
+        journalDb = JournalSqlite(self.args, journalFullPath, self.massStor)
+        
+        # update schema if needed
+        journalDb.updateSchema()        
+        
+        return journalDb
+    
 
     def __PrintSql(self, data, header):
         # determine len of each column
@@ -228,4 +236,34 @@ class JournalSqlite(DatabaseManager, AskFileDetails):
                 break
         return isColumn
     
+        def __Template(self, key, attribute, unit):
+              
+        if self.massStor[key] == 0:
+            while True:
+                try:
+                    self.massStor[key] = float(input("Please give %s in [%s]: " % (attribute, unit)))
+                    break
+                except ValueError as e:
+                    continue
+        else:
+            print("INFO: Found old record %s %s %s in journal." % (attribute, str(self.massStor[key]), unit))
+            choice = input("Do you want to use it [Y/n]? ")
+            if choice == 'n':
+                while True:
+                    try:
+                        self.massStor[key] = float(input("Please give new %s in [%s]: " % (attribute, unit)))
+                        break
+                    except ValueError as e:
+                        continue
+
+    def ask_mass(self):       
+        self.__Template("mass", "mass", "mg")
+
+    def ask_capacity(self):        
+        self.__Template("cap", "capacity", "mAh/g")
     
+    def ask_area(self):        
+        self.__Template("area", "area of the electrode", "cm²")
+
+    def ask_volume(self):        
+        self.__Template("volume", "volume of electrode", "µL")
