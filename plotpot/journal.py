@@ -1,36 +1,12 @@
 # -*- coding: utf-8 -*-
 import os,sys
-import sqlite3
 import datetime
 import csv
 import numpy as np
+from plotpot.dbmanager import DbManager    
 
-# functions and classes for manipulating the journal file
-class DatabaseManager(object):
-    
-    def __init__(self, db):
-        self.conn = sqlite3.connect(db)
-        self.cur = self.conn.cursor()
-
-    def query(self, arg, bind=()):
-        self.cur.execute(arg, bind)
-        self.conn.commit()
-        return self.cur
-    
-    def fetchall(self):
-        data = self.cur.fetchall()
-        return data
-    
-    def fetchone(self):
-        data = self.cur.fetchone()
-        return data
-
-    def __del__(self):
-        self.conn.close()
-        
-
-# class to read and manipilate journal sqlite database
-class Journal(DatabaseManager):
+class Journal(DbManager):
+    """class for manipulating the journal"""
     
     def __init__(self, args):
         self.args = args

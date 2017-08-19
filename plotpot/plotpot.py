@@ -1,9 +1,5 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
-import sys, os
-import subprocess
-from distutils.spawn import find_executable
+import sys
 import numpy as np
     
 # import own files
@@ -11,6 +7,9 @@ from plotpot.plot import plot
 from plotpot.export import Export
 from plotpot.data import Data
 from plotpot.journal import Journal
+
+# disable division by zero warnings
+np.seterr(divide='ignore')
 
 # plotpot class
     
@@ -44,74 +43,12 @@ class Plotpot(Journal):
         
         sys.exit() 
 
-    
-    def callConvpot(self):
-        """create the database object by calling Convpot to convert raw
-        data into a sqlite database if sqlite file does not already exist.
-        Check if sqlite is up-to-date and skip conversion if necessary."""
-        
-        # search path for Convpot program
-        convpotPath = find_executable("convpot")
-        
-        # search in current dir
-        if convpotPath is None:
-            convpotPath = find_executable("convpot", sys.argv[0])
-        
-        if not convpotPath:
-            sys.exit("ERROR: Convpot program not installed.")
-            
-        # test if convpot is executable
-        if not os.access(convpotPath, os.X_OK):
-            sys.exit("ERROR: Convpot program not executable.")
-        
-        # check if filename with raw data exists
-        rawFileFullPath = os.path.abspath(self.args.filename)
-        rawFileExtension = self.args.filename.rsplit('.')[1]
-        
-        try:
-            fh = open(rawFileFullPath, "r")
-        except IOError as e:
-            sys.exit(e)
-        
-        # construct sqlite filename 
-        dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'
-        
-        # create data object in current dir
-        dataDb = Data(self.args, dataFileName)
-        
-        # test if sqlite file needs updating
-        isUpToDate = dataDb.checkFileSize(rawFileFullPath)
-        
-        if (isUpToDate or self.args.force) and rawFileExtension is not "sqlite":
-        
-            # TODO continue here
-            convpotArgs = []
-            convpotArgs.append(convpotPath)
-        
-            # verbose arg
-            if self.args.verbose:
-                convpotArgs.append("-{0}".format(self.args.verbose * 'v'))
-                
-            # filename arg 
-            convpotArgs.append(self.args.filename)
-        
-            # call external Convpot program
-            try:
-                subprocess.check_call(convpotArgs)
-            except subprocess.CalledProcessError as e:
-                sys.exit(e)        
-        
-        return dataDb
-
         
     def subcommandShow(self):
         """run show subcommand"""
-
-        #disable division by zero warnings
-        np.seterr(divide='ignore')
     
         # create raw data object and call convpot if necessary
-        dataDb = self.__callConvpot()
+        dataDb = self.callConvpot()
         
         # parse plot option
         plots = self.parsePlotOption()
@@ -268,6 +205,7 @@ class Plotpot(Journal):
         # show plots if quiet option not given
         if not self.args.quiet:
             fig.show_plots()
+    
 
     def isNumber(self, s):
         """This function tests if string s is a number."""
