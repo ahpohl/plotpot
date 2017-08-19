@@ -8,36 +8,53 @@ import numpy as np
     
 # import own files
 from plotpot.plot import plot
-from plotpot.export import export
-from plotpot.data import DataSqlite
-from plotpot.journal import JournalSqlite
+from plotpot.export import Export
+from plotpot.data import Data
+from plotpot.journal import Journal
 
 # plotpot class
     
-class Plotpot(object):
+class Plotpot(Journal):
     
     def __init__(self, args):
         self.args = args
-        
+        super().__init__(args)
+        self.runSubcommands()        
 
-        
-        self.journal = self.__createJournal()
-        
-        # run subcommands
-        self.__runSubcommands()        
     
-    def __runSubcommands(self):
+    def runSubcommands(self):
         """run plotpot subcommands"""
         
         if self.args.subcommand == "show":
-            self.__subcommandShow()
+            self.subcommandShow()
 
         if self.args.subcommand == "journal":
-            self.__subcommandJournal()
+            self.subcommandJournal()
             
-        return
+
+    def subcommandJournal(self):
+        """run journal subcommand"""
+        
+        # get journalPath
+        journalPath = Journal.getJournalPath(self)
+        print(journalPath)
+        
+        # print plotpot journal file
+        if self.args.subcommand == "journal":
+            Journal.printJournal(self, "Journal_Table")
+            print("Journal file: %s." % journalPath)
+            
+            # delete journal entry
+            if self.args.delete:
+                Journal.deleteRow("Journal_Table", self.args.delete)
+                print("Deleted row %d from journal." % self.args.delete)
+        
+            sys.exit() 
+            
+        self.setMetaInfo()
+
     
-    def __callConvpot(self):
+    def callConvpot(self):
         """create the database object by calling Convpot to convert raw
         data into a sqlite database if sqlite file does not already exist.
         Check if sqlite is up-to-date and skip conversion if necessary."""
@@ -69,7 +86,7 @@ class Plotpot(object):
         dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'
         
         # create data object in current dir
-        dataDb = DataSqlite(self.args, dataFileName)
+        dataDb = Data(self.args, dataFileName)
         
         # test if sqlite file needs updating
         isUpToDate = dataDb.checkFileSize(rawFileFullPath)
@@ -95,24 +112,8 @@ class Plotpot(object):
         
         return dataDb
 
-    def __subcommandJournal(self):
-        """run journal subcommand"""
-
-        # print plotpot journal file
-        if self.args.subcommand == "journal":
-            self.journal.printJournal("Journal_Table")
-            print("Journal file: %s." % journalDbPath)
-            
-            # delete journal entry
-            if self.args.delete:
-                journalDb.deleteRow("Journal_Table", self.args.delete)
-                print("Deleted row %d from journal." % self.args.delete)
         
-            sys.exit()        
-        
-        return
-        
-    def __subcommandShow(self):
+    def subcommandShow(self):
         """run show subcommand"""
 
         #disable division by zero warnings
@@ -277,7 +278,7 @@ class Plotpot(object):
         if not self.args.quiet:
             fig.show_plots()
 
-    def is_number(self, s):
+    def isNumber(self, s):
         """This function tests if string s is a number."""
         try:
             float(s)
@@ -285,7 +286,7 @@ class Plotpot(object):
         except ValueError:
             return False
     
-    def __rangeOption(self, option):
+    def parseRange(self, option):
         """This function parses the a command line option which specifies
         a data range and returns a tuple with the interval"""
         
@@ -307,7 +308,7 @@ class Plotpot(object):
             
         return interval
     
-    def __parsePlotOption(self):
+    def parsePlotOption(self):
         """This function parses the --plot option and returns a list of plots."""
         
         errormsg_not_recognised = "Error: Plot option not recognised."

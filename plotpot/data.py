@@ -7,7 +7,7 @@ import sqlite3
 import csv
 
 # functions and classes for manipulating the journal file
-class DataSqlite(DatabaseManager):
+class Data(DatabaseManager):
     
     def __init__(self, args, dataDbPath):
         DatabaseManager.__init__(self, dataDbPath)

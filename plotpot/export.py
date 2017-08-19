@@ -8,7 +8,7 @@ import numpy as np
 np.seterr(divide='ignore')
 
 # export class
-class export(object):
+class Export(object):
     
     def __init__(self, args, data, cycles, stats, massStor):
         self.data = data
@@ -18,10 +18,10 @@ class export(object):
         self.expStats = self._calcStatistics()
         self.args = args
         
-    def get_stats(self):
+    def getStatistics(self):
         return self.expStats
     
-    def __dump_array(self, fh, array, formatstring="%f", delimiter=',', header=''):
+    def dumpArray(self, fh, array, formatstring="%f", delimiter=',', header=''):
         if formatstring == '%f':
             formatspec = []
             f = 0
@@ -46,7 +46,7 @@ class export(object):
             fh.write("\n")
         return
     
-    def _calcStatistics(self):
+    def calcStatistics(self):
         # *** statistics ***
         
         """

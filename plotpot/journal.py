@@ -27,53 +27,38 @@ class DatabaseManager(object):
 
     def __del__(self):
         self.conn.close()
+        
 
 # class to read and manipilate journal sqlite database
-class JournalSqlite(DatabaseManager):
+class Journal(DatabaseManager):
     
     def __init__(self, args):
         self.args = args
-        self.journal = self.__createJournal()
+        super().__init__(self.getJournalPath())
+        self.createJournal()
         
-        DatabaseManager.__init__(self)
-        self.__createSchema()
         
-    def setMetaInfo(self, mass, capacity, area, volume):
+    def setMetaInfo(self, mass = 0, capacity = 0, area = 0, volume = 0):
+        """store mass and capacity in dict
+           mass: active mass [mg]
+           cap: theoretical capacity [mAh/g]
+           area: electrode area [cm²]
+           volume: volume of electrode [µL]"""
+
         self.massStor = {'mass': mass, 
                          'cap': capacity, 
                          'area': area, 
                          'volume': volume}
-        return
+        
     
     def getMetaInfo(self):
         return self.massStor
-    
-    def __createSchema(self):
-        # journal schema
-        self.query('''CREATE TABLE IF NOT EXISTS Journal_Table (
-            row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            File_Name TEXT,
-            Device TEXT,
-            File_Size INTEGER,
-            Start_DateTime INTEGER,
-            Data_Points INTEGER,
-            Comments TEXT,
-            Mass DOUBLE DEFAULT 0,
-            Capacity DOUBLE DEFAULT 0,
-            Area DOUBLE DEFAULT 0,
-            Volume DOUBLE DEFAULT 0)''')
-        
-    def __createJournal(self):
+
+
+    def getJournalPath(self):
         """create journal database in program directory or path specified with
            PLOTPOT_JOURNAL environment variable if the file does not exist
            already"""
-           
-        # store mass and capacity in dict
-        # mass: active mass [mg]
-        # cap: theoretical capacity [mAh/g]
-        # area: electrode area [cm²]
-        # volume: volume of electrode [µL]
-        self.massStor = {'mass': 0, 'cap': 0, 'area': 0, 'volume': 0}
         
         journalPath = os.environ.get('PLOTPOT_JOURNAL')
         journalFile = "plotpot-journal.dat"
@@ -91,21 +76,67 @@ class JournalSqlite(DatabaseManager):
             create = input("Do you want to create a new journal file (Y,n)? ")
             if create == 'n':
                 sys.exit()
+                
+        return journalFullPath
+    
         
-        # journal object and schema
-        journalDb = JournalSqlite(self.args, journalFullPath, self.massStor)
+    def createJournal(self):
         
-        # update schema if needed
-        journalDb.updateSchema()        
+        # create schema
+        self.query('''CREATE TABLE IF NOT EXISTS Journal_Table (
+            row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            File_Name TEXT,
+            Device TEXT,
+            File_Size INTEGER,
+            Start_DateTime INTEGER,
+            Data_Points INTEGER,
+            Comments TEXT,
+            Mass DOUBLE DEFAULT 0,
+            Capacity DOUBLE DEFAULT 0,
+            Area DOUBLE DEFAULT 0,
+            Volume DOUBLE DEFAULT 0)''')
         
-        return journalDb
+        # table upgrade: test if Global_Table exists ***
+        self.query('''SELECT name FROM sqlite_master WHERE type="table" AND name="Global_Table" ''')
+        resultSql = self.fetchone()
+        if resultSql != None:
+            # copy entries from Global_Table to Journal_Table
+            self.query('''INSERT INTO Journal_Table (
+                File_Name,File_Size,Data_Points,Comments,Start_DateTime,Mass,Capacity) SELECT 
+                File_Name,File_Size,Data_Points,Comments,Start_DateTime,Mass,Capacity 
+                FROM Global_Table''')
+            # delete Global_Table
+            self.query('''DROP TABLE IF EXISTS Global_Table''')
+            print("Global_Table renamed to Journal_Table.")
+            
+        # update mass and capacity columns
+        if not self.isColumn("Journal_Table", "Volume"):
+            self.query('''UPDATE Journal_Table SET Mass = ROUND(Mass*1e3,2), Capacity = ROUND(Capacity*1e3,2)''')
+            print("Columns Mass and Capacity multiplied by 1000.")
+            
+        # table upgrade: create volume column in Journal_Table if column does not exist
+        if not self.isColumn("Journal_Table", "Volume"):
+            self.query('''ALTER TABLE Journal_Table ADD COLUMN Volume DOUBLE DEFAULT 0''')
+            print("Column Volume created.")
+            
+        # add device column
+        if not self.isColumn("Journal_Table", "Device"):
+            self.query('''ALTER TABLE Journal_Table ADD COLUMN Device TEXT''')
+            self.query('''update Journal_Table set device = ""''')
+            self.query('''UPDATE Journal_Table SET device = "Arbin BT2000" WHERE File_Name LIKE "%.res"''')
+            self.query('''UPDATE Journal_Table SET device = "Gamry Interface 1000" WHERE File_Name LIKE "%.DTA"''')
+            self.query('''UPDATE Journal_Table SET device = "Biologic VMP3" WHERE File_Name LIKE "%.mpt"''')
+            self.query('''UPDATE Journal_Table SET device = "Ivium CompactStat" WHERE File_Name LIKE "%.idf"''')
+            self.query('''UPDATE Journal_Table SET device = "Zahner IM6" WHERE File_Name LIKE "%.txt"''')
+            self.query('''UPDATE Journal_Table SET device = "merged" WHERE File_Name LIKE "%.sqlite"''')
+            print("Column Device created.")        
     
 
-    def __PrintSql(self, data, header):
+    def printSql(self, data, header):
         # determine len of each column
         lensHeader = [len(x) for x in header]
         lensData = []
-        for i in data:
+        for i in --data:
             lensData.append([len(str(x)) for x in i])
             #print(i[2], i[5])
         lensData.append(lensHeader)
@@ -129,45 +160,11 @@ class JournalSqlite(DatabaseManager):
             print(pattern % tuple(row))
         print(separator)
         
-    def updateSchema(self):
-        # *** table upgrade: test if Global_Table exists ***
-        self.query('''SELECT name FROM sqlite_master WHERE type="table" AND name="Global_Table" ''')
-        resultSql = self.fetchone()
-        if resultSql != None:
-            # copy entries from Global_Table to Journal_Table
-            self.query('''INSERT INTO Journal_Table (
-                File_Name,File_Size,Data_Points,Comments,Start_DateTime,Mass,Capacity) SELECT 
-                File_Name,File_Size,Data_Points,Comments,Start_DateTime,Mass,Capacity 
-                FROM Global_Table''')
-            # delete Global_Table
-            self.query('''DROP TABLE IF EXISTS Global_Table''')
-            print("Global_Table renamed to Journal_Table.")
-            
-        # update mass and capacity columns
-        if not self.isColumn("Journal_Table", "Volume"):
-            self.query('''UPDATE Journal_Table SET Mass = ROUND(Mass*1e3,2), Capacity = ROUND(Capacity*1e3,2)''')
-            print("Columns Mass and Capacity multiplied by 1000.")
-            
-        # *** table upgrade: create volume column in Journal_Table if column does not exist
-        if not self.isColumn("Journal_Table", "Volume"):
-            self.query('''ALTER TABLE Journal_Table ADD COLUMN Volume DOUBLE DEFAULT 0''')
-            print("Column Volume created.")
-            
-        # add device column
-        if not self.isColumn("Journal_Table", "Device"):
-            self.query('''ALTER TABLE Journal_Table ADD COLUMN Device TEXT''')
-            self.query('''update Journal_Table set device = ""''')
-            self.query('''UPDATE Journal_Table SET device = "Arbin BT2000" WHERE File_Name LIKE "%.res"''')
-            self.query('''UPDATE Journal_Table SET device = "Gamry Interface 1000" WHERE File_Name LIKE "%.DTA"''')
-            self.query('''UPDATE Journal_Table SET device = "Biologic VMP3" WHERE File_Name LIKE "%.mpt"''')
-            self.query('''UPDATE Journal_Table SET device = "Ivium CompactStat" WHERE File_Name LIKE "%.idf"''')
-            self.query('''UPDATE Journal_Table SET device = "Zahner IM6" WHERE File_Name LIKE "%.txt"''')
-            self.query('''UPDATE Journal_Table SET device = "merged" WHERE File_Name LIKE "%.sqlite"''')
-            print("Column Device created.")
             
     def deleteRow(self, table, row):
         delete_query = '''DELETE FROM {0} WHERE rowid = {1}'''.format(table, row)
         self.query(delete_query)
+    
     
     def printJournal(self, table):
         listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Device", "Comments"]
@@ -183,7 +180,8 @@ class JournalSqlite(DatabaseManager):
         
         # output sql query
         if len(data) > 0:
-            self.__PrintSql(data, header)
+            self.printSql(data, header)
+    
     
     def insertRow(self, table, dataSql, massStor):
         listOfVars = ["File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Device", "Mass", "Capacity", "Area", "Volume"]
@@ -191,10 +189,12 @@ class JournalSqlite(DatabaseManager):
                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
         self.query(insert_query, (dataSql[1:7] + (massStor['mass'],) + (massStor['cap'],) + (massStor['area'],) + (massStor['volume'],)))
         print("INFO: Created new record in journal file.")
-        
+    
+    
     def updateColumn(self, table, column, value, dataSql):
         update_query = '''UPDATE {0} SET {1} = {2} WHERE File_Name = "{3}" AND Start_DateTime = {4}'''.format(table, column, value, dataSql[1], dataSql[5])
         self.query(update_query)
+
         
     def writeJournalEntry(self, fileNameDate):
         listOfVars = ["File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Comments"]
@@ -217,6 +217,7 @@ class JournalSqlite(DatabaseManager):
         writer = csv.writer(fh)
         writer.writerow(dataSql)
         fh.close()
+
         
     def searchJournal(self, fileNameDate):
         # search arbin.cfg if battery exists in file
@@ -224,6 +225,7 @@ class JournalSqlite(DatabaseManager):
         select_query = '''SELECT {0} FROM Journal_Table WHERE File_Name = "{1}" AND Start_DateTime = {2}'''.format(','.join(listOfVars), fileNameDate[0], fileNameDate[1])
         self.query(select_query)
         return self.fetchone()
+
         
     def isColumn(self, table, column):
         select_query = '''PRAGMA table_info({0})'''.format(table)
@@ -235,9 +237,10 @@ class JournalSqlite(DatabaseManager):
                 isColumn = True;
                 break
         return isColumn
+
     
-        def __Template(self, key, attribute, unit):
-              
+    def __Template(self, key, attribute, unit):
+          
         if self.massStor[key] == 0:
             while True:
                 try:
@@ -256,14 +259,17 @@ class JournalSqlite(DatabaseManager):
                     except ValueError as e:
                         continue
 
-    def ask_mass(self):       
+    def getMass(self):       
         self.__Template("mass", "mass", "mg")
 
-    def ask_capacity(self):        
+
+    def getCapacity(self):        
         self.__Template("cap", "capacity", "mAh/g")
+
     
-    def ask_area(self):        
+    def getArea(self):        
         self.__Template("area", "area of the electrode", "cm²")
 
-    def ask_volume(self):        
+
+    def getVolume(self):        
         self.__Template("volume", "volume of electrode", "µL")
