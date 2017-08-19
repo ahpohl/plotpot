@@ -34,7 +34,8 @@ class Journal(DatabaseManager):
     
     def __init__(self, args):
         self.args = args
-        super().__init__(self.getJournalPath())
+        self.journalPath = self.getJournalPath()
+        super().__init__(self.journalPath)
         self.createJournal()
         
         
@@ -110,17 +111,17 @@ class Journal(DatabaseManager):
             print("Global_Table renamed to Journal_Table.")
             
         # update mass and capacity columns
-        if not self.isColumn("Journal_Table", "Volume"):
+        if not self.__isColumn("Journal_Table", "Volume"):
             self.query('''UPDATE Journal_Table SET Mass = ROUND(Mass*1e3,2), Capacity = ROUND(Capacity*1e3,2)''')
             print("Columns Mass and Capacity multiplied by 1000.")
             
         # table upgrade: create volume column in Journal_Table if column does not exist
-        if not self.isColumn("Journal_Table", "Volume"):
+        if not self.__isColumn("Journal_Table", "Volume"):
             self.query('''ALTER TABLE Journal_Table ADD COLUMN Volume DOUBLE DEFAULT 0''')
             print("Column Volume created.")
             
         # add device column
-        if not self.isColumn("Journal_Table", "Device"):
+        if not self.__isColumn("Journal_Table", "Device"):
             self.query('''ALTER TABLE Journal_Table ADD COLUMN Device TEXT''')
             self.query('''update Journal_Table set device = ""''')
             self.query('''UPDATE Journal_Table SET device = "Arbin BT2000" WHERE File_Name LIKE "%.res"''')
@@ -130,40 +131,21 @@ class Journal(DatabaseManager):
             self.query('''UPDATE Journal_Table SET device = "Zahner IM6" WHERE File_Name LIKE "%.txt"''')
             self.query('''UPDATE Journal_Table SET device = "merged" WHERE File_Name LIKE "%.sqlite"''')
             print("Column Device created.")        
-    
-
-    def printSql(self, data, header):
-        # determine len of each column
-        lensHeader = [len(x) for x in header]
-        lensData = []
-        for i in --data:
-            lensData.append([len(str(x)) for x in i])
-            #print(i[2], i[5])
-        lensData.append(lensHeader)
-        lensArray = np.array(lensData)
-        colWidths = np.amax(lensArray, axis=0) # get max in each column
-        #for i in range(len(lensArray)):
-        #    print(lensArray[i])
-        
-        formats = []
-        for i in colWidths:
-            formats.append("%%-%ds" % i)
-        pattern = "| "+" | ".join(formats)+" |"
-        separator ="+-"+"-+-".join(['-' * n for n in colWidths])+"-+"
-
-        # output on screen
-        print(separator)
-        print(pattern % header)
-        print(separator)
-        
-        for row in data:
-            print(pattern % tuple(row))
-        print(separator)
-        
+            
             
     def deleteRow(self, table, row):
+        select_query = '''SELECT row_id FROM {0} WHERE rowid = {1}'''.format(table, row)
         delete_query = '''DELETE FROM {0} WHERE rowid = {1}'''.format(table, row)
-        self.query(delete_query)
+        
+        # check if row with rowid exists
+        self.query(select_query)
+        data = self.fetchone()
+        
+        if data is None:
+            print("Row id %d does not exist in journal." % row)
+        else:
+            self.query(delete_query)
+            print("Row id %d deleted from journal." % row)
     
     
     def printJournal(self, table):
@@ -177,10 +159,12 @@ class Journal(DatabaseManager):
         data = [list(x) for x in data]
         for i in range(len(data)):
             data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
-        
+             
         # output sql query
         if len(data) > 0:
-            self.printSql(data, header)
+            self.__printSql(data, header)
+        
+        print("Journal file: %s." % self.journalPath)
     
     
     def insertRow(self, table, dataSql, massStor):
@@ -227,7 +211,7 @@ class Journal(DatabaseManager):
         return self.fetchone()
 
         
-    def isColumn(self, table, column):
+    def __isColumn(self, table, column):
         select_query = '''PRAGMA table_info({0})'''.format(table)
         self.query(select_query)
         resultSql = self.fetchall()
@@ -237,6 +221,32 @@ class Journal(DatabaseManager):
                 isColumn = True;
                 break
         return isColumn
+
+
+    def __printSql(self, data, header):
+        # determine len of each column
+        lensHeader = [len(x) for x in header]
+        lensData = []
+        for i in data:
+            lensData.append([len(str(x)) for x in i])
+        lensData.append(lensHeader)
+        lensArray = np.array(lensData)
+        colWidths = np.amax(lensArray, axis=0) # get max in each column
+        
+        formats = []
+        for i in colWidths:
+            formats.append("%%-%ds" % i)
+        pattern = "| "+" | ".join(formats)+" |"
+        separator ="+-"+"-+-".join(['-' * n for n in colWidths])+"-+"
+
+        # output on screen
+        print(separator)
+        print(pattern % header)
+        print(separator)
+        
+        for row in data:
+            print(pattern % tuple(row))
+        print(separator)
 
     
     def __Template(self, key, attribute, unit):

@@ -35,23 +35,14 @@ class Plotpot(Journal):
     def subcommandJournal(self):
         """run journal subcommand"""
         
-        # get journalPath
-        journalPath = Journal.getJournalPath(self)
-        print(journalPath)
-        
         # print plotpot journal file
-        if self.args.subcommand == "journal":
-            Journal.printJournal(self, "Journal_Table")
-            print("Journal file: %s." % journalPath)
-            
-            # delete journal entry
-            if self.args.delete:
-                Journal.deleteRow("Journal_Table", self.args.delete)
-                print("Deleted row %d from journal." % self.args.delete)
+        Journal.printJournal(self, "Journal_Table")
         
-            sys.exit() 
-            
-        self.setMetaInfo()
+        # delete journal entry
+        if self.args.delete:
+            Journal.deleteRow(self, "Journal_Table", self.args.delete)
+        
+        sys.exit() 
 
     
     def callConvpot(self):
