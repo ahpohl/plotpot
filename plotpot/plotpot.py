@@ -3,7 +3,7 @@ import sys
 import numpy as np
     
 # import own files
-from plotpot.plot import plot
+from plotpot.plot import Plot
 from plotpot.export import Export
 from plotpot.data import Data
 from plotpot.journal import Journal
@@ -48,16 +48,13 @@ class Plotpot(Journal):
         """run show subcommand"""
     
         # create raw data object
-        dataDb = Data(self.args)
+        plotObj = Plot(self.args)
         
         sys.exit()
         
-        # parse plot option
-        plots = self.parsePlotOption()
-        
         # read file name and start datetime
-        fileNameDate = dataDb.getNameAndDate()
-        fileCount = dataDb.getFileCount()
+        fileNameDate = plotObj.getNameAndDate()
+        fileCount = plotObj.getFileCount()
         
         if fileCount > 1:
             fileNameList = list(fileNameDate)
@@ -108,34 +105,6 @@ class Plotpot(Journal):
             self.journal.updateColumn("Journal_Table", "Area", massStor['area'], journalEntry)
             self.journal.updateColumn("Journal_Table", "Volume", massStor['volume'], journalEntry)       
            
-        if self.args.time:
-            # parse time option
-            time_cmd = self.range_option(self.args.time)
-            time_cmd = [float(x) for x in time_cmd] # now list of floats
-            
-            # sanity checks
-            if time_cmd[0] >= time_cmd[1] or len([x for x in time_cmd if x < 0]) != 0:
-                sys.exit("ERROR: Time option out of range.")
-            
-            time_cmd = [x*3600 for x in time_cmd] # in seconds
-        
-        elif self.args.cycles:
-            # parse cycles option
-            cycles_cmd = self.range_option(self.args.cycles)
-            cycles_cmd = [int(x) for x in cycles_cmd] # now list of integers
-                    
-            # sanity checks
-            if cycles_cmd[0] > cycles_cmd[1] or len([x for x in cycles_cmd if x < 0]) != 0:
-                sys.exit("ERROR: Cycles option out of range.")
-                
-        elif self.args.data:
-            # parse data point option
-            data_cmd = self.range_option(self.args.data)
-            data_cmd = [int(x) for x in data_cmd] # now list of integers
-            
-            #sanity checks
-            if data_cmd[0] > data_cmd[1] or len([x for x in data_cmd if x < 0]) != 0:
-                sys.exit("ERROR: Data option out of range.")
         
         # fetch all data
         data = dataDb.getData()
@@ -171,14 +140,9 @@ class Plotpot(Journal):
         
         # get number of cycles
         numberOfCycles = np.unique(stats[:,0])
-            
-        # filter data according to --cycles option
-        if self.args.cycles:
-            data = data[np.logical_and(cycles_cmd[0] <= data[:,1], data[:,1] <= cycles_cmd[1])]
-            stats = stats[np.logical_and(cycles_cmd[0] <= stats[:,0], stats[:,0] <= cycles_cmd[1])]
         
         # filter data according to --data option
-        elif self.args.data:
+        if self.args.data:
             data = data[np.logical_and(data_cmd[0] <= data[:,0], data[:,0] <= data_cmd[1])]
             stats = stats[np.logical_and(data_cmd[0] <= stats[:,2], stats[:,1] <= data_cmd[1])]
             
@@ -207,62 +171,3 @@ class Plotpot(Journal):
         # show plots if quiet option not given
         if not self.args.quiet:
             fig.show_plots()
-    
-
-    def isNumber(self, s):
-        """This function tests if string s is a number."""
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
-    
-    def parseRange(self, option):
-        """This function parses the a command line option which specifies
-        a data range and returns a tuple with the interval"""
-        
-        errormsg_not_recognised = "Error: Option not recognised."
-        
-        string = option.split(',')
-        if len(string) == 2:
-            if self.is_number(string[0]) and self.is_number(string[1]):
-                interval = (string[0],string[1])
-            else:
-                sys.exit(errormsg_not_recognised)
-        elif len(string) == 1:
-            if self.is_number(string[0]):
-                interval = (0,string[0])
-            else:
-                sys.exit(errormsg_not_recognised)
-        else:    
-            sys.exit(errormsg_not_recognised)
-            
-        return interval
-    
-    def parsePlotOption(self):
-        """This function parses the --plot option and returns a list of plots."""
-        
-        errormsg_not_recognised = "Error: Plot option not recognised."
-        errormsg_range_error = "Error: Plot out of range."
-        
-        plots = []
-        string_sequence = self.args.plot.split(',')
-        for s in string_sequence:
-            if self.is_number(s):
-                plots.append(int(s))
-            elif '-' in s:
-                string_range = s.split('-')
-                if self.is_number(string_range[0]) and self.is_number(string_range[1]) and len(string_range) == 2:
-                    plots_start = int(string_range[0])
-                    plots_end = int(string_range[1])+1
-                    if int(plots_start) < int(plots_end):
-                        sequence = range(plots_start, plots_end)
-                        plots.extend(sequence)
-                    else:
-                        sys.exit(errormsg_range_error)
-                else:
-                    sys.exit(errormsg_not_recognised)
-            else:
-                sys.exit(errormsg_not_recognised)
-            
-        return sorted(set(plots)) # remove duplicates and sort
