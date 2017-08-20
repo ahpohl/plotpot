@@ -10,12 +10,25 @@ def main():
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description=textwrap.dedent("""
             Plotpot is a Python module that plots potentiostatic data imported with
-            Convpot. It keeps a journal with meta information for later use.""")
+            Convpot. It keeps a journal with meta information for later use."""),
+            epilog="""For more help see page of sub-command:\n    %(prog)s <command> -h"""
     )
-            
-    plottypes=textwrap.dedent("""
+ 
+    # optional top level arguments
+    parser.add_argument('-V', '--version', action='version', version=version)
+    parser.add_argument('-v', '--verbose', action='count',
+                    help="be more verbose")
+
+    # create sub-command
+    subparsers = parser.add_subparsers(title='available commands', metavar='',
+                    dest='subcommand') 
+
+    # create the parser for the "plot" command
+    parser_show = subparsers.add_parser('show',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            help='show plots',
+            description=textwrap.dedent("""
             available plot types:
-            =====================
                1  Voltage vs. specific capacity
                2  Voltage + current vs. time
                3  Temperature vs. time
@@ -28,19 +41,8 @@ def main():
               10  C-rate
               11  Specific current density [mA/g]
               12  Current density [mA/cm²]
-              13  Specific capacity (circle plot)""")
- 
-    # optional top level arguments
-    parser.add_argument('-V', '--version', action='version', version=version)
-    parser.add_argument('-v', '--verbose', action='count',
-                    help="be more verbose")
-
-    # create sub-command
-    subparsers = parser.add_subparsers(title='available commands', metavar='',
-                    dest='subcommand') 
-
-    # create the parser for the "plot" command
-    parser_show = subparsers.add_parser('show', help='show plots')
+              13  Specific capacity (circle plot)""")                    
+    )
     
     # positional plot argument
     parser_show.add_argument('filename', help="data file name")    
@@ -55,7 +57,7 @@ def main():
     parser_show.add_argument('-b', '--bio_ce', action='store_true',
                     help="Biologic counter electrode")
     parser_show.add_argument('-p', '--plot', default='1', metavar='N',
-                    help="select plot")
+                    help="select plot type")
     parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,5),
                     metavar='N', help="smooth dQ/dV plot [%(choices)s]") # window length
     
