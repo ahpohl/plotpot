@@ -47,8 +47,10 @@ class Plotpot(Journal):
     def subcommandShow(self):
         """run show subcommand"""
     
-        # create raw data object and call convpot if necessary
-        dataDb = self.callConvpot()
+        # create raw data object
+        dataDb = Data(self.args)
+        
+        sys.exit()
         
         # parse plot option
         plots = self.parsePlotOption()

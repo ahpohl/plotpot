@@ -21,5 +21,5 @@ class DbManager(object):
         data = self.cur.fetchone()
         return data
 
-    def __del__(self):
-        self.conn.close()
+    #def __del__(self):
+    #    self.conn.close()

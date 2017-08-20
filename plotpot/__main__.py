@@ -13,7 +13,7 @@ def main():
             Convpot. It keeps a journal with meta information for later use.""")
     )
             
-    epilog=textwrap.dedent("""
+    plottypes=textwrap.dedent("""
             available plot types:
             =====================
                1  Voltage vs. specific capacity

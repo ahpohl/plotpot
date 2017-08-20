@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
+import os, sys
 import numpy as np
 import sqlite3
 import csv
@@ -7,17 +7,38 @@ import subprocess
 from distutils.spawn import find_executable
 from plotpot.dbmanager import DbManager
 
+
 class Data(DbManager):
     """class for handling the raw data"""
     
     def __init__(self, args):
         self.args = args
-        super.__init__(self, dataDbPath)
+        self.dataFileName = self.getDataFile()
+        super().__init__(self.dataFileName)
+        self.callConvpot()
+        
+        
+    def getDataFile(self):
+        """check if filename with raw data exists"""
+
+        # ckeck if raw file exists        
+        rawFileFullPath = os.path.abspath(self.args.filename)
+        
+        try:
+            fh = open(rawFileFullPath, "r")
+        except IOError as e:
+            sys.exit(e)
+            
+        # construct sqlite filename 
+        dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'        
+        
+        return dataFileName
+                
     
     def callConvpot(self):
-        """create the database by calling Convpot to convert raw
-        data if sqlite file does not already exist. Check if sqlite is
-        up-to-date and skip conversion if necessary."""
+        """create the sqlite database by calling Convpot to convert raw
+        data. Check if sqlite file is up-to-date and skip conversion 
+        if necessary."""
         
         # search path for Convpot program
         convpotPath = find_executable("convpot")
@@ -33,27 +54,15 @@ class Data(DbManager):
         if not os.access(convpotPath, os.X_OK):
             sys.exit("ERROR: Convpot program not executable.")
         
-        # check if filename with raw data exists
-        rawFileFullPath = os.path.abspath(self.args.filename)
+        # get extension of raw file
         rawFileExtension = self.args.filename.rsplit('.')[1]
         
-        try:
-            fh = open(rawFileFullPath, "r")
-        except IOError as e:
-            sys.exit(e)
-        
-        # construct sqlite filename 
-        dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'
-        
-        # create data object in current dir
-        dataDb = Data(self.args, dataFileName)
-        
         # test if sqlite file needs updating
-        isUpToDate = dataDb.checkFileSize(rawFileFullPath)
+        isUpToDate = self.checkFileSize(self.dataFileName)
         
-        if (isUpToDate or self.args.force) and rawFileExtension is not "sqlite":
+        if (self.args.force or not isUpToDate) and (rawFileExtension != "sqlite"):
         
-            # TODO continue here
+            # construct call to convpot
             convpotArgs = []
             convpotArgs.append(convpotPath)
         
@@ -68,9 +77,7 @@ class Data(DbManager):
             try:
                 subprocess.check_call(convpotArgs)
             except subprocess.CalledProcessError as e:
-                sys.exit(e)        
-        
-        return dataDb
+                sys.exit(e)
     
         
     def writeMergeFileSummary(self):
@@ -128,6 +135,10 @@ class Data(DbManager):
         return np.array(self.fetchall())
     
     def checkFileSize(self, sqlFile):
+        """Check file size of raw file and compare with size saved in 
+           sqlite file. Return True if file is up-to-date and False
+           if sizes differ."""
+        
         listOfVars = ["File_Size"]
         select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
         try:
@@ -146,6 +157,8 @@ class Data(DbManager):
             print("currentSize: %ld, previousSize: %ld" % (currentSize, previousSize))
         
         if currentSize == previousSize:
-            return False
-        else:
+            print("File size match!")
             return True
+        
+        else:
+            return False
