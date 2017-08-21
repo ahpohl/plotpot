@@ -13,25 +13,6 @@ class Journal(DbManager):
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createJournal()
-        self.setMetaInfo()
-        
-        
-    def setMetaInfo(self, mass = 0, capacity = 0, area = 0, volume = 0):
-        """store mass and capacity in dict
-           mass: active mass [mg]
-           cap: theoretical capacity [mAh/g]
-           area: electrode area [cm²]
-           volume: volume of electrode [µL]"""
-
-        self.metaInfo = {'mass': mass, 
-                         'cap': capacity, 
-                         'area': area, 
-                         'volume': volume}
-        
-    
-    def getMetaInfo(self):
-        return self.metaInfo
-
 
     def getJournalPath(self):
         """create journal database in program directory or path specified with
@@ -260,3 +241,74 @@ class Journal(DbManager):
 
     def setVolume(self):        
         self.__Template("volume", "volume of electrode", "µL")
+        
+    
+        def setMetaInfo(self, mass = 0, capacity = 0, area = 0, volume = 0):
+        """store mass and capacity in dict
+           mass: active mass [mg]
+           cap: theoretical capacity [mAh/g]
+           area: electrode area [cm²]
+           volume: volume of electrode [µL]"""
+
+        self.metaInfo = {'mass': mass, 
+                         'cap': capacity, 
+                         'area': area, 
+                         'volume': volume}
+    
+    
+    def getMetaInfo(self):
+        return self.metaInfo
+    
+    
+    def updateMetaInfo(self):
+        """Update meta info in journal file"""
+        
+        # create journal object
+        self.jour = Journal(self.args)
+        
+        # read file name and start datetime
+        fileNameDate = self.getNameAndDate()
+        fileCount = self.getFileCount()
+        
+        if fileCount > 1:
+            fileNameList = list(fileNameDate)
+            fileNameList[0] = self.args.filename
+            fileNameDate = tuple(fileNameList)
+        
+        # search plotpot-journal.dat if battery exists
+        searchResult = jour.searchJournal(fileNameDate)
+        
+        # if entry not found, fetch data from data file (global or file table)
+        if searchResult is None:
+            journalEntry = self.getFileDetails()
+            
+            # treat merged file different than single file
+            if fileCount > 1:
+                journalList = list(journalEntry)
+                journalList[1] = self.args.filename
+                journalList[6] = "merged"
+                journalEntry = tuple(journalList)
+              
+        else:
+            # get mass and capapcity from journal
+            journalEntry = searchResult
+            self.setMetaInfo(journalEntry[6], journalEntry[7], journalEntry[8], journalEntry[9])
+        
+        # ask questions
+        if any([x in [1,4,5,11] for x in self.plots]):
+            self.setMass()
+        if 10 in self.plots:
+            self.setCapacity()
+        if any([x in [12] for x in self.plots]):
+            self.setArea()
+        if 6 in self.plots:
+            self.setVolume()
+            
+        # create new record in journal file if previous record was not found, otherwise update mass
+        if searchResult == None:
+            self.insertRow("Journal_Table", journalEntry, self.getMetaInfo())
+        else:
+            self.updateColumn("Journal_Table", "Mass", massStor['mass'], journalEntry)
+            self.updateColumn("Journal_Table", "Capacity", massStor['cap'], journalEntry) 
+            self.updateColumn("Journal_Table", "Area", massStor['area'], journalEntry)
+            self.updateColumn("Journal_Table", "Volume", massStor['volume'], journalEntry)

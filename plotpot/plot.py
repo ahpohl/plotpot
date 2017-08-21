@@ -26,12 +26,16 @@ class Plot(Data):
 
     def __init__(self, args):
         self.args = args
-        super().__init__(args)
-        self.plots = self.parsePlotOption()
         
-    
-    def getPlots(self):
-        return self.plots
+        # call Data base class constructor
+        super().__init__(args)
+        
+        # import variables from base class Data
+        self.plots = self.getPlots()
+        self.cycles = self.getCycles()
+        self.data = self.getData()
+        self.stats = self.getStatistics()
+        self.metaInfo = self.getMetaInfo()
 
     
     def drawPlots(self):
@@ -491,34 +495,5 @@ class Plot(Data):
         
         # make 'y output lengtj' == 'y input length'
         return y[(window_len//2):-(window_len//2)] # "//" integer division e.g. 15//2 = 7
-        
-    
-    def parsePlotOption(self):
-        """This function parses the --plot option and returns a list of plots."""
-        
-        errormsg_not_recognised = "ERROR: Plot option not recognised."
-        errormsg_range_error = "ERROR: Plot number out of range."
-        
-        plots = []
-        string_sequence = self.args.plot.split(',')
-        for s in string_sequence:
-            if self.isNumber(s):
-                plots.append(int(s))
-            elif '-' in s:
-                string_range = s.split('-')
-                if self.isNumber(string_range[0]) and self.isNumber(string_range[1]) and len(string_range) == 2:
-                    plots_start = int(string_range[0])
-                    plots_end = int(string_range[1])+1
-                    if int(plots_start) < int(plots_end):
-                        sequence = range(plots_start, plots_end)
-                        plots.extend(sequence)
-                    else:
-                        sys.exit(errormsg_range_error)
-                else:
-                    sys.exit(errormsg_not_recognised)
-            else:
-                sys.exit(errormsg_not_recognised)
-            
-        return sorted(set(plots)) # remove duplicates and sort
     
     

@@ -6,6 +6,7 @@ import csv
 import subprocess
 from distutils.spawn import find_executable
 from plotpot.dbmanager import DbManager
+from plotpot.journal import Journal
 
 
 class Data(DbManager):
@@ -25,6 +26,13 @@ class Data(DbManager):
         self.points = self.getDataOption()
         self.filterData()
         self.filterStatistics()
+        
+        # update meta info before plotting
+        self.plots = self.getPlotsOption()
+        
+
+    def getPlots(self):
+        return self.plots
     
     
     def getData(self):
@@ -150,15 +158,6 @@ class Data(DbManager):
                 print("File size match!")
             return True 
         else:
-            return False
-        
-        
-    def isNumber(self, s):
-        """This function tests if string s is a number."""
-        try:
-            float(s)
-            return True
-        except ValueError:
             return False
         
         
@@ -333,3 +332,43 @@ class Data(DbManager):
     def getFileCount(self):
         self.query('''SELECT Count(*) FROM File_Table''')
         return self.fetchone()[0]
+    
+
+    def isNumber(self, s):
+        """This function tests if string s is a number."""
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+        
+        
+    def getPlotsOption(self):
+        """This function parses the --plot option and returns a list of plots."""
+        
+        errormsg_not_recognised = "ERROR: Plot option not recognised."
+        errormsg_range_error = "ERROR: Plot number out of range."
+        
+        plots = []
+        string_sequence = self.args.plot.split(',')
+        for s in string_sequence:
+            if self.isNumber(s):
+                plots.append(int(s))
+            elif '-' in s:
+                string_range = s.split('-')
+                if self.isNumber(string_range[0]) and self.isNumber(string_range[1]) and len(string_range) == 2:
+                    plots_start = int(string_range[0])
+                    plots_end = int(string_range[1])+1
+                    if int(plots_start) < int(plots_end):
+                        sequence = range(plots_start, plots_end)
+                        plots.extend(sequence)
+                    else:
+                        sys.exit(errormsg_range_error)
+                else:
+                    sys.exit(errormsg_not_recognised)
+            else:
+                sys.exit(errormsg_not_recognised)
+            
+        return sorted(set(plots)) # remove duplicates and sort 
+        
+        
