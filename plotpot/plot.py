@@ -28,6 +28,10 @@ class Plot(Data):
         self.args = args
         super().__init__(args)
         self.plots = self.parsePlotOption()
+        
+    
+    def getPlots(self):
+        return self.plots
 
     
     def drawPlots(self):
@@ -487,16 +491,7 @@ class Plot(Data):
         
         # make 'y output lengtj' == 'y input length'
         return y[(window_len//2):-(window_len//2)] # "//" integer division e.g. 15//2 = 7
-    
-    
-    def isNumber(self, s):
-        """This function tests if string s is a number."""
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
-    
+        
     
     def parsePlotOption(self):
         """This function parses the --plot option and returns a list of plots."""

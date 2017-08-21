@@ -46,11 +46,9 @@ class Plotpot(Journal):
         
     def subcommandShow(self):
         """run show subcommand"""
-    
-        # create raw data object
-        plotObj = Plot(self.args)
         
-        sys.exit()
+        # create plot object
+        plotObj = Plot(self.args)
         
         # read file name and start datetime
         fileNameDate = plotObj.getNameAndDate()
@@ -62,11 +60,11 @@ class Plotpot(Journal):
             fileNameDate = tuple(fileNameList)
         
         # search plotpot-journal.dat if battery exists
-        searchResult = journalDb.searchJournal(fileNameDate)
+        searchResult = self.searchJournal(fileNameDate)
         
         # if entry not found, fetch data from data file (global or file table)
-        if searchResult == None:
-            journalEntry = dataDb.getFileDetails()
+        if searchResult is None:
+            journalEntry = plotObj.getFileDetails()
             
             # treat merged file different than single file
             if fileCount > 1:
@@ -78,80 +76,34 @@ class Plotpot(Journal):
         else:
             # get mass and capapcity from journal
             journalEntry = searchResult
-            massStor['mass'] = journalEntry[6]
-            massStor['cap'] = journalEntry[7]
-            massStor['area'] = journalEntry[8]
-            massStor['volume'] = journalEntry[9]
+            self.setMetaInfo(journalEntry[6], journalEntry[7], journalEntry[8], journalEntry[9])
+        
+        # parse plot option
+        plots = self.getPlots()
         
         # ask questions
         if any([x in [1,4,5,11] for x in plots]):
-            self.journal.ask_mass()
+            self.setMass()
         if 10 in plots:
-            self.journal.ask_capacity()
+            self.setCapacity()
         if any([x in [12] for x in plots]):
-            self.journal.ask_area()
+            self.setArea()
         if 6 in plots:
-            self.journal.ask_volume()
+            self.setVolume()
             
-        # update massStor
-        massStor = self.journal.get_mass()
-                        
         # create new record in journal file if previous record was not found, otherwise update mass
         if searchResult == None:
-            self.journal.insertRow("Journal_Table", journalEntry, massStor)
+            self.insertRow("Journal_Table", journalEntry, self.getMetaInfo())
         else:
-            self.journal.updateColumn("Journal_Table", "Mass", massStor['mass'], journalEntry)
-            self.journal.updateColumn("Journal_Table", "Capacity", massStor['cap'], journalEntry) 
-            self.journal.updateColumn("Journal_Table", "Area", massStor['area'], journalEntry)
-            self.journal.updateColumn("Journal_Table", "Volume", massStor['volume'], journalEntry)       
-           
-        
-        # fetch all data
-        data = dataDb.getData()
-        
-        if not data.any():
-            data = np.zeros((1,12))
-        
-        if self.args.verbose:
-            print("data:")
-            print(data.shape)
-        
-        data[:,1] = data[:,1]+1 # one based cycle index
-        
-        # fix discharge capacity and energy being negative
-        data[:,8] = np.abs(data[:,8])
-        data[:,9] = np.abs(data[:,9])
-    
-        # fetch statistics
-        stats = dataDb.getStatistics()
-        
-        if not stats.any():
-            stats = np.zeros((1,13))
-        
-        if self.args.verbose:
-            print("stats:")
-            print(stats.shape)
+            self.updateColumn("Journal_Table", "Mass", massStor['mass'], journalEntry)
+            self.updateColumn("Journal_Table", "Capacity", massStor['cap'], journalEntry) 
+            self.updateColumn("Journal_Table", "Area", massStor['area'], journalEntry)
+            self.updateColumn("Journal_Table", "Volume", massStor['volume'], journalEntry)       
             
-        stats[:,0] = stats[:,0]+1 # one based cycle index
+        sys.exit()
         
-        # fix discharge capacity and energy being negative
-        stats[:,6] = np.abs(stats[:,6])
-        stats[:,8] = np.abs(stats[:,8])
-        
-        # get number of cycles
-        numberOfCycles = np.unique(stats[:,0])
-        
-        # filter data according to --data option
-        if self.args.data:
-            data = data[np.logical_and(data_cmd[0] <= data[:,0], data[:,0] <= data_cmd[1])]
-            stats = stats[np.logical_and(data_cmd[0] <= stats[:,2], stats[:,1] <= data_cmd[1])]
-            
-        # filter data according to --time option
-        elif self.args.time:
-            data = data[np.logical_and(time_cmd[0] <= data[:,3], data[:,3] <= time_cmd[1])]    
-            
         # calc extended statistics, convert units
-        expStat = export(self.args, data, numberOfCycles, stats, massStor)
+        expStat = export(self.args, self.data, numberOfCycles, self.stats, massStor)
         statistics = expStat.get_stats()
         
         # create figures    

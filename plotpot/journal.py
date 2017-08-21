@@ -13,6 +13,7 @@ class Journal(DbManager):
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createJournal()
+        self.setMetaInfo()
         
         
     def setMetaInfo(self, mass = 0, capacity = 0, area = 0, volume = 0):
@@ -22,14 +23,14 @@ class Journal(DbManager):
            area: electrode area [cm²]
            volume: volume of electrode [µL]"""
 
-        self.massStor = {'mass': mass, 
+        self.metaInfo = {'mass': mass, 
                          'cap': capacity, 
                          'area': area, 
                          'volume': volume}
         
     
     def getMetaInfo(self):
-        return self.massStor
+        return self.metaInfo
 
 
     def getJournalPath(self):
@@ -143,11 +144,11 @@ class Journal(DbManager):
         print("Journal file: %s." % self.journalPath)
     
     
-    def insertRow(self, table, dataSql, massStor):
+    def insertRow(self, table, dataSql, metaInfo):
         listOfVars = ["File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Device", "Mass", "Capacity", "Area", "Volume"]
         insert_query = '''INSERT INTO {0} ({1}) VALUES ({2})'''.format(table,
                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, (dataSql[1:7] + (massStor['mass'],) + (massStor['cap'],) + (massStor['area'],) + (massStor['volume'],)))
+        self.query(insert_query, (dataSql[1:7] + (metaInfo['mass'],) + (metaInfo['cap'],) + (metaInfo['area'],) + (metaInfo['volume'],)))
         print("INFO: Created new record in journal file.")
     
     
@@ -227,35 +228,35 @@ class Journal(DbManager):
     
     def __Template(self, key, attribute, unit):
           
-        if self.massStor[key] == 0:
+        if self.metaInfo[key] == 0:
             while True:
                 try:
-                    self.massStor[key] = float(input("Please give %s in [%s]: " % (attribute, unit)))
+                    self.metaInfo[key] = float(input("Please give %s in [%s]: " % (attribute, unit)))
                     break
                 except ValueError as e:
                     continue
         else:
-            print("INFO: Found old record %s %s %s in journal." % (attribute, str(self.massStor[key]), unit))
+            print("INFO: Found old record %s %s %s in journal." % (attribute, str(self.metaInfo[key]), unit))
             choice = input("Do you want to use it [Y/n]? ")
             if choice == 'n':
                 while True:
                     try:
-                        self.massStor[key] = float(input("Please give new %s in [%s]: " % (attribute, unit)))
+                        self.metaInfo[key] = float(input("Please give new %s in [%s]: " % (attribute, unit)))
                         break
                     except ValueError as e:
                         continue
 
-    def getMass(self):       
+    def setMass(self):       
         self.__Template("mass", "mass", "mg")
 
 
-    def getCapacity(self):        
+    def setCapacity(self):        
         self.__Template("cap", "capacity", "mAh/g")
 
     
-    def getArea(self):        
+    def setArea(self):        
         self.__Template("area", "area of the electrode", "cm²")
 
 
-    def getVolume(self):        
+    def setVolume(self):        
         self.__Template("volume", "volume of electrode", "µL")

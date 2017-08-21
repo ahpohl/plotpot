@@ -17,12 +17,27 @@ class Data(DbManager):
         super().__init__(self.dataFileName)
         self.callConvpot()
         
-        self.cycles = self.getCycles()
-        print(self.cycles)
-        self.time = self.getTime()
-        print(self.time)
-        self.points = self.getPoints()
-        print(self.points)
+        # reduce data and stats
+        self.data = self.fetchData()
+        self.stats = self.fetchStatistics()
+        self.cycles = self.getCyclesOption()
+        self.time = self.getTimeOption()
+        self.points = self.getDataOption()
+        self.filterData()
+        self.filterStatistics()
+    
+    
+    def getData(self):
+        return self.data
+    
+    
+    def getStatistics(self):
+        return self.stats
+    
+    
+    def getCycles(self):
+        """get unique number of cycles"""
+        return np.unique(self.stats[:,0])
         
         
     def getDataFile(self):
@@ -86,7 +101,200 @@ class Data(DbManager):
             except subprocess.CalledProcessError as e:
                 sys.exit(e)
     
+    
+    def fetchData(self):
+        if self.args.bio_ce:
+            listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
+                "DateTime","Current","Voltage2","Capacity","Energy","dQdV","Aux_Channel"]
+        else:
+            listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
+                "DateTime","Current","Voltage","Capacity","Energy","dQdV","Aux_Channel"]
+        select_query = '''SELECT {0} FROM Channel_Normal_Table'''.format(','.join(listOfData))
+        self.query(select_query)
+        return np.array(self.fetchall())
+    
+    
+    def fetchStatistics(self):
+        listOfStats = ["Full_Cycle","Cycle_Start","Cycle_End","Charge_Time","Discharge_Time",
+            "Charge_Capacity","Discharge_Capacity","Charge_Energy","Discharge_Energy",
+            "Charge_Voltage","Discharge_Voltage","Hysteresis","Efficiency"]        
+        select_query = '''SELECT {0} FROM Full_Cycle_Table'''.format(','.join(listOfStats))
+        self.query(select_query)
+        return np.array(self.fetchall())
+    
+    
+    def checkFileSize(self, sqlFile):
+        """Check file size of raw file and compare with size saved in 
+           sqlite file. Return True if file is up-to-date and False
+           if sizes differ."""
         
+        listOfVars = ["File_Size"]
+        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
+        try:
+            self.query(select_query)
+        except sqlite3.OperationalError as e:
+            return True
+        
+        previousSize = int(self.fetchone()[0])
+        currentSize = 0
+        with open(self.args.filename, 'r') as fh:
+            fh.seek(0, os.SEEK_END)
+            currentSize = fh.tell()
+            fh.close()
+            
+        if self.args.verbose:
+            print("currentSize: %ld, previousSize: %ld" % (currentSize, previousSize))
+        
+        if currentSize == previousSize:
+            if self.args.verbose:
+                print("File size match!")
+            return True 
+        else:
+            return False
+        
+        
+    def isNumber(self, s):
+        """This function tests if string s is a number."""
+        try:
+            float(s)
+            return True
+        except ValueError:
+            return False
+        
+        
+    def parseRange(self, option):
+        """This function parses the a command line option which specifies
+        a data range and returns a tuple with the interval"""
+        
+        errormsg_not_recognised = "Error: Option not recognised."
+        
+        string = option.split(',')
+        if len(string) == 2:
+            if self.isNumber(string[0]) and self.isNumber(string[1]):
+                interval = (string[0],string[1])
+            else:
+                sys.exit(errormsg_not_recognised)
+        elif len(string) == 1:
+            if self.isNumber(string[0]):
+                interval = (0,string[0])
+            else:
+                sys.exit(errormsg_not_recognised)
+        else:    
+            sys.exit(errormsg_not_recognised)
+            
+        return interval
+    
+    
+    def getCyclesOption(self):
+        """get cycles from --cycles option"""
+        
+        # init cycles
+        cycles = None
+        
+        if self.args.cycles:
+            # parse cycles option
+            cycles = self.parseRange(self.args.cycles)
+            cycles = [int(x) for x in cycles] # now list of integers
+                    
+            # sanity checks
+            if cycles[0] > cycles[1] or len([x for x in cycles if x < 0]) != 0:
+                sys.exit("ERROR: Cycles option out of range.")
+                
+        return cycles
+    
+                
+    def getDataOption(self):
+        """get data points from --data option"""
+    
+        # init points
+        points = None
+    
+        if self.args.data:
+            # parse data point option
+            points = self.parseRange(self.args.data)
+            points = [int(x) for x in points] # now list of integers
+            
+            #sanity checks
+            if points[0] > points[1] or len([x for x in points if x < 0]) != 0:
+                sys.exit("ERROR: Data option out of range.")
+        
+        return points
+    
+    
+    def getTimeOption(self):
+        """get time from --time option"""
+        
+        # init time
+        time = None
+        
+        if self.args.time:
+            # parse time option
+            time = self.parseRange(self.args.time)
+            time = [float(x) for x in time] # now list of floats
+            
+            # sanity checks
+            if time[0] >= time[1] or len([x for x in time if x < 0]) != 0:
+                sys.exit("ERROR: Time option out of range.")
+            
+            time = [x*3600 for x in time] # in seconds
+        
+        return time
+    
+    
+    def filterData(self):
+        """filter data according to selected cycles, time and points""" 
+        
+        # shape data
+        if not self.data.any():
+            self.data = np.zeros((1,12))
+        
+        self.data[:,1] = self.data[:,1]+1 # one based cycle index
+        
+        # fix discharge capacity and energy being negative
+        self.data[:,8] = np.abs(self.data[:,8])
+        self.data[:,9] = np.abs(self.data[:,9])
+        
+        # filter data according to --cycles option
+        if self.cycles is not None:
+            self.data = self.data[np.logical_and(self.cycles[0] <= self.data[:,1], self.data[:,1] <= self.cycles[1])]
+            
+        # filter data according to --data option
+        elif self.points is not None:
+            self.data = self.data[np.logical_and(self.points[0] <= self.data[:,0], self.data[:,0] <= self.points[1])]
+            
+        # filter data according to --time option
+        elif self.time is not None:
+            self.data = self.data[np.logical_and(self.time[0] <= self.data[:,3], self.data[:,3] <= self.time[1])]
+
+        if self.args.verbose:
+            print("data: %d, %d" % (self.data.shape[0], self.data.shape[1]))   
+            
+        
+    def filterStatistics(self):
+        """filter statistics according to selected cycles, time and points"""
+        
+        # shape statistics
+        if not self.stats.any():
+            self.stats = np.zeros((1,13))
+            
+        self.stats[:,0] = self.stats[:,0]+1 # one based cycle index
+        
+        # fix discharge capacity and energy being negative
+        self.stats[:,6] = np.abs(self.stats[:,6])
+        self.stats[:,8] = np.abs(self.stats[:,8])
+        
+        # filter stats according to --cycles option
+        if self.cycles is not None:
+            self.stats = self.stats[np.logical_and(self.cycles[0] <= self.stats[:,0], self.stats[:,0] <= self.cycles[1])]
+            
+        # filter data according to --data option
+        elif self.points is not None:
+            self.stats = self.stats[np.logical_and(self.points[0] <= self.stats[:,2], self.stats[:,1] <= self.points[1])]
+            
+        if self.args.verbose:
+            print("stats: %d, %d" % (self.stats.shape[0], self.stats.shape[1]))
+            
+            
     def writeMergeFileSummary(self):
         listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Localtime", "Comment"]
         select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
@@ -125,147 +333,3 @@ class Data(DbManager):
     def getFileCount(self):
         self.query('''SELECT Count(*) FROM File_Table''')
         return self.fetchone()[0]
-    
-    
-    def getData(self):
-        if self.args.bio_ce:
-            listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
-                "DateTime","Current","Voltage2","Capacity","Energy","dQdV","Aux_Channel"]
-        else:
-            listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
-                "DateTime","Current","Voltage","Capacity","Energy","dQdV","Aux_Channel"]
-        select_query = '''SELECT {0} FROM Channel_Normal_Table'''.format(','.join(listOfData))
-        self.query(select_query)
-        return np.array(self.fetchall())
-    
-    
-    def getStatistics(self):
-        listOfStats = ["Full_Cycle","Cycle_Start","Cycle_End","Charge_Time","Discharge_Time",
-            "Charge_Capacity","Discharge_Capacity","Charge_Energy","Discharge_Energy",
-            "Charge_Voltage","Discharge_Voltage","Hysteresis","Efficiency"]        
-        select_query = '''SELECT {0} FROM Full_Cycle_Table'''.format(','.join(listOfStats))
-        self.query(select_query)
-        return np.array(self.fetchall())
-    
-    
-    def checkFileSize(self, sqlFile):
-        """Check file size of raw file and compare with size saved in 
-           sqlite file. Return True if file is up-to-date and False
-           if sizes differ."""
-        
-        listOfVars = ["File_Size"]
-        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
-        try:
-            self.query(select_query)
-        except sqlite3.OperationalError as e:
-            return True
-        
-        previousSize = int(self.fetchone()[0])
-        currentSize = 0
-        with open(self.args.filename, 'r') as fh:
-            fh.seek(0, os.SEEK_END)
-            currentSize = fh.tell()
-            fh.close()
-            
-        if self.args.verbose:
-            print("currentSize: %ld, previousSize: %ld" % (currentSize, previousSize))
-        
-        if currentSize == previousSize:
-            if self.args.verbose:
-                print("File size match!")
-            return True 
-        else:
-            return False
-        
-    def parseRange(self, option):
-        """This function parses the a command line option which specifies
-        a data range and returns a tuple with the interval"""
-        
-        errormsg_not_recognised = "Error: Option not recognised."
-        
-        string = option.split(',')
-        if len(string) == 2:
-            if self.isNumber(string[0]) and self.isNumber(string[1]):
-                interval = (string[0],string[1])
-            else:
-                sys.exit(errormsg_not_recognised)
-        elif len(string) == 1:
-            if self.isNumber(string[0]):
-                interval = (0,string[0])
-            else:
-                sys.exit(errormsg_not_recognised)
-        else:    
-            sys.exit(errormsg_not_recognised)
-            
-        return interval
-    
-    
-    def getCycles(self):
-        """get cycles from --cycles option"""
-        
-        # init cycles
-        cycles = None
-        
-        if self.args.cycles:
-            # parse cycles option
-            cycles = self.parseRange(self.args.cycles)
-            cycles = [int(x) for x in cycles] # now list of integers
-                    
-            # sanity checks
-            if cycles[0] > cycles[1] or len([x for x in cycles if x < 0]) != 0:
-                sys.exit("ERROR: Cycles option out of range.")
-                
-        return cycles
-    
-                
-    def getPoints(self):
-        """get data points from --data option"""
-    
-        # init points
-        points = None
-    
-        if self.args.data:
-            # parse data point option
-            points = self.parseRange(self.args.data)
-            points = [int(x) for x in points] # now list of integers
-            
-            #sanity checks
-            if points[0] > points[1] or len([x for x in points if x < 0]) != 0:
-                sys.exit("ERROR: Data option out of range.")
-        
-        return points
-    
-    
-    def getTime(self):
-        """get time from --time option"""
-        
-        # init time
-        time = None
-        
-        if self.args.time:
-            # parse time option
-            time = self.parseRange(self.args.time)
-            time = [float(x) for x in time] # now list of floats
-            
-            # sanity checks
-            if time[0] >= time[1] or len([x for x in time if x < 0]) != 0:
-                sys.exit("ERROR: Time option out of range.")
-            
-            time = [x*3600 for x in time] # in seconds
-        
-        return time
-    
-    
-    def filterCycles(self, data, stats):
-        """filter data and stats according to selected cycles"""
-        
-        cycles = self.getCycles()
-        
-        # filter data according to --cycles option
-        if cycles is not None:
-            data = data[np.logical_and(cycles[0] <= data[:,1], data[:,1] <= cycles[1])]
-            stats = stats[np.logical_and(cycles[0] <= stats[:,0], stats[:,0] <= cycles[1])]
-        
-        return data, stats
-        
-        
