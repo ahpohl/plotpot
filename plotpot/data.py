@@ -18,7 +18,9 @@ class Data(DbManager):
         super().__init__(self.dataFileName)
         self.callConvpot()
         
-        # reduce data and stats
+    
+    def reduceData(self):
+        """reduce data and stats"""
         self.data = self.fetchData()
         self.stats = self.fetchStatistics()
         self.cycles = self.getCyclesOption()
@@ -27,13 +29,6 @@ class Data(DbManager):
         self.filterData()
         self.filterStatistics()
         
-        # update meta info before plotting
-        self.plots = self.getPlotsOption()
-        
-
-    def getPlots(self):
-        return self.plots
-    
     
     def getData(self):
         return self.data
@@ -158,6 +153,15 @@ class Data(DbManager):
                 print("File size match!")
             return True 
         else:
+            return False
+        
+        
+    def isNumber(self, s):
+        """This function tests if string s is a number."""
+        try:
+            float(s)
+            return True
+        except ValueError:
             return False
         
         
@@ -332,15 +336,6 @@ class Data(DbManager):
     def getFileCount(self):
         self.query('''SELECT Count(*) FROM File_Table''')
         return self.fetchone()[0]
-    
-
-    def isNumber(self, s):
-        """This function tests if string s is a number."""
-        try:
-            float(s)
-            return True
-        except ValueError:
-            return False
         
         
     def getPlotsOption(self):
@@ -369,6 +364,6 @@ class Data(DbManager):
             else:
                 sys.exit(errormsg_not_recognised)
             
-        return sorted(set(plots)) # remove duplicates and sort 
+        return sorted(set(plots)) # remove duplicates and sort
         
         

@@ -13,6 +13,8 @@ class Journal(DbManager):
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createJournal()
+        self.setMetaInfo()
+        
 
     def getJournalPath(self):
         """create journal database in program directory or path specified with
@@ -243,7 +245,7 @@ class Journal(DbManager):
         self.__Template("volume", "volume of electrode", "µL")
         
     
-        def setMetaInfo(self, mass = 0, capacity = 0, area = 0, volume = 0):
+    def setMetaInfo(self, mass = 0, capacity = 0, area = 0, volume = 0):
         """store mass and capacity in dict
            mass: active mass [mg]
            cap: theoretical capacity [mAh/g]
@@ -258,6 +260,14 @@ class Journal(DbManager):
     
     def getMetaInfo(self):
         return self.metaInfo
+    
+    
+    def fetchMetaInfo(self, fileNameDate, fileCount):
+        """fetch mass, cap, area volume from journal"""
+        
+        
+        
+        return metaInfo
     
     
     def updateMetaInfo(self):

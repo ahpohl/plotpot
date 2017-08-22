@@ -35,7 +35,6 @@ class Plot(Data):
         self.cycles = self.getCycles()
         self.data = self.getData()
         self.stats = self.getStatistics()
-        self.metaInfo = self.getMetaInfo()
 
     
     def drawPlots(self):
