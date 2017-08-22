@@ -4,8 +4,6 @@ import numpy as np
     
 # import own files
 from plotpot.plot import Plot
-from plotpot.export import Export
-from plotpot.data import Data
 from plotpot.journal import Journal
 
 # disable division by zero warnings
@@ -13,10 +11,11 @@ np.seterr(divide='ignore')
 
 # plotpot class
     
-class Plotpot(object):
+class Plotpot(Journal):
     
     def __init__(self, args):
         self.args = args
+        super().__init__(args)
         self.runSubcommands()        
 
     
@@ -33,15 +32,12 @@ class Plotpot(object):
     def subcommandJournal(self):
         """run journal subcommand"""
         
-        # create journal object
-        jour = Journal(self.args)
-        
         # print plotpot journal file
-        jour.printJournal("Journal_Table")
+        self.printJournal("Journal_Table")
         
         # delete journal entry
         if self.args.delete:
-            jour.deleteRow("Journal_Table", self.args.delete)
+            self.deleteRow("Journal_Table", self.args.delete)
         
         sys.exit() 
 
@@ -51,27 +47,64 @@ class Plotpot(object):
         
         # create plot object
         plotObj = Plot(self.args)
+        
+        # read file name and start datetime
+        fileNameDate = plotObj.getNameAndDate()
+        fileCount = plotObj.getFileCount()
+        
+        if fileCount > 1:
+            fileNameList = list(fileNameDate)
+            fileNameList[0] = self.args.filename
+            fileNameDate = tuple(fileNameList)
+        
+        # search plotpot-journal.dat if battery exists
+        searchResult = self.searchJournal(fileNameDate)
+        
+        # if entry not found, fetch data from data file (global or file table)
+        if searchResult is None:
+            journalEntry = self.getFileDetails()
             
-        sys.exit()
+            # treat merged file different than single file
+            if fileCount > 1:
+                journalList = list(journalEntry)
+                journalList[1] = self.args.filename
+                journalList[6] = "merged"
+                journalEntry = tuple(journalList)
+              
+        else:
+            # get mass and capapcity from journal
+            journalEntry = searchResult
+            self.setMetaInfo(journalEntry[6], journalEntry[7], journalEntry[8], journalEntry[9])
         
-        # calc extended statistics, convert units
-        expStat = export(self.args, self.data, numberOfCycles, self.stats, massStor)
-        statistics = expStat.get_stats()
+        # get selected plots
+        plots = plotObj.getPlots()
         
-        # create figures    
-        fig = plot(self.args, plots, data, numberOfCycles, statistics, massStor)
-        fig.draw()
-                        
+        # ask questions
+        if any([x in [1,4,5,11] for x in plots]):
+            self.setMass()
+        if 10 in plots:
+            self.setCapacity()
+        if any([x in [12] for x in plots]):
+            self.setArea()
+        if 6 in plots:
+            self.setVolume()
+            
+        # create new record in journal file if previous record was not found, otherwise update meta info
+        if searchResult == None:
+            self.insertRow("Journal_Table", journalEntry)
+        else:
+            self.updateMetaInfo(fileNameDate)
+        
         # export  
         if self.args.export:
             print("INFO: Exporting data, statistics and figures.")
-            self.journal.writeJournalEntry(fileNameDate)
-            expStat.writeStatisticsTable()
-            expStat.writeDataTable()
-            expStat.writeVoltageProfile()
-            dataDb.writeMergeFileSummary()
-            fig.savefigure()
+            self.writeJournalEntry(fileNameDate)
+            plotObj.export(self.getMetaInfo())
+            plotObj.savefigure()
+        
+        # create figures    
+        plotObj.drawPlots(self.args, self.getMetaInfo())
             
         # show plots if quiet option not given
         if not self.args.quiet:
-            fig.show_plots()
+            plotObj.showPlots()

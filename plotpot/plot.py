@@ -29,16 +29,18 @@ class Plot(Data):
         
         # call Data base class constructor
         super().__init__(args)
+
+    
+    def drawPlots(self, metaInfo):
+        """call plotting functions"""
+
+        self.metaInfo = metaInfo
         
         # import variables from base class Data
         self.plots = self.getPlots()
         self.cycles = self.getCycles()
         self.data = self.getData()
         self.stats = self.getStatistics()
-
-    
-    def drawPlots(self):
-        """call plotting functions"""
         
         # set current working directory
         plt.rcParams['savefig.directory'] = os.getcwd()
@@ -108,7 +110,7 @@ class Plot(Data):
         plt.show()
         
     
-    def figVoltageCapacity(self): # data, cycles, massStor
+    def figVoltageCapacity(self): # data, cycles, metaInfo
         """plot galvanostatic profile"""
         
         fig = plt.figure(1)
@@ -123,8 +125,8 @@ class Plot(Data):
             dc = dc[:-1] # discard last data point, zero capacity
             
             with np.errstate(invalid='ignore'):
-                ax1.plot(ch[:,8]/(3.6e-3*self.massStor['mass']), ch[:,7], 'k-', label='charge')
-                ax1.plot(dc[:,8]/(3.6e-3*self.massStor['mass']), dc[:,7], 'k-', label='discharge')
+                ax1.plot(ch[:,8]/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
+                ax1.plot(dc[:,8]/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
     
         ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
         ax1.set_ylabel('Voltage [V]')
@@ -162,7 +164,7 @@ class Plot(Data):
         #ax1.legend()
         
     
-    def figCapacity(self): # stats, massStor
+    def figCapacity(self): # stats, metaInfo
         """capacity plot"""
         
         fig = plt.figure(4)
@@ -188,7 +190,7 @@ class Plot(Data):
         plt.ylim(ymin=0, ymax=lim[1])
         
     
-    def figSpecificEnergy(self): # stats, massStor
+    def figSpecificEnergy(self): # stats, metaInfo
         """energy plot per mass""" 
     
         fig = plt.figure(5)
@@ -214,7 +216,7 @@ class Plot(Data):
         plt.ylim(ymin=0, ymax=lim[1])
      
 
-    def figVolumetricEnergy(self): # stats, massStor
+    def figVolumetricEnergy(self): # stats, metaInfo
         """energy plot per volume""" 
     
         fig = plt.figure(6)
@@ -330,7 +332,7 @@ class Plot(Data):
         ax1.set_ylabel('dQ/dV [As V$^{-1}$]')
     
     
-    def figCRate(self): # stats, massStor
+    def figCRate(self): # stats, metaInfo
         """C-rate vs. cycle number"""
         
         fig = plt.figure(10)
@@ -359,7 +361,7 @@ class Plot(Data):
         #plt.ylim(ymin=0, ymax=lim[1])
         
 
-    def figSpecificCurrentDensity(self): # stats, massStor
+    def figSpecificCurrentDensity(self): # stats, metaInfo
         """Specific current density vs. cycle number"""
         
         fig = plt.figure(11)
@@ -417,7 +419,7 @@ class Plot(Data):
         #plt.ylim(ymin=0, ymax=lim[1])
         
     
-    def figVoltageCapacityCircle(self): # data, cycles, massStor
+    def figVoltageCapacityCircle(self): # data, cycles, metaInfo
         """plot galvanostatic profile (circle)"""
         
         fig = plt.figure(13)
@@ -432,8 +434,8 @@ class Plot(Data):
             dc = dc[:-1] # discard last data point, zero capacity
             
             with np.errstate(invalid='ignore'):
-                ax1.plot((-1*ch[:,8]+np.abs(dc[-1:,8]))/(3.6e-3*self.massStor['mass']), ch[:,7], 'k-', label='charge')
-                ax1.plot(np.abs(dc[:,8])/(3.6e-3*self.massStor['mass']), dc[:,7], 'k-', label='discharge')
+                ax1.plot((-1*ch[:,8]+np.abs(dc[-1:,8]))/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
+                ax1.plot(np.abs(dc[:,8])/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
     
         ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
         ax1.set_ylabel('Voltage [V]')
