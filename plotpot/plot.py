@@ -26,17 +26,14 @@ class Plot(Data):
 
     def __init__(self, args):
         self.args = args
-        
         # call Data base class constructor
         super().__init__(args)
 
     
-    def drawPlots(self, metaInfo):
+    def drawPlots(self):
         """call plotting functions"""
-
-        self.metaInfo = metaInfo
-        
         # import variables from base class Data
+        self.metaInfo = self.getMetaInfo()
         self.plots = self.getPlots()
         self.cycles = self.getCycles()
         self.data = self.getData()
@@ -79,7 +76,7 @@ class Plot(Data):
     def saveFigure(self):
         """This function saves figures."""
 
-        if self.args.counter:
+        if self.args.bio_ce:
             ext = '_ce.png'
         else:
             ext = '.png'

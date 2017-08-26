@@ -49,18 +49,15 @@ class Plotpot(object):
         
         # create plot object
         plotObj = Plot(self.args)
-        
-        sys.exit()
+
+        # create figures    
+        plotObj.drawPlots()
         
         # export  
         if self.args.export:
             print("INFO: Exporting data, statistics and figures.")
-            self.writeJournalEntry(fileNameDate)
-            plotObj.export(self.getMetaInfo())
-            plotObj.savefigure()
-        
-        # create figures    
-        plotObj.drawPlots(self.args, self.getMetaInfo())
+            plotObj.exportData()
+            plotObj.saveFigure()
             
         # show plots if quiet option not given
         if not self.args.quiet:

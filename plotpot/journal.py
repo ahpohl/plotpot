@@ -13,7 +13,7 @@ class Journal(DbManager):
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createJournal()
-        self.metaInfo = self.setMetaInfo()
+        self.setMetaInfo()
         
 
     def getJournalPath(self):
@@ -247,12 +247,10 @@ class Journal(DbManager):
            area: electrode area [cm²]
            volume: volume of electrode [µL]"""
 
-        metaInfo = {'mass': mass, 
+        self.metaInfo = {'mass': mass, 
                     'cap': capacity, 
                     'area': area, 
                     'volume': volume}
-    
-        return metaInfo
     
     
     def getMetaInfo(self):
