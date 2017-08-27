@@ -83,6 +83,26 @@ class Data(DbManager):
         dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'        
         
         return dataFileName
+    
+    
+    def getNameAndDate(self):
+        # get file name and start time
+        select_query = '''SELECT File_Name,Start_DateTime FROM File_Table'''
+        self.query(select_query)
+        return self.fetchone()
+    
+    
+    def getFileDetails(self):
+        # get file details
+        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Comment", "Start_DateTime", "Device"]
+        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
+        self.query(select_query)
+        return self.fetchone() + (0,0,0,0) # add dummy fields for mass, cap, area and volume
+    
+    
+    def getFileCount(self):
+        self.query('''SELECT Count(*) FROM File_Table''')
+        return self.fetchone()[0]
                 
     
     def callConvpot(self):
@@ -267,6 +287,35 @@ class Data(DbManager):
             time = [x*3600 for x in time] # in seconds
         
         return time
+
+
+    def getPlotsOption(self):
+        """This function parses the --plot option and returns a list of plots."""
+        
+        errormsg_not_recognised = "ERROR: Plot option not recognised."
+        errormsg_range_error = "ERROR: Plot number out of range."
+        
+        plots = []
+        string_sequence = self.args.plot.split(',')
+        for s in string_sequence:
+            if self.isNumber(s):
+                plots.append(int(s))
+            elif '-' in s:
+                string_range = s.split('-')
+                if self.isNumber(string_range[0]) and self.isNumber(string_range[1]) and len(string_range) == 2:
+                    plots_start = int(string_range[0])
+                    plots_end = int(string_range[1])+1
+                    if int(plots_start) < int(plots_end):
+                        sequence = range(plots_start, plots_end)
+                        plots.extend(sequence)
+                    else:
+                        sys.exit(errormsg_range_error)
+                else:
+                    sys.exit(errormsg_not_recognised)
+            else:
+                sys.exit(errormsg_not_recognised)
+            
+        return sorted(set(plots)) # remove duplicates and sort
     
     
     def filterData(self):
@@ -321,75 +370,6 @@ class Data(DbManager):
             
         if self.args.verbose:
             print("stats: %d, %d" % (self.stats.shape[0], self.stats.shape[1]))
-            
-            
-    def writeMergeFileSummary(self):
-        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Localtime", "Comment"]
-        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
-        self.query(select_query)
-        metadata = self.fetchall()
-
-        
-        # insert metaInfo (mass, cap and area)    
-        with open(self.args.filename.split('.')[0]+'_files.csv', 'w',  newline='') as fh:
-            header = "%s,%s,%s,%s,%s,%s\n" % (
-                "file_ID", "file_name", "file_size", 
-                "data_points", "start_datetime", 
-                "comment")
-        
-            fh.write(header)
-            writer = csv.writer(fh, dialect='excel')
-            writer.writerows(metadata)
-            fh.close()
-
-    
-    def getNameAndDate(self):
-        # get file name and start time
-        select_query = '''SELECT File_Name,Start_DateTime FROM File_Table'''
-        self.query(select_query)
-        return self.fetchone()
-    
-    
-    def getFileDetails(self):
-        # get file details
-        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Comment", "Start_DateTime", "Device"]
-        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
-        self.query(select_query)
-        return self.fetchone() + (0,0,0,0) # add dummy fields for mass, cap, area and volume
-    
-    
-    def getFileCount(self):
-        self.query('''SELECT Count(*) FROM File_Table''')
-        return self.fetchone()[0]
-        
-        
-    def getPlotsOption(self):
-        """This function parses the --plot option and returns a list of plots."""
-        
-        errormsg_not_recognised = "ERROR: Plot option not recognised."
-        errormsg_range_error = "ERROR: Plot number out of range."
-        
-        plots = []
-        string_sequence = self.args.plot.split(',')
-        for s in string_sequence:
-            if self.isNumber(s):
-                plots.append(int(s))
-            elif '-' in s:
-                string_range = s.split('-')
-                if self.isNumber(string_range[0]) and self.isNumber(string_range[1]) and len(string_range) == 2:
-                    plots_start = int(string_range[0])
-                    plots_end = int(string_range[1])+1
-                    if int(plots_start) < int(plots_end):
-                        sequence = range(plots_start, plots_end)
-                        plots.extend(sequence)
-                    else:
-                        sys.exit(errormsg_range_error)
-                else:
-                    sys.exit(errormsg_not_recognised)
-            else:
-                sys.exit(errormsg_not_recognised)
-            
-        return sorted(set(plots)) # remove duplicates and sort
     
     
     def calcStatistics(self):
@@ -533,7 +513,7 @@ class Data(DbManager):
             fileNameDate = tuple(fileNameList)
         
         # search plotpot-journal.dat if battery exists
-        searchResult = jourObj.searchJournal(fileNameDate)
+        searchResult = jourObj.searchJournalTable(fileNameDate)
         
         # if entry not found, fetch data from data file (global or file table)
         if searchResult is None:
@@ -564,14 +544,14 @@ class Data(DbManager):
             
         # create new record in journal file if previous record was not found, otherwise update meta info
         if searchResult is None:
-            jourObj.insertRow("Journal_Table", journalEntry)
+            jourObj.insertRowJournalTable(journalEntry)
         else:
             jourObj.updateMetaInfo(fileNameDate)
             
         return jourObj.getMetaInfo()
     
     
-    def dumpArray(self, fh, array, formatstring="%f", delimiter=',', header=''):
+    def __dumpArray(self, fh, array, formatstring="%f", delimiter=',', header=''):
         if formatstring == '%f':
             formatspec = []
             f = 0
@@ -594,6 +574,25 @@ class Data(DbManager):
                 else:
                     fh.write(formatspec[j] % (array[i,j])+delimiter)
             fh.write("\n")
+
+
+    def writeMergeFileSummary(self):
+        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Localtime", "Comment"]
+        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
+        self.query(select_query)
+        metadata = self.fetchall()
+        
+        # insert metaInfo (mass, cap and area)    
+        with open(self.args.filename.split('.')[0]+'_files.csv', 'w',  newline='') as fh:
+            header = "%s,%s,%s,%s,%s,%s\n" % (
+                "file_ID", "file_name", "file_size", 
+                "data_points", "start_datetime", 
+                "comment")
+        
+            fh.write(header)
+            writer = csv.writer(fh, dialect='excel')
+            writer.writerows(metadata)
+            fh.close()
     
     
     def writeDataTable(self):
@@ -608,7 +607,7 @@ class Data(DbManager):
             header = ",,,%s,%s,%s,%s,%s,%s,%s,%s,\n" % (
                 "s", "s", "s", "A", "V", "As", "Ws", "As/V")
             fh.write(header)        
-            self.dumpArray(fh, self.data, '%d %d %d %f %f %f %e %f %f %f %f %f')
+            self.__dumpArray(fh, self.data, '%d %d %d %f %f %f %e %f %f %f %f %f')
             fh.close()
     
     
@@ -656,7 +655,7 @@ mg,mAh/g,cm²,µL,mg/cm²\n"""
                     "mA/g", "mA/g", "mA/cm²", "mA/cm²", "h", "h")
             fh.write(units)
             
-            self.dumpArray(fh, self.fullStats, "%d %d %d %f %f %f %f %f %f %f %f %f %f %e %e %f %f %f %f %f %f %f %f")
+            self.__dumpArray(fh, self.fullStats, "%d %d %d %f %f %f %f %f %f %f %f %f %f %e %e %f %f %f %f %f %f %f %f")
             fh.close()
     
       

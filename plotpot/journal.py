@@ -3,7 +3,8 @@ import os,sys
 import datetime
 import csv
 import numpy as np
-from plotpot.dbmanager import DbManager    
+from plotpot.dbmanager import DbManager
+  
 
 class Journal(DbManager):
     """class for manipulating the journal"""
@@ -44,7 +45,7 @@ class Journal(DbManager):
     def createJournal(self):
         # create schema
         self.query('''CREATE TABLE IF NOT EXISTS Journal_Table (
-            row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
             File_Name TEXT,
             Device TEXT,
             File_Size INTEGER,
@@ -55,6 +56,16 @@ class Journal(DbManager):
             Capacity DOUBLE DEFAULT 0,
             Area DOUBLE DEFAULT 0,
             Volume DOUBLE DEFAULT 0)''')
+        
+        self.query('''CREATE TABLE IF NOT EXISTS Merge_Table (
+            Row_ID INTEGER,
+            File_ID INTEGER,
+            File_Name TEXT,
+            Device TEXT,
+            File_Size INTEGER,
+            Start_DateTime INTEGER,
+            Data_Points INTEGER,
+            Comments TEXT)''')
         
         # table upgrade: test if Global_Table exists ***
         self.query('''SELECT name FROM sqlite_master WHERE type="table" AND name="Global_Table" ''')
@@ -89,12 +100,12 @@ class Journal(DbManager):
             self.query('''UPDATE Journal_Table SET device = "Ivium CompactStat" WHERE File_Name LIKE "%.idf"''')
             self.query('''UPDATE Journal_Table SET device = "Zahner IM6" WHERE File_Name LIKE "%.txt"''')
             self.query('''UPDATE Journal_Table SET device = "merged" WHERE File_Name LIKE "%.sqlite"''')
-            print("Column Device created.")        
+            print("Column Device created.")
             
             
-    def deleteRow(self, table, row):
-        select_query = '''SELECT row_id FROM {0} WHERE rowid = {1}'''.format(table, row)
-        delete_query = '''DELETE FROM {0} WHERE rowid = {1}'''.format(table, row)
+    def deleteRowJournalTable(self, row):
+        select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(row)
+        delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(row)
         
         # check if row with rowid exists
         self.query(select_query)
@@ -109,9 +120,9 @@ class Journal(DbManager):
         return rc
             
     
-    def printJournal(self, table):
+    def printJournalTable(self):
         listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Device", "Comments"]
-        select_query = '''SELECT {0} FROM {1}'''.format(','.join(listOfVars), table)
+        select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
         self.query(select_query)
         data = self.fetchall()
         header = ("id", "file name", "mass [mg]", "C [mAh/g]", "A [cm²]", "V [µL]", "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "comment")
@@ -128,13 +139,20 @@ class Journal(DbManager):
         print("Journal file: %s." % self.journalPath)
     
     
-    def insertRow(self, table, dataSql):
+    def insertRowJournalTable(self, dataSql):
+        """insert row into journal table"""
         listOfVars = ["File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Device", "Mass", "Capacity", "Area", "Volume"]
-        insert_query = '''INSERT INTO {0} ({1}) VALUES ({2})'''.format(table,
-               (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
+        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
         self.query(insert_query, (dataSql[1:7] + (self.metaInfo['mass'],) + (self.metaInfo['cap'],) + (self.metaInfo['area'],) + (self.metaInfo['volume'],)))
         print("INFO: Created new record in journal file.")
-
+        
+    
+    def insertRowMergeTable(self, dataSql):
+        """insert row into Merge_Table"""
+        listOfVars = ["Row_ID", "File_ID", "File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Device"]
+        insert_query = '''INSERT INTO Merge_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
+        self.query(insert_query, dataSql)
+        
         
     def writeJournalEntry(self, fileNameDate):
         listOfVars = ["File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Comments"]
@@ -159,7 +177,7 @@ class Journal(DbManager):
         fh.close()
 
         
-    def searchJournal(self, fileNameDate):
+    def searchJournalTable(self, fileNameDate):
         # search plotpot-journal.dat if battery exists in file
         listOfVars = ["rowid", "File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Mass", "Capacity", "Area", "Volume"]
         select_query = '''SELECT {0} FROM Journal_Table WHERE File_Name = "{1}" AND Start_DateTime = {2}'''.format(','.join(listOfVars), fileNameDate[0], fileNameDate[1])

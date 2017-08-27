@@ -33,10 +33,10 @@ class Plotpot(object):
         # delete journal entry
         rc = None
         if self.args.delete:
-            rc = jourObj.deleteRow("Journal_Table", self.args.delete)
+            rc = jourObj.deleteRowJournalTable(self.args.delete)
         
         # print plotpot journal file
-        jourObj.printJournal("Journal_Table")
+        jourObj.printJournalTable()
         
         # print outcome of delete
         if rc is not None:
