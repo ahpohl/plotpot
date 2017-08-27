@@ -87,9 +87,17 @@ class Data(DbManager):
     
     def getNameAndDate(self):
         # get file name and start time
-        select_query = '''SELECT File_Name,Start_DateTime FROM File_Table'''
-        self.query(select_query)
-        return self.fetchone()
+        fileCount = self.getFileCount()
+        
+        # merged file
+        if fileCount > 1:
+            
+        
+        # single file
+        else:
+            select_query = '''SELECT File_Name,Start_DateTime FROM File_Table'''
+            self.query(select_query)
+            return self.fetchone()
     
     
     def getFileDetails(self):
