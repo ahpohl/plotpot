@@ -10,10 +10,6 @@ from plotpot.dbmanager import DbManager
 from plotpot.journal import Journal
 
 
-# ignore division by zero errors
-np.seterr(divide='ignore')
-
-
 class Data(DbManager):
     """class for handling the raw data"""
     
@@ -47,6 +43,7 @@ class Data(DbManager):
         self.writeMergeFileSummary()
         
         jourObj = Journal(self.args)
+        print(self.getNameAndDate())
         jourObj.writeJournalEntry(self.getNameAndDate())
         
     
@@ -436,7 +433,10 @@ class Data(DbManager):
         20: area discharge current density [mA/cm-2]
         21: charge c-rate [h]
         22: discharge c-rate [h]
-        """
+        """        
+        # ignore division by zero errors
+        np.seterr(divide='ignore', invalid='ignore')
+        
         # copy cycle index, start, end, time(c) and time(d) to export array 
         export = self.stats[:,:5] # [0,1,2,3,4]
         
@@ -549,6 +549,7 @@ class Data(DbManager):
         else:
             # get mass and capapcity from journal
             journalEntry = searchResult
+            print(journalEntry)
             jourObj.setMetaInfo(journalEntry[6], journalEntry[7], journalEntry[8], journalEntry[9])
         
         # ask questions
@@ -726,4 +727,3 @@ mg,mAh/g,cm²,µL,mg/cm²\n"""
         shutil.copy(zfile, cwd)
         os.remove(zfile)
         os.chdir(cwd)
-        

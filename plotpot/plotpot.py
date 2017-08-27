@@ -6,10 +6,6 @@ import numpy as np
 from plotpot.plot import Plot
 from plotpot.journal import Journal
 
-# disable division by zero warnings
-np.seterr(divide='ignore')
-
-# plotpot class
     
 class Plotpot(object):
     
@@ -33,13 +29,18 @@ class Plotpot(object):
         
         # create journal object
         jourObj = Journal(self.args)
+
+        # delete journal entry
+        rc = None
+        if self.args.delete:
+            rc = jourObj.deleteRow("Journal_Table", self.args.delete)
         
         # print plotpot journal file
         jourObj.printJournal("Journal_Table")
         
-        # delete journal entry
-        if self.args.delete:
-            jourObj.deleteRow("Journal_Table", self.args.delete)
+        # print outcome of delete
+        if rc is not None:
+            print(rc)
         
         sys.exit() 
 

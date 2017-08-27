@@ -42,7 +42,6 @@ class Journal(DbManager):
     
         
     def createJournal(self):
-        
         # create schema
         self.query('''CREATE TABLE IF NOT EXISTS Journal_Table (
             row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,11 +101,13 @@ class Journal(DbManager):
         data = self.fetchone()
         
         if data is None:
-            print("Row id %d does not exist in journal." % row)
+            rc = "Row id %d does not exist in journal." % row
         else:
             self.query(delete_query)
-            print("Row id %d deleted from journal." % row)
-    
+            rc = "Row id %d deleted from journal." % row
+            
+        return rc
+            
     
     def printJournal(self, table):
         listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Device", "Comments"]

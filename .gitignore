@@ -111,3 +111,8 @@ __version__.py
 
 # ignore the journal file
 plotpot-journal.dat
+
+# ignore samples exported files
+sample/*.png
+sample/*.csv
+sample/*.zip
