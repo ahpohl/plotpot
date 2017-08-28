@@ -141,9 +141,9 @@ class Journal(DbManager):
     
     def insertRowJournalTable(self, dataSql):
         """insert row into journal table"""
-        listOfVars = ["File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Device", "Mass", "Capacity", "Area", "Volume"]
+        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", "Device", "Comments", "Mass", "Capacity", "Area", "Volume"]
         insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, (dataSql[1:7] + (self.metaInfo['mass'],) + (self.metaInfo['cap'],) + (self.metaInfo['area'],) + (self.metaInfo['volume'],)))
+        self.query(insert_query, dataSql)
         print("INFO: Created new record in journal file.")
         
     
@@ -179,7 +179,7 @@ class Journal(DbManager):
         
     def searchJournalTable(self, fileNameDate):
         # search plotpot-journal.dat if battery exists in file
-        listOfVars = ["rowid", "File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Mass", "Capacity", "Area", "Volume"]
+        listOfVars = ["Mass", "Capacity", "Area", "Volume"]
         select_query = '''SELECT {0} FROM Journal_Table WHERE File_Name = "{1}" AND Start_DateTime = {2}'''.format(','.join(listOfVars), fileNameDate[0], fileNameDate[1])
         self.query(select_query)
         return self.fetchone()
@@ -273,12 +273,17 @@ class Journal(DbManager):
     
     
     def getMetaInfo(self):
+        """return dict with meta info"""
         return self.metaInfo
+    
+    
+    def tupleMetaInfo(self):
+        """return a tuple with meta info values"""
+        return (self.metaInfo['mass'], self.metaInfo['cap'], self.metaInfo['area'], self.metaInfo['volume'])
     
     
     def updateMetaInfo(self, fileNameDate):
         """update meta info of journal entry"""
-        
         update_query = '''
             UPDATE Journal_Table 
             SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}
@@ -292,3 +297,14 @@ class Journal(DbManager):
             
         self.query(update_query)
         
+
+    def askMetaInfo(self, plots):
+        """ask questions and update meta info"""
+        if any([x in [1,4,5,11] for x in plots]):
+            self.setMass()
+        if 10 in plots:
+            self.setCapacity()
+        if any([x in [12] for x in plots]):
+            self.setArea()
+        if 6 in plots:
+            self.setVolume()

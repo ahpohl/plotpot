@@ -19,7 +19,7 @@ class Data(DbManager):
         super().__init__(self.dataFileName)
         self.callConvpot()
         self.reduceData()
-        self.metaInfo = self.searchMetaInfo()
+        self.metaInfo = self.updateMetaInfo()
         self.fullStats = self.calcStatistics()
         
     
@@ -86,12 +86,14 @@ class Data(DbManager):
     
     
     def getNameAndDate(self):
-        # get file name and start time
+        """get file name and start time"""
         fileCount = self.getFileCount()
         
         # merged file
         if fileCount > 1:
-            
+            select_query = '''SELECT File_Name,DateTime FROM Global_Table'''
+            self.query(select_query)
+            return self.fetchone()
         
         # single file
         else:
@@ -101,11 +103,25 @@ class Data(DbManager):
     
     
     def getFileDetails(self):
-        # get file details
-        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Comment", "Start_DateTime", "Device"]
-        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
-        self.query(select_query)
-        return self.fetchone() + (0,0,0,0) # add dummy fields for mass, cap, area and volume
+        """get file details for insertion into journal"""
+        fileCount = self.getFileCount()
+        
+        # merged file
+        if fileCount > 1:
+            listOfVars = ["File_Name", "File_Size", "DateTime", "Data_Points"]
+            select_query = '''SELECT {0} FROM Global_Table'''.format(','.join(listOfVars))
+            print(select_query)
+            result = self.fetchone()
+            print(result)
+            sys.exit()
+            return result # ("merged", "",) # add device and comment columns to result set
+        
+        # single file
+        else:    
+            listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", "Device", "Comment"]
+            select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
+            self.query(select_query)
+            return self.fetchone()
     
     
     def getFileCount(self):
@@ -113,7 +129,7 @@ class Data(DbManager):
         return self.fetchone()[0]
     
 
-    def searchMetaInfo(self):
+    def updateMetaInfo(self):
         """Search journal for battery filename and date. If battery already exists
            fetch meta info from journal. Ask questions to update
            meta info according to selected plots.
@@ -124,48 +140,22 @@ class Data(DbManager):
            
         # read file name and start datetime
         fileNameDate = self.getNameAndDate()
-        fileCount = self.getFileCount()
-        
-        if fileCount > 1:
-            fileNameList = list(fileNameDate)
-            fileNameList[0] = self.args.filename
-            fileNameDate = tuple(fileNameList)
         
         # search plotpot-journal.dat if battery exists
         searchResult = jourObj.searchJournalTable(fileNameDate)
         
-        # if entry not found, fetch data from data file (global or file table)
-        if searchResult is None:
-            journalEntry = self.getFileDetails()
-            
-            # treat merged file different than single file
-            if fileCount > 1:
-                journalList = list(journalEntry)
-                journalList[1] = self.args.filename
-                journalList[6] = "merged"
-                journalEntry = tuple(journalList)
-              
-        else:
-            # get mass and capapcity from journal
-            journalEntry = searchResult
-            print(journalEntry)
-            jourObj.setMetaInfo(journalEntry[6], journalEntry[7], journalEntry[8], journalEntry[9])
-        
-        # ask questions
-        if any([x in [1,4,5,11] for x in self.plots]):
-            jourObj.setMass()
-        if 10 in self.plots:
-            jourObj.setCapacity()
-        if any([x in [12] for x in self.plots]):
-            jourObj.setArea()
-        if 6 in self.plots:
-            jourObj.setVolume()
-            
-        # create new record in journal file if previous record was not found, otherwise update meta info
-        if searchResult is None:
-            jourObj.insertRowJournalTable(journalEntry)
-        else:
+        if searchResult is not None:
+            # set metaInfo with values found in journal
+            jourObj.setMetaInfo(searchResult[0], searchResult[1], searchResult[2], searchResult[3])
+            jourObj.askMetaInfo(self.plots)
             jourObj.updateMetaInfo(fileNameDate)
+        
+        else:
+            # if entry not found, fetch data from data file (global or file table)
+            jourObj.askMetaInfo(self.plots)
+            journalEntry = self.getFileDetails() + jourObj.tupleMetaInfo()
+            # create new record in journal file
+            jourObj.insertRowJournalTable(journalEntry)
             
         return jourObj.getMetaInfo()
                 
