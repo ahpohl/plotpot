@@ -110,11 +110,8 @@ class Data(DbManager):
         if fileCount > 1:
             listOfVars = ["File_Name", "File_Size", "DateTime", "Data_Points"]
             select_query = '''SELECT {0} FROM Global_Table'''.format(','.join(listOfVars))
-            print(select_query)
-            result = self.fetchone()
-            print(result)
-            sys.exit()
-            return result # ("merged", "",) # add device and comment columns to result set
+            self.query(select_query)
+            return self.fetchone() + ("merged", "",) # add device and comment columns to result set
         
         # single file
         else:    
