@@ -2,6 +2,7 @@
 import sys, os
 import numpy as np
 import matplotlib.pyplot as plt
+from plotpot.data import Data
 
 # data array 
 """
@@ -21,58 +22,61 @@ import matplotlib.pyplot as plt
     
 # Plot functions
 
-class plot(object):
+class Plot(Data):
 
-    def __init__(self, args, plots, data, cycles, stats, massStor):
-        self.data = data
-        self.cycles = cycles
-        self.stats = stats
-        self.massStor = massStor
-        self.plots = plots
+    def __init__(self, args):
         self.args = args
+        # call Data base class constructor
+        super().__init__(args)
+
     
-    def draw(self):
+    def drawPlots(self):
         """call plotting functions"""
+        # import variables from base class Data
+        self.metaInfo = self.getMetaInfo()
+        self.plots = self.getPlots()
+        self.cycles = self.getCycles()
+        self.data = self.getData()
+        self.stats = self.getStatistics()
         
         # set current working directory
         plt.rcParams['savefig.directory'] = os.getcwd()
         
         for n in self.plots:
             if n == 1:
-                self.fig_voltage_vs_capacity()
+                self.figVoltageCapacity()
             elif n == 2:
-                self.fig_voltage_current_vs_time()
+                self.figVoltageCurrentTime()
             elif n == 3:
-                self.fig_aux_channel_vs_time()
+                self.figAuxChannelTime()
             elif n == 4:
-                self.fig_capacity()
+                self.figCapacity()
             elif n == 5:
-                self.fig_specific_energy()
+                self.figSpecificEnergy()
             elif n == 6:
-                self.fig_volumetric_energy()
+                self.figVolumetricEnergy()
             elif n == 7:
-                self.fig_efficiency()
+                self.figEfficiency()
             elif n == 8:
-                self.fig_hysteresis()
+                self.figHysteresis()
             elif n == 9:
-                self.fig_dQdV()
+                self.figDQDV()
             elif n == 10:
-                self.fig_c_rate()
+                self.figCRate()
             elif n == 11:
-                self.fig_specific_current_density()
+                self.figSpecificCurrentDensity()
             elif n == 12:
-                self.fig_area_current_density()
+                self.figAreaCurrentDensity()
             elif n == 13:
-                self.fig_voltage_vs_capacity2()
+                self.figVoltageCapacityCircle()
             else:
-                sys.exit("ERROR: plot number not defined.")
+                sys.exit("ERROR: Plot number not defined.")
         
-        return
 
-    def savefigure(self):
+    def saveFigure(self):
         """This function saves figures."""
 
-        if self.args.counter:
+        if self.args.bio_ce:
             ext = '_ce.png'
         else:
             ext = '.png'
@@ -97,14 +101,13 @@ class plot(object):
             fig = plt.figure(n)
             plt.savefig(stem + filename[n] + ext)
            
-        return
     
-    def show_plots(self):
+    def showPlots(self):
         """show plots on sceen"""
         plt.show()
-        return
+        
     
-    def fig_voltage_vs_capacity(self): # data, cycles, massStor
+    def figVoltageCapacity(self): # data, cycles, metaInfo
         """plot galvanostatic profile"""
         
         fig = plt.figure(1)
@@ -119,15 +122,14 @@ class plot(object):
             dc = dc[:-1] # discard last data point, zero capacity
             
             with np.errstate(invalid='ignore'):
-                ax1.plot(ch[:,8]/(3.6e-3*self.massStor['mass']), ch[:,7], 'k-', label='charge')
-                ax1.plot(dc[:,8]/(3.6e-3*self.massStor['mass']), dc[:,7], 'k-', label='discharge')
+                ax1.plot(ch[:,8]/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
+                ax1.plot(dc[:,8]/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
     
         ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
         ax1.set_ylabel('Voltage [V]')
     
-        return
     
-    def fig_voltage_current_vs_time(self): # data
+    def figVoltageCurrentTime(self): # data
         """Voltage and current vs. time plot"""
           
         fig = plt.figure(2)
@@ -143,9 +145,8 @@ class plot(object):
         ax2.plot(self.data[:,3]/3600, self.data[:,6]*1e3, 'k--', label='Current')
         ax2.set_ylabel('Current [mA]')
         
-        return
     
-    def fig_aux_channel_vs_time(self): # data
+    def figAuxChannelTime(self): # data
         """auxiliary channel vs. time plot"""
     
         fig = plt.figure(3)
@@ -156,12 +157,11 @@ class plot(object):
         ax1 = fig.add_subplot(111)
         ax1.plot(self.data[:,3]/3600, self.data[:,11], 'k-', label='Auxiliary channel')
         ax1.set_xlabel('Time [h]')
-        ax1.set_ylabel('Auxiliary channel')
+        ax1.set_ylabel('Temperature [°C]')
         #ax1.legend()
         
-        return
     
-    def fig_capacity(self): # stats, massStor
+    def figCapacity(self): # stats, metaInfo
         """capacity plot"""
         
         fig = plt.figure(4)
@@ -186,9 +186,8 @@ class plot(object):
         lim = plt.ylim()
         plt.ylim(ymin=0, ymax=lim[1])
         
-        return
     
-    def fig_specific_energy(self): # stats, massStor
+    def figSpecificEnergy(self): # stats, metaInfo
         """energy plot per mass""" 
     
         fig = plt.figure(5)
@@ -213,9 +212,8 @@ class plot(object):
         lim = plt.ylim()
         plt.ylim(ymin=0, ymax=lim[1])
      
-        return
 
-    def fig_volumetric_energy(self): # stats, massStor
+    def figVolumetricEnergy(self): # stats, metaInfo
         """energy plot per volume""" 
     
         fig = plt.figure(6)
@@ -240,9 +238,8 @@ class plot(object):
         lim = plt.ylim()
         plt.ylim(ymin=0, ymax=lim[1])
      
-        return
     
-    def fig_efficiency(self): # stats
+    def figEfficiency(self): # stats
         """coulombic efficiency plot"""
     
         fig = plt.figure(7)
@@ -255,9 +252,8 @@ class plot(object):
         ax3.set_xlabel('Cycle')
         ax3.set_ylabel('Coulombic efficiency [%]')
         
-        return
     
-    def fig_hysteresis(self): # stats
+    def figHysteresis(self): # stats
         """average voltage and hysteresis plot"""
     
         fig = plt.figure(8)
@@ -287,9 +283,8 @@ class plot(object):
         plt.legend(lines, [l.get_label() for l in lines], loc='upper center', 
                    bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=3)
         
-        return
     
-    def fig_dQdV(self): # data, cycles
+    def figDQDV(self): # data, cycles
         """cyclovoltammogram from galvanostatic self.cycles
         7: voltage
         8: capacity
@@ -333,9 +328,8 @@ class plot(object):
         ax1.set_xlabel('Voltage [V]')
         ax1.set_ylabel('dQ/dV [As V$^{-1}$]')
     
-        return
     
-    def fig_c_rate(self): # stats, massStor
+    def figCRate(self): # stats, metaInfo
         """C-rate vs. cycle number"""
         
         fig = plt.figure(10)
@@ -363,9 +357,8 @@ class plot(object):
         #lim = plt.ylim()
         #plt.ylim(ymin=0, ymax=lim[1])
         
-        return
-    
-    def fig_specific_current_density(self): # stats, massStor
+
+    def figSpecificCurrentDensity(self): # stats, metaInfo
         """Specific current density vs. cycle number"""
         
         fig = plt.figure(11)
@@ -393,9 +386,8 @@ class plot(object):
         #lim = plt.ylim()
         #plt.ylim(ymin=0, ymax=lim[1])
         
-        return
     
-    def fig_area_current_density(self):
+    def figAreaCurrentDensity(self):
         """Specific current density vs. cycle number"""
         
         fig = plt.figure(12)
@@ -423,9 +415,8 @@ class plot(object):
         #lim = plt.ylim()
         #plt.ylim(ymin=0, ymax=lim[1])
         
-        return
     
-    def fig_voltage_vs_capacity2(self): # data, cycles, massStor
+    def figVoltageCapacityCircle(self): # data, cycles, metaInfo
         """plot galvanostatic profile (circle)"""
         
         fig = plt.figure(13)
@@ -440,13 +431,13 @@ class plot(object):
             dc = dc[:-1] # discard last data point, zero capacity
             
             with np.errstate(invalid='ignore'):
-                ax1.plot((-1*ch[:,8]+np.abs(dc[-1:,8]))/(3.6e-3*self.massStor['mass']), ch[:,7], 'k-', label='charge')
-                ax1.plot(np.abs(dc[:,8])/(3.6e-3*self.massStor['mass']), dc[:,7], 'k-', label='discharge')
+                if dc.shape[0] > 0 and ch.shape[0] > 0:
+                    ax1.plot((-1*ch[:,8]+np.abs(dc[-1:,8]))/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
+                    ax1.plot(np.abs(dc[:,8])/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
     
         ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
         ax1.set_ylabel('Voltage [V]')
     
-        return
     
     def smooth(self, x, window_len=11, window='hanning'):
         """smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth
@@ -503,3 +494,5 @@ class plot(object):
         
         # make 'y output lengtj' == 'y input length'
         return y[(window_len//2):-(window_len//2)] # "//" integer division e.g. 15//2 = 7
+    
+    
