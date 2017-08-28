@@ -157,7 +157,7 @@ class Plot(Data):
         ax1 = fig.add_subplot(111)
         ax1.plot(self.data[:,3]/3600, self.data[:,11], 'k-', label='Auxiliary channel')
         ax1.set_xlabel('Time [h]')
-        ax1.set_ylabel('Auxiliary channel')
+        ax1.set_ylabel('Temperature [°C]')
         #ax1.legend()
         
     
@@ -431,8 +431,9 @@ class Plot(Data):
             dc = dc[:-1] # discard last data point, zero capacity
             
             with np.errstate(invalid='ignore'):
-                ax1.plot((-1*ch[:,8]+np.abs(dc[-1:,8]))/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
-                ax1.plot(np.abs(dc[:,8])/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
+                if dc.shape[0] > 0 and ch.shape[0] > 0:
+                    ax1.plot((-1*ch[:,8]+np.abs(dc[-1:,8]))/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
+                    ax1.plot(np.abs(dc[:,8])/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
     
         ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
         ax1.set_ylabel('Voltage [V]')
