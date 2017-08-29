@@ -41,9 +41,7 @@ class Data(DbManager):
         self.writeDataTable()
         self.writeVoltageProfile()
         self.writeMergeFileSummary()
-        
         jourObj = Journal(self.args)
-        print(self.getNameAndDate())
         jourObj.writeJournalEntry(self.getNameAndDate())
         
     
@@ -597,10 +595,10 @@ class Data(DbManager):
                 "data_point", "cycle_index", "step_index", 
                 "test_time", "step_time", "datetime", 
                 "current", "voltage", "capacity", 
-                "energy", "dQ/dV", "aux_channel")
+                "energy", "dQ/dV", "temperature")
             fh.write(header)
-            header = ",,,%s,%s,%s,%s,%s,%s,%s,%s,\n" % (
-                "s", "s", "s", "A", "V", "As", "Ws", "As/V")
+            header = ",,,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+                "s", "s", "s", "A", "V", "As", "Ws", "As/V", "°C")
             fh.write(header)        
             self.__dumpArray(fh, self.data, '%d %d %d %f %f %f %e %f %f %f %f %f')
             fh.close()

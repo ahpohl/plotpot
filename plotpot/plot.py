@@ -85,7 +85,7 @@ class Plot(Data):
         
         filename = {1: '_voltage_vs_capacity',
                     2: '_voltage_current_vs_time',
-                    3: '_aux_channel_vs_time',
+                    3: '_temperature_vs_time',
                     4: '_capacity',
                     5: '_specific_energy',
                     6: '_volumetric_energy',
@@ -95,7 +95,7 @@ class Plot(Data):
                     10: '_c_rate',
                     11: '_specific_current_density',
                     12: '_current_density',
-                    13: '_voltage_vs_capacity2'}
+                    13: '_capacity_circle'}
         
         for n in self.plots:
             fig = plt.figure(n)
