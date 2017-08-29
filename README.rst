@@ -63,7 +63,10 @@ usage message without errors about missing packages.
 Usage
 -----
 
-An example plot generated with ``plotpot arbintest.res`` looks like this:
+Plotpot currently knows two sub-commands ``show`` and ``journal``. A detailed help of the 
+sub-command options are printed with ``plotpot <sub-command> -h``
+
+An example plot generated with ``plotpot show arbintest.res`` looks like this:
 
 .. image:: https://github.com/ahpohl/plotpot/blob/master/resources/arbintest.png
 
@@ -80,13 +83,13 @@ For example to plot data up to cycle 10:
 
 ::
 
-    potplot --cycles 10 arbintest.py
+    plotpot show arbintest.res --cycles 10
     
 To plot from cycle 3 to 6:
 
 ::
 
-    potplot --cycles 3,6 arbintest.py
+    plotpot show arbintest.res --cycles 3,6
 
 Select plots
 ~~~~~~~~~~~~
@@ -95,7 +98,7 @@ Plots are selected with the ``--plot`` option, *e.g.*
 
 ::
    
-    potplot --plot 1,4-5 arbintest.res
+    plotpot show arbintest.res --plot 1,4-5
        
 It is possible to give a comma separated list of plots and ranges separated with "-". If no plots are selected, the voltage versus specific capacity (1) is plotted by default. Plotpot currently supports the following plot types:
 
@@ -113,6 +116,17 @@ It is possible to give a comma separated list of plots and ranges separated with
 12. Current density [mA/cm²] per cycle
 13. Specific capacity as charge/dischage circle
 
+Smooth dQ/dV plot
+~~~~~~~~~~~~~~~~~
+
+Plotpot has the option to smooth the dQ/dV plot by convoluting the raw data with a Hanning window of
+certain width. The smoothing strength is chosen with the level parameter ranging from 1 to 4, which 
+translates to the widths of the window.
+
+::
+
+   plotpot show arbintest.res --cycle 2,2 --plot 9 --smooth 4
+
 Export data
 ~~~~~~~~~~~
 
@@ -120,7 +134,7 @@ The raw data, statistics and data per cycle are exported with
 
 ::
 
-    plotpot --export arbintest.res
+    plotpot show arbintest.res --export
 
 This generates files in `csv format <https://en.wikipedia.org/wiki/Comma-separated_values>`__ for further processing with e.g. `Microcal Origin <http://www.originlab.com/>`__ or similar software. Data per cycle is packed into a zip archive and png snapshots of the plots genererated on screen are created.
 
@@ -129,17 +143,17 @@ The journal
 
 On first execution, a journal file ``plotpot-journal.dat`` is created in the directory of the plotpot executable. The folder location can be changed by setting the ``PLOTPOT_JOURNAL`` environment variable to a full path as described in the `wiki <https://github.com/ahpohl/plotpot/wiki/Set-the-location-of-the-Plotpot-journal-file>`__. 
 
-The journal file keeps a record of mass, capacity, area and volume of the electrode. If run again with the same data file, you have the possibility to use the previously entered values or enter new ones. The content of the journal can be printed out with
+The journal file keeps a record of mass, capacity, area and volume of the electrode. If plotpot is called with the same data file, you have the possibility to use the previously entered values or enter new ones. The content of the journal is displayed with
 
 ::
    
-    plotpot --journal
+    plotpot journal
        
 A particular entry can be removed from the journal with
 
 ::
 
-    plotpot --journal --delete <row>
+    plotpot journal --delete <row_ID>
 
 Authors
 -------
