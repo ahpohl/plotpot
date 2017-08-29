@@ -1,12 +1,3 @@
-"""
-Test case:
-
-plotpot
-plotpot -h
-plotpot -V
-    
-    
-"""
 import sys
 from distutils.spawn import find_executable
 
