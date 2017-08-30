@@ -159,20 +159,21 @@ class Data(DbManager):
         """Check file size of raw file and compare with size saved in 
            sqlite file. Return True if file is up-to-date and False
            if sizes differ."""
+
+        currentSize = 0
+        with open(self.args.filename, 'r') as fh:
+            fh.seek(0, os.SEEK_END)
+            currentSize = fh.tell()
+            fh.close()
         
         listOfVars = ["File_Size"]
         select_query = '''SELECT {0} FROM Global_Table'''.format(','.join(listOfVars))
         try:
             self.query(select_query)
         except sqlite3.OperationalError as e:
-            return True
+            return False
         
         previousSize = int(self.fetchone()[0])
-        currentSize = 0
-        with open(self.args.filename, 'r') as fh:
-            fh.seek(0, os.SEEK_END)
-            currentSize = fh.tell()
-            fh.close()
             
         if self.args.verbose:
             print("currentSize: %ld, previousSize: %ld" % (currentSize, previousSize))
