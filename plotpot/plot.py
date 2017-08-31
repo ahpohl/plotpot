@@ -305,7 +305,7 @@ class Plot(Data):
             if ch.shape[0] > 0:
                 if self.args.smooth:
                     level = dictLevel[str(self.args.smooth)]
-                    ych = self.smooth(ch[:,10], window_len=level, window='hamming')
+                    ych = self.smooth(ch[:,11], window_len=level, window='hamming')
                     ax1.plot(ch[:,7], ych, 'k-', label='')
                 # disable smooth
                 else:
