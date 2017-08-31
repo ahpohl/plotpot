@@ -17,20 +17,15 @@ class Data(DbManager):
         self.args = args
         self.dataFileName = self.getDataFile()
         super().__init__(self.dataFileName)
-        self.reduceData()
         
-    
-    def reduceData(self):
-        """reduce data and stats"""
+        # do the work
         self.callConvpot()
         self.data = self.fetchData()
         self.stats = self.fetchStatistics()
-        self.plots = self.getPlotsOption()
-        self.cycles = self.getCyclesOption()
-        self.time = self.getTimeOption()
-        self.points = self.getDataOption()
         self.filterData()
         self.filterStatistics()
+        self.plots = self.getPlotsOption()
+        self.cycles = self.getCycles()
         self.metaInfo = self.updateMetaInfo()
         self.fullStats = self.calcStatistics()
         
@@ -248,6 +243,11 @@ class Data(DbManager):
         self.query(select_query)
         return np.array(self.fetchall())
         
+    
+    def isFullCell(self):
+        """test if voltage2 counter electrode column is not zero"""
+        return np.any(self.data[:,8])
+    
         
     def isNumber(self, s):
         """This function tests if string s is a number."""
@@ -369,6 +369,11 @@ class Data(DbManager):
     def filterData(self):
         """filter data according to selected cycles, time and points""" 
         
+        # get cycles, points and time range
+        cycles = self.getCyclesOption()
+        time = self.getTimeOption()
+        points = self.getDataOption()
+        
         # shape data
         if not self.data.any():
             self.data = np.zeros((1,12))
@@ -380,23 +385,26 @@ class Data(DbManager):
         self.data[:,10] = np.abs(self.data[:,10])
         
         # filter data according to --cycles option
-        if self.cycles is not None:
-            self.data = self.data[np.logical_and(self.cycles[0] <= self.data[:,1], self.data[:,1] <= self.cycles[1])]
+        if cycles is not None:
+            self.data = self.data[np.logical_and(cycles[0] <= self.data[:,1], self.data[:,1] <= cycles[1])]
             
         # filter data according to --data option
-        elif self.points is not None:
-            self.data = self.data[np.logical_and(self.points[0] <= self.data[:,0], self.data[:,0] <= self.points[1])]
+        elif points is not None:
+            self.data = self.data[np.logical_and(points[0] <= self.data[:,0], self.data[:,0] <= points[1])]
             
         # filter data according to --time option
-        elif self.time is not None:
-            self.data = self.data[np.logical_and(self.time[0] <= self.data[:,3], self.data[:,3] <= self.time[1])]
+        elif time is not None:
+            self.data = self.data[np.logical_and(time[0] <= self.data[:,3], self.data[:,3] <= time[1])]
 
         if self.args.verbose:
             print("data: %d, %d" % (self.data.shape[0], self.data.shape[1]))   
             
         
     def filterStatistics(self):
-        """filter statistics according to selected cycles, time and points"""
+        """filter statistics according to selected cycles"""
+        
+        # get cycles, points and time range
+        cycles = self.getCyclesOption()
         
         # shape statistics
         if not self.stats.any():
@@ -409,12 +417,8 @@ class Data(DbManager):
         self.stats[:,8] = np.abs(self.stats[:,8])
         
         # filter stats according to --cycles option
-        if self.cycles is not None:
-            self.stats = self.stats[np.logical_and(self.cycles[0] <= self.stats[:,0], self.stats[:,0] <= self.cycles[1])]
-            
-        # filter data according to --data option
-        elif self.points is not None:
-            self.stats = self.stats[np.logical_and(self.points[0] <= self.stats[:,2], self.stats[:,1] <= self.points[1])]
+        if cycles is not None:
+            self.stats = self.stats[np.logical_and(cycles[0] <= self.stats[:,0], self.stats[:,0] <= cycles[1])]
             
         if self.args.verbose:
             print("stats: %d, %d" % (self.stats.shape[0], self.stats.shape[1]))

@@ -30,13 +30,7 @@ class Plot(Data):
     
     def drawPlots(self):
         """call plotting functions"""
-        # import variables from base class Data
-        self.metaInfo = self.getMetaInfo()
-        self.plots = self.getPlots()
-        self.cycles = self.getCycles()
-        self.data = self.getData()
-        self.stats = self.getStatistics()
-        
+
         # set current working directory
         plt.rcParams['savefig.directory'] = os.getcwd()
         
@@ -164,8 +158,8 @@ class Plot(Data):
     
         # specific capacity
         ax1 = fig.add_subplot(111)
-        ax1.plot(self.stats[:,0], self.stats[:,5], 'ko-', label='charge')
-        ax1.plot(self.stats[:,0], np.abs(self.stats[:,6]), 'kD-', label='discharge')
+        ax1.plot(self.fullStats[:,0], self.fullStats[:,5], 'ko-', label='charge')
+        ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,6]), 'kD-', label='discharge')
         ax1.set_xlabel('Cycle')
         ax1.set_ylabel('Specific capacity [mAh g$^{-1}$]')
         
@@ -190,8 +184,8 @@ class Plot(Data):
     
         # specific energy
         ax2 = fig.add_subplot(111)
-        ax2.plot(self.stats[:,0], self.stats[:,7], 'ko-', label='charge')
-        ax2.plot(self.stats[:,0], np.abs(self.stats[:,8]), 'kD-', label='discharge')
+        ax2.plot(self.fullStats[:,0], self.fullStats[:,7], 'ko-', label='charge')
+        ax2.plot(self.fullStats[:,0], np.abs(self.fullStats[:,8]), 'kD-', label='discharge')
         ax2.set_xlabel('Cycle')
         ax2.set_ylabel('Specific energy [Wh kg$^{-1}$]')
         
@@ -216,8 +210,8 @@ class Plot(Data):
     
         # specific energy in Wh/L
         ax2 = fig.add_subplot(111)
-        ax2.plot(self.stats[:,0], self.stats[:,9], 'ko-', label='charge')
-        ax2.plot(self.stats[:,0], np.abs(self.stats[:,10]), 'kD-', label='discharge')
+        ax2.plot(self.fullStats[:,0], self.fullStats[:,9], 'ko-', label='charge')
+        ax2.plot(self.fullStats[:,0], np.abs(self.fullStats[:,10]), 'kD-', label='discharge')
         ax2.set_xlabel('Cycle')
         ax2.set_ylabel('Volumetric energy [Wh L$^{-1}$]')
         
@@ -242,7 +236,7 @@ class Plot(Data):
        
         # coulombic efficiency
         ax3 = fig.add_subplot(111)
-        ax3.plot(self.stats[:,0], self.stats[:,16]*100, 'ks-')
+        ax3.plot(self.fullStats[:,0], self.fullStats[:,16]*100, 'ks-')
         ax3.set_xlabel('Cycle')
         ax3.set_ylabel('Coulombic efficiency [%]')
         
@@ -258,9 +252,9 @@ class Plot(Data):
         # voltage hysteresis
         ax4 = fig.add_subplot(111)
         
-        p1 = ax4.plot(self.stats[:,0], self.stats[:,11], 'ko--', label='charge voltage')
-        p2 = ax4.plot(self.stats[:,0], self.stats[:,12], 'kD--', label='discharge voltage')
-        p3 = ax4.plot(self.stats[:,0], self.stats[:,15], 'ks-', label='hysteresis')
+        p1 = ax4.plot(self.fullStats[:,0], self.fullStats[:,11], 'ko--', label='charge voltage')
+        p2 = ax4.plot(self.fullStats[:,0], self.fullStats[:,12], 'kD--', label='discharge voltage')
+        p3 = ax4.plot(self.fullStats[:,0], self.fullStats[:,15], 'ks-', label='hysteresis')
         ax4.set_xlabel('Cycle')
         ax4.set_ylabel('Voltage [V]')
         
@@ -332,8 +326,8 @@ class Plot(Data):
         plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
        
         ax1 = fig.add_subplot(111)
-        p1 = ax1.plot(self.stats[:,0], self.stats[:,21], 'ko-', label='charge')
-        p2 = ax1.plot(self.stats[:,0], np.abs(self.stats[:,22]), 'kD-', label='discharge')
+        p1 = ax1.plot(self.fullStats[:,0], self.fullStats[:,21], 'ko-', label='charge')
+        p2 = ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,22]), 'kD-', label='discharge')
         
         ax1.set_xlabel('Cycle number')
         ax1.set_ylabel('x in C x$^{-1}$ [h]')
@@ -361,8 +355,8 @@ class Plot(Data):
         plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
        
         ax1 = fig.add_subplot(111)
-        p1 = ax1.plot(self.stats[:,0], self.stats[:,17], 'ko-', label='charge')
-        p2 = ax1.plot(self.stats[:,0], np.abs(self.stats[:,18]), 'kD-', label='discharge')
+        p1 = ax1.plot(self.fullStats[:,0], self.fullStats[:,17], 'ko-', label='charge')
+        p2 = ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,18]), 'kD-', label='discharge')
         
         ax1.set_xlabel('Cycle number')
         ax1.set_ylabel('Specific current density [mA g$^{-1}$]')
@@ -390,8 +384,8 @@ class Plot(Data):
         plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
        
         ax1 = fig.add_subplot(111)
-        p1 = ax1.plot(self.stats[:,0], self.stats[:,19], 'ko-', label='charge')
-        p2 = ax1.plot(self.stats[:,0], np.abs(self.stats[:,20]), 'kD-', label='discharge')
+        p1 = ax1.plot(self.fullStats[:,0], self.fullStats[:,19], 'ko-', label='charge')
+        p2 = ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,20]), 'kD-', label='discharge')
         
         ax1.set_xlabel('Cycle number')
         ax1.set_ylabel('Current density [mA cm$^{-2}$]')
