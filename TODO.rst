@@ -4,7 +4,11 @@ Biologic 3-electrode setup (full cell)
 Biologic counter electrode plot both CE and WE simultaneously in two plots
 Ask meta info twice and create two separate entries in journal with
 a comment full cell name one plot working electrode with _we suffix and the 
-other plot with a counter electrode _ce suffix.
+other plot with a counter electrode _ce suffix. Remove --bio_ce option
+and ask additional question "Do you want to plot counter electrode in
+addition to working electrode (default No)?". Fetch always Voltage2 column
+for every instrument. Easier to create both we and ce plots. Only ask
+counter electrode questions if voltage2 column is not everywhere zero.
 
 Print File Table
 ~~~~~~~~~~~~~~~~
@@ -29,3 +33,9 @@ Write a graphical user interface for Plotpot, called by plotpot gui. Use as
 many methods from the Plot, Data and Journal classes as possible. Keep the 
 command line program intact and let the user choose to use the gui or not.
 As the gui matures, the console interface will be depreciated at some point.
+
+Publish
+~~~~~~~
+
+Publish final package on the Python Package Index page and GitHub. Keep
+documentation pages up-to-date.

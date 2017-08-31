@@ -17,14 +17,12 @@ class Data(DbManager):
         self.args = args
         self.dataFileName = self.getDataFile()
         super().__init__(self.dataFileName)
-        self.callConvpot()
         self.reduceData()
-        self.metaInfo = self.updateMetaInfo()
-        self.fullStats = self.calcStatistics()
         
     
     def reduceData(self):
         """reduce data and stats"""
+        self.callConvpot()
         self.data = self.fetchData()
         self.stats = self.fetchStatistics()
         self.plots = self.getPlotsOption()
@@ -33,6 +31,8 @@ class Data(DbManager):
         self.points = self.getDataOption()
         self.filterData()
         self.filterStatistics()
+        self.metaInfo = self.updateMetaInfo()
+        self.fullStats = self.calcStatistics()
         
         
     def exportData(self):
@@ -232,12 +232,9 @@ class Data(DbManager):
     
     
     def fetchData(self):
-        if self.args.bio_ce:
-            listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
-                "DateTime","Current","Voltage2","Capacity","Energy","dQdV","Aux_Channel"]
-        else:
-            listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
-                "DateTime","Current","Voltage","Capacity","Energy","dQdV","Aux_Channel"]
+        """Fetch data from Channel_Normal_Table"""
+        listOfData = ["Data_Point","Full_Cycle","Step_Index","Test_Time","Step_Time",
+            "DateTime","Current","Voltage","Voltage2","Capacity","Energy","dQdV","Aux_Channel"]
         select_query = '''SELECT {0} FROM Channel_Normal_Table'''.format(','.join(listOfData))
         self.query(select_query)
         return np.array(self.fetchall())
@@ -379,8 +376,8 @@ class Data(DbManager):
         self.data[:,1] = self.data[:,1]+1 # one based cycle index
         
         # fix discharge capacity and energy being negative
-        self.data[:,8] = np.abs(self.data[:,8])
         self.data[:,9] = np.abs(self.data[:,9])
+        self.data[:,10] = np.abs(self.data[:,10])
         
         # filter data according to --cycles option
         if self.cycles is not None:
@@ -592,16 +589,16 @@ class Data(DbManager):
     def writeDataTable(self):
         
         with open(self.args.filename.split('.')[0]+'_data.csv', 'w') as fh:
-            header = "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+            header = "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
                 "data_point", "cycle_index", "step_index", 
                 "test_time", "step_time", "datetime", 
-                "current", "voltage", "capacity", 
+                "current", "voltage", "voltage2", "capacity", 
                 "energy", "dQ/dV", "temperature")
             fh.write(header)
-            header = ",,,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
-                "s", "s", "s", "A", "V", "As", "Ws", "As/V", "°C")
+            header = ",,,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+                "s", "s", "s", "A", "V", "V", "As", "Ws", "As/V", "°C")
             fh.write(header)        
-            self.__dumpArray(fh, self.data, '%d %d %d %f %f %f %e %f %f %f %f %f')
+            self.__dumpArray(fh, self.data, '%d %d %d %f %f %f %e %f %f %f %f %f %f')
             fh.close()
     
     
@@ -657,9 +654,9 @@ mg,mAh/g,cm²,µL,mg/cm²\n"""
         
         # convert from As to mAh/g
         if self.metaInfo['mass'] == 0:
-            self.data[:,8] = 0
+            self.data[:,9] = 0
         else:
-            self.data[:,8] = self.data[:,8] / (3.6e-3 * self.metaInfo['mass'])
+            self.data[:,9] = self.data[:,9] / (3.6e-3 * self.metaInfo['mass'])
             
         cwd = os.getcwd() # save current directory
         os.chdir(tempfile.gettempdir()) # change to tmp dir

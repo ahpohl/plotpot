@@ -4,31 +4,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 from plotpot.data import Data
 
-# data array 
-"""
-0: data point
-1: cycle index
-2: step index
-3: test time [s]
-4: step time [s]
-5: datetime [sec since epoch]
-6: current [A]
-7: voltage [V]
-8: capacity [As]
-9: energy [VAs]
-10: dQdV [As V-1]
-11: aux channel, temp. or Ece
-"""
-    
-# Plot functions
 
 class Plot(Data):
 
     def __init__(self, args):
+        """Data array: 
+            0: data point
+            1: cycle index
+            2: step index
+            3: test time [s]
+            4: step time [s]
+            5: datetime [sec since epoch]
+            6: current [A]
+            7: voltage, working electrode [V]
+            8: voltage2, counter electrode [V]
+            9: capacity [As]
+            10: energy [VAs]
+            11: dQdV [As V-1]
+            12: aux channel"""
+        
         self.args = args
         # call Data base class constructor
         super().__init__(args)
-
+        
     
     def drawPlots(self):
         """call plotting functions"""
@@ -76,11 +74,7 @@ class Plot(Data):
     def saveFigure(self):
         """This function saves figures."""
 
-        if self.args.bio_ce:
-            ext = '_ce.png'
-        else:
-            ext = '.png'
-        
+        ext = '.png'
         stem = self.args.filename.split('.')[0]
         
         filename = {1: '_voltage_vs_capacity',
@@ -122,8 +116,8 @@ class Plot(Data):
             dc = dc[:-1] # discard last data point, zero capacity
             
             with np.errstate(invalid='ignore'):
-                ax1.plot(ch[:,8]/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
-                ax1.plot(dc[:,8]/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
+                ax1.plot(ch[:,9]/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
+                ax1.plot(dc[:,9]/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
     
         ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
         ax1.set_ylabel('Voltage [V]')
@@ -155,7 +149,7 @@ class Plot(Data):
         plt.rc('legend', numpoints=1) # change points in legend
         
         ax1 = fig.add_subplot(111)
-        ax1.plot(self.data[:,3]/3600, self.data[:,11], 'k-', label='Auxiliary channel')
+        ax1.plot(self.data[:,3]/3600, self.data[:,12], 'k-', label='Auxiliary channel')
         ax1.set_xlabel('Time [h]')
         ax1.set_ylabel('Temperature [°C]')
         #ax1.legend()
@@ -306,7 +300,7 @@ class Plot(Data):
             ch = ch[:-2]
             dc = dc[:-2]
             
-            dc[:,10] = -dc[:,10] # dQdV negative on discharge
+            dc[:,11] = -dc[:,11] # dQdV negative on discharge
             
             if ch.shape[0] > 0:
                 if self.args.smooth:
@@ -315,15 +309,15 @@ class Plot(Data):
                     ax1.plot(ch[:,7], ych, 'k-', label='')
                 # disable smooth
                 else:
-                    ax1.plot(ch[:,7], ch[:,10], 'k-', label='')
+                    ax1.plot(ch[:,7], ch[:,11], 'k-', label='')
                 
             if dc.shape[0] > 0:
                 if self.args.smooth:
                     level = dictLevel[str(self.args.smooth)]
-                    ydc = self.smooth(dc[:,10], window_len=level, window='hamming')
+                    ydc = self.smooth(dc[:,11], window_len=level, window='hamming')
                     ax1.plot(dc[:,7], ydc, 'k-', label='')
                 else:
-                    ax1.plot(dc[:,7], dc[:,10], 'k-', label='')
+                    ax1.plot(dc[:,7], dc[:,11], 'k-', label='')
                 
         ax1.set_xlabel('Voltage [V]')
         ax1.set_ylabel('dQ/dV [As V$^{-1}$]')
@@ -432,8 +426,8 @@ class Plot(Data):
             
             with np.errstate(invalid='ignore'):
                 if dc.shape[0] > 0 and ch.shape[0] > 0:
-                    ax1.plot((-1*ch[:,8]+np.abs(dc[-1:,8]))/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
-                    ax1.plot(np.abs(dc[:,8])/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
+                    ax1.plot((-1*ch[:,9]+np.abs(dc[-1:,9]))/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
+                    ax1.plot(np.abs(dc[:,9])/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
     
         ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
         ax1.set_ylabel('Voltage [V]')

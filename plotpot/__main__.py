@@ -54,8 +54,6 @@ def main():
                     help="export data, statistics and figures")
     parser_show.add_argument('-f', '--force', action='store_true',
                     help="skip up-to-date check")
-    parser_show.add_argument('-b', '--bio_ce', action='store_true',
-                    help="Biologic counter electrode")
     parser_show.add_argument('-p', '--plot', default='1', metavar='N',
                     help="select plot type")
     parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,5),
