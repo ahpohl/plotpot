@@ -28,7 +28,8 @@ class Journal(DbManager):
         if journalPath:
             journalFullPath = os.path.join(journalPath, journalFile)
         else:
-            journalFullPath = os.path.join(os.path.dirname(sys.argv[0]), journalPath)
+            home = os.getenv('USERPROFILE') or os.getenv('HOME')
+            journalFullPath = os.path.join(home, journalFile)
             
         # check if journal file exists
         try:
