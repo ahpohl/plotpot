@@ -68,7 +68,7 @@ sub-command options are printed with ``plotpot <sub-command> -h``
 
 An example plot generated with ``plotpot show arbintest.res`` looks like this:
 
-.. image:: https://github.com/ahpohl/plotpot/blob/master/resources/arbintest.png
+.. image:: https://raw.githubusercontent.com/ahpohl/plotpot/master/resources/arbintest.png
 
 Select data
 ~~~~~~~~~~~

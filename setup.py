@@ -39,8 +39,8 @@ setup(
     version = version,
 
     # use setuptools_scm package to get version from git
-    #use_scm_version = {'write_to': 'plotpot/__version__.py'},
-    #setup_requires = ['setuptools_scm'],
+    use_scm_version = {'write_to': 'plotpot/__version__.py'},
+    setup_requires = ['setuptools_scm'],
     
     # package description
     description = 'Plot potentiostatic data',
