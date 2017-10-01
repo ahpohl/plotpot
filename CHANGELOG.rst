@@ -1,7 +1,7 @@
 Plotpot changelog
 =================
 
-v1.0.5 - 2017-10-01
+v1.0.6 - 2017-10-01
 -------------------
 -  create plotpot-journal in HOME or USERPROFILE
 -  publish to python package index
