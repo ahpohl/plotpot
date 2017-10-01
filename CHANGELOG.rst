@@ -1,9 +1,13 @@
 Plotpot changelog
 =================
 
+v1.0.2 - 2017-10-01
+-------------------
+-  create plotpot-journal in HOME or USERPROFILE
+-  publish to python package index
+
 v1.0.0 - 2017-08-29
 -------------------
-
 -  create subcommands show and journal
 -  renamed counter electrode option to --bio_ce
 -  fix smooth option
