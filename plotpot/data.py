@@ -689,7 +689,7 @@ mg,mAh/g,cm²,µL,mg/cm²\n"""
                 fh = open(cyclename, 'w')
                 fh.write(header)
                 for i in range(ch.shape[0]):
-                    line = "%12.6f %12.6f %12.6f\n" % (ch[i,8], ch[i,7], ch[i,10])
+                    line = "%12.6f %12.6f %12.6f\n" % (ch[i,9], ch[i,7], ch[i,11])
                     fh.write(line)
                 fh.close()
                 
@@ -704,7 +704,7 @@ mg,mAh/g,cm²,µL,mg/cm²\n"""
                 fh = open(cyclename, 'w')
                 fh.write(header)
                 for i in range(dc.shape[0]):
-                    line = "%12.6f %12.6f %12.6f\n" % (dc[i,8], dc[i,7], dc[i,10])
+                    line = "%12.6f %12.6f %12.6f\n" % (dc[i,9], dc[i,7], dc[i,11])
                     fh.write(line)
                 fh.close()
                 
