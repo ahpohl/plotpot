@@ -87,22 +87,16 @@ class Plotpot(object):
         # call convpot to convert raw data
         self.callConvpot()
         
-        # create battery object
+        # create battery objectqui
         bat = Battery(self.args, showArgs)
         
- 
-        print("*** Working electrode ***")
-        we = Electrode(self.args, showArgs, False)
-        print(we.getData())
- 
-        if bat.isFullCell():
-            print("*** Counter electrode ***")
-            ce = Electrode(self.args, showArgs, True)
-            print(ce.getData())
-    
-    
-    
-    
+        # create figures
+        plot = Plot(self.args, bat)
+        plot.drawPlots()
+        
+        # show plots if quiet option not given
+        if not self.args.quiet:
+            plot.showPlots()
     
     ### internal methods ###
     

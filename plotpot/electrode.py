@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import numpy as np
 
 # own modules
@@ -7,10 +8,10 @@ from plotpot.dbmanager import DbManager
 
 class Electrode(DbManager):
     
-    def __init__(self, args, showArgs, fullCell = False):
+    def __init__(self, args, showArgs, electrode = "we"):
         self.args = args
         self.showArgs = showArgs
-        self.fullCell = fullCell
+        self.electrode = electrode
         super().__init__(showArgs['dataFile'])
         
         # set electrode properties
@@ -142,10 +143,12 @@ class Electrode(DbManager):
 
     def setVoltage(self):
         """voltage"""
-        if not self.fullCell:
+        if self.electrode == 'we':
             self.query('''SELECT Voltage FROM Channel_Normal_Table''')
-        else:
+        elif self.electrode == 'ce':
             self.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
+        else:
+            sys.exit("ERROR: Unknown electrode %s" % self.electrode)
         self.voltage = np.array(self.fetchall())
 
         
@@ -160,7 +163,7 @@ class Electrode(DbManager):
         self.capacity = np.array(self.fetchall())
         # convert capacity from As to mAh/g
         if self.mass:
-            self.capacity = self.capacity / (3.6e-3 * self.mass)
+            self.capacity = np.abs(self.capacity / (3.6e-3 * self.mass))
         else:
             self.capacity = np.zeros(self.capacity.shape)
 
@@ -172,10 +175,12 @@ class Electrode(DbManager):
     
     def setEnergy(self):
         """energy"""
-        if not self.fullCell:
+        if self.electrode == 'we':
             self.query('''SELECT Energy FROM Channel_Normal_Table''')
-        else:
+        elif self.electrode == 'ce':
             self.query('''SELECT Energy2 FROM Channel_Normal_Table''')
+        else:
+            sys.exit("ERROR: Unknown electrode %s" % self.electrode)
         self.energy = np.array(self.fetchall())
         # convert energy from Ws to Wh/kg
         if self.mass:
@@ -191,10 +196,12 @@ class Electrode(DbManager):
     
     def setDqDv(self):
         """dQdV"""
-        if not self.fullCell:
+        if self.electrode == 'we':
             self.query('''SELECT dQdV FROM Channel_Normal_Table''')
-        else:
+        elif self.electrode == 'ce':
             self.query('''SELECT dQdV2 FROM Channel_Normal_Table''')
+        else:
+            sys.exit("ERROR: Unknown electrode %s" % self.electrode)
         self.dqdv = np.array(self.fetchall())
 
         
