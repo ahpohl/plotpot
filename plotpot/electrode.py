@@ -43,6 +43,15 @@ class Electrode(DbManager):
         # volume
         if 6 in self.showArgs['plots']:
             self.setVolume()
+        
+        
+    def getProperties(self):
+        """return dict of properties"""
+        
+        return {'mass': self.mass,
+                'capacity': self.propCapacity,
+                'area': self.area,
+                'volume': self.volume}
     
     
     def __Property(self, prop, desc, unit):

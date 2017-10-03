@@ -8,6 +8,7 @@ import sqlite3
 from plotpot.plot import Plot
 from plotpot.journal import Journal
 from plotpot.battery import Battery
+from plotpot.electrode import Electrode
 from plotpot.dbmanager import DbManager
 
 
@@ -88,6 +89,16 @@ class Plotpot(object):
         
         # create battery object
         bat = Battery(self.args, showArgs)
+        
+ 
+        print("*** Working electrode ***")
+        we = Electrode(self.args, showArgs, False)
+        print(we.getData())
+ 
+        if bat.isFullCell():
+            print("*** Counter electrode ***")
+            ce = Electrode(self.args, showArgs, True)
+            print(ce.getData())
     
     
     
