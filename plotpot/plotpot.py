@@ -91,7 +91,7 @@ class Plotpot(object):
         bat = Battery(self.args, showArgs)
         
         # create figures
-        plot = Plot(self.args, bat)
+        plot = Plot(self.args, showArgs, bat)
         plot.drawPlots()
         
         # show plots if quiet option not given

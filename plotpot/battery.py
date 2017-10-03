@@ -15,7 +15,7 @@ class Battery(DbManager):
         super().__init__(showArgs['dataFile'])
     
         # set electrodes
-        self.setFullCell()
+        self.setIsFullCell()
         self.setElectrodes()
         
         # set data
@@ -26,13 +26,13 @@ class Battery(DbManager):
         self.setHalfStatistics()
     
     
-    def setFullCell(self):
+    def setIsFullCell(self):
         """test if voltage2 column is not zero"""
         self.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
         self.isFullCell = np.any(np.array(self.fetchall()))
     
     
-    def getFullCell(self):
+    def getIsFullCell(self):
         """return boolean if full or half cell"""
         return self.isFullCell
     
@@ -76,7 +76,7 @@ class Battery(DbManager):
     def setPoints(self):
         """data points"""
         self.query('''SELECT Data_Point FROM Channel_Normal_Table''')
-        self.points = np.array(self.fetchall())
+        self.points = np.squeeze(np.array(self.fetchall()))
 
         
     def getPoints(self):
@@ -87,7 +87,7 @@ class Battery(DbManager):
     def setCycles(self):
         """full cycles"""
         self.query('''SELECT Full_Cycle FROM Channel_Normal_Table''')
-        self.cycles = np.array(self.fetchall())
+        self.cycles = np.squeeze(np.array(self.fetchall()))
 
         
     def getCycles(self):
@@ -115,7 +115,7 @@ class Battery(DbManager):
     def setStatCycles(self):
         """full cycle statistics"""
         self.query('''SELECT Full_Cycle FROM Full_Cycle_Table''')
-        self.statCycles = np.array(self.fetchall())
+        self.statCycles = np.squeeze(np.array(self.fetchall()))
 
         
     def getStatCycles(self):

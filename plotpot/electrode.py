@@ -149,7 +149,7 @@ class Electrode(DbManager):
             self.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
-        self.voltage = np.array(self.fetchall())
+        self.voltage = np.squeeze(np.array(self.fetchall()))
 
         
     def getVoltage(self):
@@ -160,7 +160,7 @@ class Electrode(DbManager):
     def setCapacity(self):
         """capacity"""
         self.query('''SELECT Capacity FROM Channel_Normal_Table''')
-        self.capacity = np.array(self.fetchall())
+        self.capacity = np.squeeze(np.array(self.fetchall()))
         # convert capacity from As to mAh/g
         if self.mass:
             self.capacity = np.abs(self.capacity / (3.6e-3 * self.mass))
@@ -181,7 +181,7 @@ class Electrode(DbManager):
             self.query('''SELECT Energy2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
-        self.energy = np.array(self.fetchall())
+        self.energy = np.squeeze(np.array(self.fetchall()))
         # convert energy from Ws to Wh/kg
         if self.mass:
             self.energy = self.energy / (3.6e-3 * self.mass)
@@ -202,7 +202,7 @@ class Electrode(DbManager):
             self.query('''SELECT dQdV2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
-        self.dqdv = np.array(self.fetchall())
+        self.dqdv = np.squeeze(np.array(self.fetchall()))
 
         
     def getDqDv(self):

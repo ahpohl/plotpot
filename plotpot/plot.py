@@ -7,8 +7,9 @@ from plotpot.data import Data
 
 class Plot(object):
 
-    def __init__(self, args, bat):
+    def __init__(self, args, showArgs, bat):
         self.args = args
+        self.showArgs = showArgs
         self.bat = bat
         
     
@@ -73,14 +74,24 @@ class Plot(object):
                   14: '_c_rate'}
 
         for n in self.plots:
-            fig = plt.figure(n)
+            plt.figure(n)
             plt.savefig(stem + suffix[n] + ext)
            
     
     def showPlots(self):
         """show plots on sceen"""
         plt.show()
+    
+
+    def reduce(self, data):
+        """reduce data according to show arguments cycles, time and points"""
         
+        if self.showArgs['cycles'] is not None:
+            pass
+            
+        return data
+        
+    ### plot methods ###
     
     def figVoltageCapacity(self):
         """plot galvanostatic profile"""
