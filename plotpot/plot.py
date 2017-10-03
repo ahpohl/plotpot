@@ -108,8 +108,8 @@ class Plot(object):
             
             # loop over half cycles
             for c in self.bat.halfStatCycles:
-                capacity = self.bat.we.capacity[self.bat.halfStatPoints[c,0]:self.bat.halfStatPoints[c,1]]
-                voltage = self.bat.we.voltage[self.bat.halfStatPoints[c,0]:self.bat.halfStatPoints[c,1]]
+                capacity = self.bat.we.capacity[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
+                voltage = self.bat.we.voltage[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
                 ax1.plot(capacity, voltage, 'k-', label='half cycle')
     
         # full cell
@@ -132,12 +132,12 @@ class Plot(object):
         
              # loop over half cycles
             for c in self.bat.halfStatCycles:
-                weCapacity = self.bat.we.capacity[self.bat.halfStatPoints[c,0]:self.bat.halfStatPoints[c,1]]
-                weVoltage = self.bat.we.voltage[self.bat.halfStatPoints[c,0]:self.bat.halfStatPoints[c,1]]
+                weCapacity = self.bat.we.capacity[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
+                weVoltage = self.bat.we.voltage[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
                 ax1.plot(weCapacity, weVoltage, 'k-', label='half cycle')
                 
-                ceCapacity = self.bat.ce.capacity[self.bat.halfStatPoints[c,0]:self.bat.halfStatPoints[c,1]]
-                ceVoltage = self.bat.ce.voltage[self.bat.halfStatPoints[c,0]:self.bat.halfStatPoints[c,1]]
+                ceCapacity = self.bat.ce.capacity[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
+                ceVoltage = self.bat.ce.voltage[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
                 ax2.plot(ceCapacity, ceVoltage, 'k-', label='half cycle')
                 
         fig.tight_layout()
