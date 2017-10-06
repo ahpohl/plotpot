@@ -19,6 +19,9 @@ class Plot(object):
         # set current working directory
         plt.rcParams['savefig.directory'] = os.getcwd()
         
+        # reduce data according to show arguments cycles, time and points
+        self.reduce()
+        
         for n in self.bat.showArgs['plots']:
             if n == 1:
                 self.figVoltageCapacity()
@@ -83,13 +86,24 @@ class Plot(object):
         plt.show()
     
 
-    def reduce(self, data):
+    def reduce(self):
         """reduce data according to show arguments cycles, time and points"""
-        
+
+        # --cycles argument
         if self.showArgs['cycles'] is not None:
-            pass
             
-        return data
+            # get indices of selected cycles
+            start = self.bat.statCycleRange[self.bat.showArgs['cycles'][0]-1:self.bat.showArgs['cycles'][1]].flatten()[0]
+            end = self.bat.statCycleRange[self.bat.showArgs['cycles'][0]-1:self.bat.showArgs['cycles'][1]].flatten()[-1]
+        
+            # reduce data
+            self.weVoltage = self.bat.we.voltage[start:end]
+            self.weCapacity = self.bat.we.capacity[start:end]
+            
+            if self.bat.isFullCell:
+                self.ceVoltage = self.bat.ce.voltage[start:end]
+                self.ceCapacity = self.bat.ce.capacity[start:end]
+        
         
     ### plot methods ###
     
@@ -103,14 +117,13 @@ class Plot(object):
             
             # working electrode plot
             ax1 = fig.add_subplot(111)
+            ax1.autoscale(axis='x', tight='tight')
             ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
             ax1.set_ylabel('Voltage [V]', fontsize=12)
             
             # loop over half cycles
-            for c in self.bat.halfStatCycles:
-                capacity = self.bat.we.capacity[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
-                voltage = self.bat.we.voltage[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
-                ax1.plot(capacity, voltage, 'k-', label='half cycle')
+            for (a,b) in self.bat.halfStatRange:
+                ax1.plot(self.weCapacity[a:b], self.weVoltage[a:b], 'k-', label='half cycle')
     
         # full cell
         else:
@@ -129,17 +142,11 @@ class Plot(object):
             ax2.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
             ax2.set_ylabel('CE potential [V]', fontsize=12)
         
-        
              # loop over half cycles
-            for c in self.bat.halfStatCycles:
-                weCapacity = self.bat.we.capacity[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
-                weVoltage = self.bat.we.voltage[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
-                ax1.plot(weCapacity, weVoltage, 'k-', label='half cycle')
-                
-                ceCapacity = self.bat.ce.capacity[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
-                ceVoltage = self.bat.ce.voltage[self.bat.halfStatRange[c,0]:self.bat.halfStatRange[c,1]]
-                ax2.plot(ceCapacity, ceVoltage, 'k-', label='half cycle')
-                
+            for (a,b) in self.bat.halfStatRange:
+                ax1.plot(self.weCapacity[a:b], self.weVoltage[a:b], 'k-', label='half cycle')
+                ax2.plot(self.ceCapacity[a:b], self.ceVoltage[a:b], 'k-', label='half cycle')                
+
         fig.tight_layout()
 
     

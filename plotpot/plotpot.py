@@ -123,7 +123,7 @@ class Plotpot(object):
                 sys.exit(errormsg_not_recognised)
         elif len(string) == 1:
             if self.isNumber(string[0]):
-                interval = (0,string[0])
+                interval = (1,string[0])
             else:
                 sys.exit(errormsg_not_recognised)
         else:    
@@ -144,7 +144,7 @@ class Plotpot(object):
             cycles = [int(x) for x in cycles] # now list of integers
                     
             # sanity checks
-            if cycles[0] > cycles[1] or len([x for x in cycles if x < 0]) != 0:
+            if cycles[0] > cycles[1] or len([x for x in cycles if x <= 0]) != 0:
                 sys.exit("ERROR: Cycles option out of range.")
                 
         return cycles
