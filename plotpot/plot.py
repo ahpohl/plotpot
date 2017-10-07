@@ -19,8 +19,8 @@ class Plot(object):
         # set current working directory
         plt.rcParams['savefig.directory'] = os.getcwd()
         
-        # reduce data according to show arguments cycles, time and points
-        self.reduce()
+        # set plot range according to show arguments cycles, time and points
+        self.setPlotRange()
         
         for n in self.bat.showArgs['plots']:
             if n == 1:
@@ -86,30 +86,37 @@ class Plot(object):
         plt.show()
     
 
-    def reduce(self):
-        """reduce data according to show arguments cycles, time and points"""
-
-        # --cycles argument
-        if self.showArgs['cycles'] is not None:
-            
-            # get indices of selected cycles
-            start = self.bat.statCycleRange[self.bat.showArgs['cycles'][0]-1:self.bat.showArgs['cycles'][1]].flatten()[0]
-            end = self.bat.statCycleRange[self.bat.showArgs['cycles'][0]-1:self.bat.showArgs['cycles'][1]].flatten()[-1]
+    def setPlotRange(self):
+        """set plot range according to show arguments cycles, time and points"""
         
-            # reduce data
-            self.weVoltage = self.bat.we.voltage[start:end]
-            self.weCapacity = self.bat.we.capacity[start:end]
-            
-            if self.bat.isFullCell:
-                self.ceVoltage = self.bat.ce.voltage[start:end]
-                self.ceCapacity = self.bat.ce.capacity[start:end]
+        # get indices of full cycle limits
+        try:
+            # convert cycles to zero based index
+            self.c = (self.bat.showArgs['cycles'][0]-1, self.bat.showArgs['cycles'][1])
+        except:
+            # cycle argument not given (None)
+            self.c = (self.bat.statCycles[0], self.bat.statCycles[-1])
         
+        # get indeces of half cycle limits
+        try:
+            # convert full cycles into half cycles (with zero based index)
+            self.h = ((2*(self.bat.showArgs['cycles'][0])-1)-1, 2*(self.bat.showArgs['cycles'][1]))
+        except:
+            self.h = (self.bat.halfStatCycles[0], self.bat.halfStatCycles[-1])
+        
+        # get indices of data point limits
+        try:
+            self.p = (self.bat.statPoints[self.c[0]:self.c[1]].flatten()[0],
+                      self.bat.statPoints[self.c[0]:self.c[1]].flatten()[-1])
+        except:
+            self.p = (self.bat.statPoints.flatten()[0], self.bat.statPoints.flatten()[-1])
+            
         
     ### plot methods ###
     
     def figVoltageCapacity(self):
         """plot galvanostatic profile"""
-        
+
         # half cell
         if not self.bat.isFullCell:
             fig = plt.figure(1)
@@ -122,8 +129,8 @@ class Plot(object):
             ax1.set_ylabel('Voltage [V]', fontsize=12)
             
             # loop over half cycles
-            for (a,b) in self.bat.halfStatRange:
-                ax1.plot(self.weCapacity[a:b], self.weVoltage[a:b], 'k-', label='half cycle')
+            for (a,b) in self.bat.halfStatPoints[self.h[0]:self.h[1]]:
+                ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-', label='half cycle')
     
         # full cell
         else:
@@ -143,9 +150,9 @@ class Plot(object):
             ax2.set_ylabel('CE potential [V]', fontsize=12)
         
              # loop over half cycles
-            for (a,b) in self.bat.halfStatRange:
-                ax1.plot(self.weCapacity[a:b], self.weVoltage[a:b], 'k-', label='half cycle')
-                ax2.plot(self.ceCapacity[a:b], self.ceVoltage[a:b], 'k-', label='half cycle')                
+            for (a,b) in self.bat.halfStatPoints[self.h[0]:self.h[1]]:
+                ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-', label='half cycle')
+                ax2.plot(self.bat.ce.capacity[a:b], self.bat.ce.voltage[a:b], 'k-', label='half cycle')                
 
         fig.tight_layout()
 

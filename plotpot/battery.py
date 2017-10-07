@@ -102,10 +102,10 @@ class Battery(DbManager):
         
         # fetch statistics
         self.setStatCycles()
-        self.setStatCycleRange()
+        self.setStatPoints()
         
         self.statistics = {'cycles': self.statCycles,
-                           'range': self.statCycleRange}
+                           'points': self.statPoints}
         
         
     def getStatistics(self):
@@ -124,15 +124,15 @@ class Battery(DbManager):
         return self.statCycles
     
     
-    def setStatCycleRange(self):
+    def setStatPoints(self):
         """start and end data point of cycle"""
         self.query('''SELECT Cycle_Start,Cycle_End FROM Full_Cycle_Table''')
-        self.statCycleRange = np.array(self.fetchall())
+        self.statPoints = np.array(self.fetchall())
 
         
-    def getStatCycleRange(self):
+    def getStatPoints(self):
         """start and end data point of cycle"""
-        return self.statCycleRange
+        return self.statPoints
     
     
     ### half cycle statistics methods ###
@@ -142,10 +142,10 @@ class Battery(DbManager):
         
         # fetch statistics
         self.setHalfStatCycles()
-        self.setHalfStatRange()
+        self.setHalfStatPoints()
         
         self.halfStatistics = {'cycles': self.halfStatCycles,
-                               'points': self.halfStatRange}
+                               'points': self.halfStatPoints}
         
         
     def getHalfStatistics(self):
@@ -164,11 +164,11 @@ class Battery(DbManager):
         return self.halfStatCycles
     
     
-    def setHalfStatRange(self):
+    def setHalfStatPoints(self):
         """start and end data point of half cycle"""
         self.query('''SELECT Cycle_Start,Cycle_End FROM Half_Cycle_Table''')
-        self.halfStatRange = np.array(self.fetchall())
+        self.halfStatPoints = np.array(self.fetchall())
         
-    def getHalfStatRange(self):
+    def getHalfStatPoints(self):
         """start and end data point of half cycle"""
-        return self.halfStatRange
+        return self.halfStatPoints

@@ -128,8 +128,8 @@ class Plotpot(object):
                 sys.exit(errormsg_not_recognised)
         else:    
             sys.exit(errormsg_not_recognised)
-            
-        return interval
+        
+        return interval # one based index
     
     
     def getCyclesOption(self):
@@ -142,11 +142,11 @@ class Plotpot(object):
             # parse cycles option
             cycles = self.parseRange(self.args.cycles)
             cycles = [int(x) for x in cycles] # now list of integers
-                    
+            
             # sanity checks
             if cycles[0] > cycles[1] or len([x for x in cycles if x <= 0]) != 0:
                 sys.exit("ERROR: Cycles option out of range.")
-                
+        
         return cycles
     
                 
