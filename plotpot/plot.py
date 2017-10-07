@@ -90,27 +90,44 @@ class Plot(object):
         """set plot range according to show arguments cycles, time and points"""
         
         # get indices of full cycle limits
-        try:
+        if self.bat.showArgs['cycles'] is not None:
             # convert cycles to zero based index
             self.c = (self.bat.showArgs['cycles'][0]-1, self.bat.showArgs['cycles'][1])
-        except:
-            # cycle argument not given (None)
-            self.c = (self.bat.statCycles[0], self.bat.statCycles[-1])
-        
-        # get indeces of half cycle limits
-        try:
+            # get indices of half cycle limits
             # convert full cycles into half cycles (with zero based index)
             self.h = ((2*(self.bat.showArgs['cycles'][0])-1)-1, 2*(self.bat.showArgs['cycles'][1]))
-        except:
-            self.h = (self.bat.halfStatCycles[0], self.bat.halfStatCycles[-1])
-        
-        # get indices of data point limits
-        try:
+            #self.h = (2*self.c[0]-1, 2*self.c[1])
+            # get indices of data point limits
             self.p = (self.bat.statPoints[self.c[0]:self.c[1]].flatten()[0],
                       self.bat.statPoints[self.c[0]:self.c[1]].flatten()[-1])
-        except:
-            self.p = (self.bat.statPoints.flatten()[0], self.bat.statPoints.flatten()[-1])
+        
+        # get indices with --time argument
+        elif self.bat.showArgs['time'] is not None:
+            # get indices of data point limits
+            self.p = np.searchsorted(self.bat.testTime, self.bat.showArgs['time'])
+            # get indices of half cycle limits
+            self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
+            self.h[1] += 1 
+            # get indices of full cycle limits
+            self.c = np.searchsorted(self.bat.statPoints[:,1], self.p)
+            self.c[1] += 1
             
+        # get indices with --data argument
+        elif self.bat.showArgs['points'] is not None:
+            # get indices of data point limits
+            self.p = self.bat.showArgs['points']
+            
+        # no range argument given
+        else:
+            self.c = (0, len(self.bat.statCycles))
+            self.h = (0, len(self.bat.halfStatCycles))
+            self.p = (0, len(self.bat.points))
+            
+        if self.args.verbose:
+            print(self.c)
+            print(self.h)
+            print(self.p)
+        
         
     ### plot methods ###
     
@@ -130,6 +147,8 @@ class Plot(object):
             
             # loop over half cycles
             for (a,b) in self.bat.halfStatPoints[self.h[0]:self.h[1]]:
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
                 ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-', label='half cycle')
     
         # full cell

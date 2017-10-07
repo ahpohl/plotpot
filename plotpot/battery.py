@@ -62,10 +62,12 @@ class Battery(DbManager):
         # fetch data
         self.setPoints()
         self.setCycles()
+        self.setTestTime()
         
         # assemble data dictionary
         self.data = {'points': self.points,
-                     'cycles': self.cycles}
+                     'cycles': self.cycles,
+                     'testtime': self.testTime}
     
     
     def getData(self):
@@ -93,6 +95,17 @@ class Battery(DbManager):
     def getCycles(self):
         """full cycles"""
         return self.cycles
+    
+    
+    def setTestTime(self):
+        """test time in hours"""
+        self.query('''SELECT Test_Time FROM Channel_Normal_Table''')
+        self.testTime = np.squeeze(np.array(self.fetchall())) / 3.6e3
+    
+    
+    def getTestTime(self):
+        """test time in hours"""
+        return self.testTime
     
    
     ### battery statistics methods ###

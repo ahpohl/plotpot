@@ -79,7 +79,7 @@ class Plotpot(object):
         # parse show command line options
         showArgs = {'plots': self.getPlotsOption(), 
                     'time': self.getTimeOption(),
-                    'data': self.getDataOption(),
+                    'points': self.getDataOption(),
                     'cycles': self.getCyclesOption(),
                     'dataFile': self.dataFileName}
         
@@ -113,7 +113,7 @@ class Plotpot(object):
         """This function parses the a command line option which specifies
         a data range and returns a tuple with the interval"""
         
-        errormsg_not_recognised = "Error: Option not recognised."
+        errormsg_not_recognised = "ERROR: Option not recognised."
         
         string = option.split(',')
         if len(string) == 2:
@@ -123,13 +123,16 @@ class Plotpot(object):
                 sys.exit(errormsg_not_recognised)
         elif len(string) == 1:
             if self.isNumber(string[0]):
-                interval = (1,string[0])
+                if self.args.time is not None:    
+                    interval = (0,string[0])
+                else:
+                    interval = (1,string[0])
             else:
                 sys.exit(errormsg_not_recognised)
         else:    
             sys.exit(errormsg_not_recognised)
         
-        return interval # one based index
+        return interval
     
     
     def getCyclesOption(self):
@@ -182,8 +185,6 @@ class Plotpot(object):
             # sanity checks
             if time[0] >= time[1] or len([x for x in time if x < 0]) != 0:
                 sys.exit("ERROR: Time option out of range.")
-            
-            time = [x*3600 for x in time] # in seconds
         
         return time
 
