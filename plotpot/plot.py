@@ -194,11 +194,11 @@ class Plot(object):
             # working electrode plot
             ax1 = fig.add_subplot(111)
             #ax1.autoscale(axis='x', tight='tight')
-            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
-            ax1.set_ylabel('Voltage [V]')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax1.set_ylabel('Voltage [V]', fontsize=12)
             
-            curCap = 0; prevCap = 0
             # loop over half cycles
+            curCap = 0; prevCap = 0
             for ((a,b),s) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatStep[self.h[0]:self.h[1]]):
                 if a < self.p[0]: a = self.p[0]
                 if b > self.p[1]: b = self.p[1]
@@ -219,17 +219,18 @@ class Plot(object):
             # working electrode
             ax1 = fig.add_subplot(121)
             ax1.autoscale(axis='x', tight='tight')
-            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
-            ax1.set_ylabel('WE potential [V]')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax1.set_ylabel('WE potential [V]', fontsize=12)
     
             # counter electrode
             ax2 = fig.add_subplot(122)
             ax2.autoscale(axis='x', tight='tight')
-            ax2.set_xlabel('Specific capacity [mAh g$^{-1}$]')
-            ax2.set_ylabel('CE potential [V]')
+            ax2.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax2.set_ylabel('CE potential [V]', fontsize=12)
             
-            curCap = []; prevCap = [0,0]
+            
             # loop over half cycles
+            curCap = []; prevCap = [0,0]
             for ((a,b),s) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatStep[self.h[0]:self.h[1]]):
                 if a < self.p[0]: a = self.p[0]
                 if b > self.p[1]: b = self.p[1]
@@ -243,6 +244,64 @@ class Plot(object):
                 else:
                     sys.exit("ERROR: Rest cycles do not have capacity!")
                 prevCap = curCap
+        
+        fig.tight_layout()
+        
+        
+    def figVoltageCurrent(self):
+        """Voltage and current vs. time plot"""
+        
+        # half cell
+        if not self.bat.isFullCell:       
+            fig = plt.figure(3, figsize=(10,5))
+            fig.canvas.set_window_title("Figure 3 - voltage, current vs. time")
+
+            # working electrode plot
+            ax1 = fig.add_subplot(111)
+            ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Time [h]', fontsize=12)
+            ax1.set_ylabel('Voltage [V]', fontsize=12)
+            ax2 = ax1.twinx()
+            ax2.autoscale(axis='x', tight='tight')
+            ax2.set_ylabel('Current [mA]', fontsize=12)
+           
+            ax1.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.we.voltage[self.p[0]:self.p[1]], 'k-', label='voltage')
+            ax2.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.current[self.p[0]:self.p[1]], 'k--', label='current')
+            
+        # full cell
+        else:
+            fig = plt.figure(3, figsize=(10,8))
+            fig.canvas.set_window_title("Figure 3 - full cell voltage, current vs. time")
+            
+            # working electrode plot
+            ax1 = fig.add_subplot(211)
+            ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Time [h]', fontsize=12)
+            ax1.set_ylabel('WE potential [V]', fontsize=12)
+            ax2 = ax1.twinx()
+            ax2.autoscale(axis='x', tight='tight')
+            ax2.set_ylabel('Current [mA]', fontsize=12)
+           
+            ax1.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.we.voltage[self.p[0]:self.p[1]], 'k-', label='voltage')
+            ax2.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.current[self.p[0]:self.p[1]], 'k--', label='current')
+            
+            # counter electrode plot
+            ax3 = fig.add_subplot(212)
+            ax3.autoscale(axis='x', tight='tight')
+            ax3.set_xlabel('Time [h]', fontsize=12)
+            ax3.set_ylabel('CE potential [V]', fontsize=12)
+            ax4 = ax3.twinx()
+            ax4.autoscale(axis='x', tight='tight')
+            ax4.set_ylabel('Current [mA]', fontsize=12)
+           
+            ax3.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.ce.voltage[self.p[0]:self.p[1]], 'k-', label='voltage')
+            ax4.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     -1*self.bat.current[self.p[0]:self.p[1]], 'k--', label='current')
         
         fig.tight_layout()
 

@@ -63,11 +63,13 @@ class Battery(DbManager):
         self.setPoints()
         self.setCycles()
         self.setTestTime()
+        self.setCurrent()
         
         # assemble data dictionary
         self.data = {'points': self.points,
                      'cycles': self.cycles,
-                     'testtime': self.testTime}
+                     'testtime': self.testTime,
+                     'current': self.current}
     
     
     def getData(self):
@@ -106,8 +108,19 @@ class Battery(DbManager):
     def getTestTime(self):
         """test time in hours"""
         return self.testTime
+
+
+    def setCurrent(self):
+        """current in mA"""
+        self.query('''SELECT Current FROM Channel_Normal_Table''')
+        self.current = np.squeeze(np.array(self.fetchall())) * 1e3
     
+    
+    def getCurrent(self):
+        """test time in hours"""
+        return self.current
    
+    
     ### battery statistics methods ###
     
     def setStatistics(self):
