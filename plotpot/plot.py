@@ -116,6 +116,12 @@ class Plot(object):
         elif self.bat.showArgs['points'] is not None:
             # get indices of data point limits
             self.p = self.bat.showArgs['points']
+            # get indices of half cycle limits
+            self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
+            self.h[1] += 1 
+            # get indices of full cycle limits
+            self.c = np.searchsorted(self.bat.statPoints[:,1], self.p)
+            self.c[1] += 1
             
         # no range argument given
         else:
@@ -124,9 +130,8 @@ class Plot(object):
             self.p = (0, len(self.bat.points))
             
         if self.args.verbose:
-            print(self.c)
-            print(self.h)
-            print(self.p)
+            print("Full cycles: %d-%d, Half cycles: %d-%d, Data Points: %d-%d" 
+                  % (self.c[0], self.c[1], self.h[0], self.h[1], self.p[0], self.p[1]))
         
         
     ### plot methods ###
@@ -170,6 +175,8 @@ class Plot(object):
         
              # loop over half cycles
             for (a,b) in self.bat.halfStatPoints[self.h[0]:self.h[1]]:
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
                 ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-', label='half cycle')
                 ax2.plot(self.bat.ce.capacity[a:b], self.bat.ce.voltage[a:b], 'k-', label='half cycle')                
 
