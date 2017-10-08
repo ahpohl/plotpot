@@ -146,7 +146,7 @@ class Plot(object):
             
             # working electrode plot
             ax1 = fig.add_subplot(111)
-            ax1.autoscale(axis='x', tight='tight')
+            #ax1.autoscale(axis='x', tight='tight')
             ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
             ax1.set_ylabel('Voltage [V]', fontsize=12)
             
@@ -180,6 +180,70 @@ class Plot(object):
                 ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-', label='half cycle')
                 ax2.plot(self.bat.ce.capacity[a:b], self.bat.ce.voltage[a:b], 'k-', label='half cycle')                
 
+        fig.tight_layout()
+        
+    
+    def figVoltageCapacityCircle(self):
+        """plot galvanostatic profile (circle)"""
+        
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(2)
+            fig.canvas.set_window_title("Figure 2 - galvanostatic profile (circle)")
+            
+            # working electrode plot
+            ax1 = fig.add_subplot(111)
+            #ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
+            ax1.set_ylabel('Voltage [V]')
+            
+            curCap = 0; prevCap = 0
+            # loop over half cycles
+            for ((a,b),s) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatStep[self.h[0]:self.h[1]]):
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+                curCap = self.bat.we.capacity[b-1]
+                if s > 0:
+                    ax1.plot(-1*self.bat.we.capacity[a:b]+prevCap, self.bat.we.voltage[a:b], 'k-', label='charge')
+                elif s < 0:
+                    ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-', label='discharge')
+                else:
+                    sys.exit("ERROR: Rest cycles do not have capacity!")
+                prevCap = curCap
+                    
+        # full cell
+        else:
+            fig = plt.figure(2, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 2 - full cell galvanostatic profile (circle)")
+            
+            # working electrode
+            ax1 = fig.add_subplot(121)
+            ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
+            ax1.set_ylabel('WE potential [V]')
+    
+            # counter electrode
+            ax2 = fig.add_subplot(122)
+            ax2.autoscale(axis='x', tight='tight')
+            ax2.set_xlabel('Specific capacity [mAh g$^{-1}$]')
+            ax2.set_ylabel('CE potential [V]')
+            
+            curCap = []; prevCap = [0,0]
+            # loop over half cycles
+            for ((a,b),s) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatStep[self.h[0]:self.h[1]]):
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+                curCap = [self.bat.we.capacity[b-1], self.bat.ce.capacity[b-1]]
+                if s > 0:
+                    ax1.plot(-1*self.bat.we.capacity[a:b]+prevCap[0], self.bat.we.voltage[a:b], 'k-', label='charge')
+                    ax2.plot(-1*self.bat.ce.capacity[a:b]+prevCap[1], self.bat.ce.voltage[a:b], 'k-', label='charge')
+                elif s < 0:
+                    ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-', label='discharge')
+                    ax2.plot(self.bat.ce.capacity[a:b], self.bat.ce.voltage[a:b], 'k-', label='discharge')
+                else:
+                    sys.exit("ERROR: Rest cycles do not have capacity!")
+                prevCap = curCap
+        
         fig.tight_layout()
 
     

@@ -156,9 +156,11 @@ class Battery(DbManager):
         # fetch statistics
         self.setHalfStatCycles()
         self.setHalfStatPoints()
+        self.setHalfStatStep()
         
         self.halfStatistics = {'cycles': self.halfStatCycles,
-                               'points': self.halfStatPoints}
+                               'points': self.halfStatPoints,
+                               'step': self.halfStatStep}
         
         
     def getHalfStatistics(self):
@@ -181,7 +183,20 @@ class Battery(DbManager):
         """start and end data point of half cycle"""
         self.query('''SELECT Cycle_Start,Cycle_End FROM Half_Cycle_Table''')
         self.halfStatPoints = np.array(self.fetchall())
-        
+    
+    
     def getHalfStatPoints(self):
         """start and end data point of half cycle"""
         return self.halfStatPoints
+    
+    
+    def setHalfStatStep(self):
+        """step index of half cycle"""
+        self.query('''SELECT Step_Index FROM Half_Cycle_Table''')
+        self.halfStatStep = np.squeeze(np.array(self.fetchall()))
+    
+    
+    def getHalfStatStep(self):
+        """step index of half cycle"""
+        return self.halfStatStep
+    

@@ -49,9 +49,9 @@ class Plotpot(object):
         
         sys.exit() 
 
-        
+    """       
     def subcommandShow_backup(self):
-        """run show subcommand"""
+        run show subcommand
         
         # create plot object
         plotObj = Plot(self.args)
@@ -68,7 +68,7 @@ class Plotpot(object):
         # show plots if quiet option not given
         if not self.args.quiet:
             plotObj.showPlots()
-            
+    """            
     
     def subcommandShow(self):
         """run show subcommand"""
