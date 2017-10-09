@@ -82,7 +82,7 @@ class Battery(DbManager):
     def setPoints(self):
         """data points"""
         self.query('''SELECT Data_Point FROM Channel_Normal_Table''')
-        self.points = np.squeeze(np.array(self.fetchall()))
+        self.points = np.array(self.fetchall())
 
         
     def getPoints(self):
@@ -93,7 +93,7 @@ class Battery(DbManager):
     def setCycles(self):
         """full cycles"""
         self.query('''SELECT Full_Cycle FROM Channel_Normal_Table''')
-        self.cycles = np.squeeze(np.array(self.fetchall()))
+        self.cycles = np.array(self.fetchall())
 
         
     def getCycles(self):
@@ -104,7 +104,7 @@ class Battery(DbManager):
     def setTestTime(self):
         """test time in hours"""
         self.query('''SELECT Test_Time FROM Channel_Normal_Table''')
-        self.testTime = np.squeeze(np.array(self.fetchall())) / 3.6e3
+        self.testTime = np.array(self.fetchall()) / 3.6e3
     
     
     def getTestTime(self):
@@ -115,7 +115,7 @@ class Battery(DbManager):
     def setCurrent(self):
         """current in mA"""
         self.query('''SELECT Current FROM Channel_Normal_Table''')
-        self.current = np.squeeze(np.array(self.fetchall())) * 1e3
+        self.current = np.array(self.fetchall()) * 1e3
     
     
     def getCurrent(self):
@@ -126,7 +126,7 @@ class Battery(DbManager):
     def setTemperature(self):
         """Temperature in °C"""
         self.query('''SELECT Aux_Channel FROM Channel_Normal_Table''')
-        self.temperature = np.squeeze(np.array(self.fetchall()))
+        self.temperature = np.array(self.fetchall())
     
     
     def getTemperature(self):
@@ -155,7 +155,7 @@ class Battery(DbManager):
     def setStatCycles(self):
         """full cycle statistics"""
         self.query('''SELECT Full_Cycle FROM Full_Cycle_Table''')
-        self.statCycles = np.squeeze(np.array(self.fetchall()))
+        self.statCycles = np.array(self.fetchall())
 
         
     def getStatCycles(self):
@@ -197,7 +197,7 @@ class Battery(DbManager):
     def setHalfStatCycles(self):
         """half cycles"""
         self.query('''SELECT Half_Cycle FROM Half_Cycle_Table''')
-        self.halfStatCycles = np.squeeze(np.array(self.fetchall()))
+        self.halfStatCycles = np.array(self.fetchall())
 
         
     def getHalfStatCycles(self):
@@ -219,7 +219,7 @@ class Battery(DbManager):
     def setHalfStatStep(self):
         """step index of half cycle"""
         self.query('''SELECT Step_Index FROM Half_Cycle_Table''')
-        self.halfStatStep = np.squeeze(np.array(self.fetchall()))
+        self.halfStatStep = np.array(self.fetchall())
     
     
     def getHalfStatStep(self):

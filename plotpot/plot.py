@@ -104,7 +104,7 @@ class Plot(object):
         # get indices with --time argument
         elif self.bat.showArgs['time'] is not None:
             # get indices of data point limits
-            self.p = np.searchsorted(self.bat.testTime, self.bat.showArgs['time'])
+            self.p = np.searchsorted(self.bat.testTime[:,0], self.bat.showArgs['time'])
             # get indices of half cycle limits
             self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
             self.h[1] += 1 
