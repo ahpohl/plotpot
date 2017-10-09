@@ -33,7 +33,7 @@ class Electrode(DbManager):
         self.volume = 0       # volume of electrode [µL]
         
         # mass 
-        if any([x in [1,2,4,5,11] for x in self.showArgs['plots']]):
+        if any([x in [1,2,11] for x in self.showArgs['plots']]):
             self.setMass()
         # capacity
         if 10 in self.showArgs['plots']:

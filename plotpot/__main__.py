@@ -56,7 +56,7 @@ def main():
                     help="skip up-to-date check")
     parser_show.add_argument('-p', '--plot', default='1', metavar='N',
                     help="select plot type")
-    parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,5),
+    parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,6),
                     metavar='N', help="smooth dQ/dV plot [%(choices)s]") # window length
     
     # mutually exclusive arguments for plot command

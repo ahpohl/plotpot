@@ -64,12 +64,14 @@ class Battery(DbManager):
         self.setCycles()
         self.setTestTime()
         self.setCurrent()
+        self.setTemperature()
         
         # assemble data dictionary
         self.data = {'points': self.points,
                      'cycles': self.cycles,
                      'testtime': self.testTime,
-                     'current': self.current}
+                     'current': self.current,
+                     'temperature': self.temperature}
     
     
     def getData(self):
@@ -120,6 +122,17 @@ class Battery(DbManager):
         """test time in hours"""
         return self.current
    
+    
+    def setTemperature(self):
+        """Temperature in °C"""
+        self.query('''SELECT Aux_Channel FROM Channel_Normal_Table''')
+        self.temperature = np.squeeze(np.array(self.fetchall()))
+    
+    
+    def getTemperature(self):
+        """Temperature in °C"""
+        return self.temperature
+    
     
     ### battery statistics methods ###
     
