@@ -134,7 +134,7 @@ class Plot(object):
                   % (self.c[0], self.c[1], self.h[0], self.h[1], self.p[0], self.p[1]))
         
         
-    ### plot methods ###
+    ### data plot methods ###
     
     def figVoltageCapacity(self):
         """plot galvanostatic profile"""
@@ -395,6 +395,60 @@ class Plot(object):
                     sys.exit("ERROR: rest cycles not supported")
                     
         fig.tight_layout()
+        
+        
+    ### statistics plot methods ###
+    
+
+    def figSpecificCapacity(self):
+        """capacity plot"""
+
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(6)
+            fig.canvas.set_window_title("Figure 6 - specific capacity")
+        
+            # working electrode
+            ax1 = fig.add_subplot(111)
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)            
+            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]], self.bat.we.statCapacity[self.c[0]:self.c[1]][0], 'ko-', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]], self.bat.we.statCapacity[self.c[0]:self.c[1]][1], 'kD-', label='discharge')
+
+            ylim = ax1.get_ylim()
+            ax1.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            #ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=2, fontsize=12)
+            #fig.tight_layout(rect=(0,0.05,1,1))
+    
+        # full cell
+        else:
+            fig = plt.figure(6, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 6 - full cell specific capacity")
+        
+            # working electrode
+            ax1 = fig.add_subplot(121)
+            ax1.plot(self.fullStats[:,0], self.fullStats[:,5], 'ko-', label='charge')
+            ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,6]), 'kD-', label='discharge')
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel('WE specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ylim = ax1.get_ylim()
+            ax1.set_ylim([0,ylim[1]])
+            
+            # counter electrode
+            ax2 = fig.add_subplot(122)
+            ax2.plot(self.fullStats[:,0], self.fullStats[:,5], 'ko-', label='charge')
+            ax2.plot(self.fullStats[:,0], np.abs(self.fullStats[:,6]), 'kD-', label='discharge')
+            ax2.set_xlabel('Cycle', fontsize=12)
+            ax2.set_ylabel('CE specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ylim = ax2.get_ylim()
+            ax2.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=2, fontsize=12)
+            fig.tight_layout(rect=(0,0.05,1,1))
         
     
     def smooth(self, x, window_len=11, window='hanning'):

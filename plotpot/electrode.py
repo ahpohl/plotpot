@@ -20,6 +20,9 @@ class Electrode(DbManager):
         # set electrode data
         self.setData()
         
+        # set electrode statistics
+        self.setStatistics()
+        
         
     ### property methods ###
     
@@ -33,7 +36,7 @@ class Electrode(DbManager):
         self.volume = 0       # volume of electrode [µL]
         
         # mass 
-        if any([x in [1,2,11] for x in self.showArgs['plots']]):
+        if any([x in [1,2,6,11] for x in self.showArgs['plots']]):
             self.setMass()
         # capacity
         if 10 in self.showArgs['plots']:
@@ -42,7 +45,7 @@ class Electrode(DbManager):
         if 12 in self.showArgs['plots']:
             self.setArea()
         # volume
-        if 6 in self.showArgs['plots']:
+        if 8 in self.showArgs['plots']:
             self.setVolume()
         
         
@@ -212,5 +215,30 @@ class Electrode(DbManager):
     
     ### per cycle statistics methods ###
     
-    
-    
+    def setStatistics(self):
+        """fetch statistics from raw file"""
+        
+        # fetch statistics
+        self.setStatCapacity()
+        
+        self.statistics = {'capacity': self.statCapacity}
+        
+        
+    def getStatistics(self):
+        """return battery statistics"""
+        return self.statistics
+
+    def setStatCapacity(self):
+        """capacity"""
+        self.query('''SELECT Charge_Capacity,Discharge_Capacity FROM Full_Cycle_Table''')
+        self.statCapacity = np.squeeze(np.array(self.fetchall()))
+        # convert capacity from As to mAh/g
+        if self.mass:
+            self.statCapacity = np.abs(self.capacity / (3.6e-3 * self.mass))
+        else:
+            self.statCapacity = np.zeros(self.statCapacity.shape)
+
+        
+    def getStatCapacity(self):
+        """capacity"""
+        return self.capacity
