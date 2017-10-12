@@ -399,58 +399,96 @@ class Plot(object):
         
     ### statistics plot methods ###
     
-
-    def figSpecificCapacity(self):
-        """capacity plot"""
+    def _TemplateStatPlot(self, plotnum, title, ylabel, y):
+        """template for plots vs. cycle number"""
 
         # half cell
         if not self.bat.isFullCell:
-            fig = plt.figure(6)
-            fig.canvas.set_window_title("Figure 6 - specific capacity")
+            fig = plt.figure(plotnum)
+            fig.canvas.set_window_title("Figure %d - %s" % (plotnum, title))
         
             # working electrode
             ax1 = fig.add_subplot(111)
             ax1.set_xlabel('Cycle', fontsize=12)
-            ax1.set_ylabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)            
-            
-            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]], self.bat.we.statCapacity[self.c[0]:self.c[1]][0], 'ko-', label='charge')
-            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]], self.bat.we.statCapacity[self.c[0]:self.c[1]][1], 'kD-', label='discharge')
-
+            ax1.set_ylabel(ylabel, fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],0], 'ko-', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],1], 'kD-', label='discharge')
             ylim = ax1.get_ylim()
             ax1.set_ylim([0,ylim[1]])
             
             # Put a legend below current axis
-            #ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=2, fontsize=12)
-            #fig.tight_layout(rect=(0,0.05,1,1))
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, fontsize=12)
+            fig.tight_layout(rect=(0,0.06,1,1))
     
         # full cell
         else:
-            fig = plt.figure(6, figsize=(12,6))
-            fig.canvas.set_window_title("Figure 6 - full cell specific capacity")
+            fig = plt.figure(plotnum, figsize=(12,6))
+            fig.canvas.set_window_title("Figure %d - full cell %s" % (plotnum, title))
         
             # working electrode
             ax1 = fig.add_subplot(121)
-            ax1.plot(self.fullStats[:,0], self.fullStats[:,5], 'ko-', label='charge')
-            ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,6]), 'kD-', label='discharge')
             ax1.set_xlabel('Cycle', fontsize=12)
-            ax1.set_ylabel('WE specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax1.set_ylabel('WE %s' % ylabel, fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],0], 'ko-', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],1], 'kD-', label='discharge')
             ylim = ax1.get_ylim()
             ax1.set_ylim([0,ylim[1]])
             
             # counter electrode
             ax2 = fig.add_subplot(122)
-            ax2.plot(self.fullStats[:,0], self.fullStats[:,5], 'ko-', label='charge')
-            ax2.plot(self.fullStats[:,0], np.abs(self.fullStats[:,6]), 'kD-', label='discharge')
             ax2.set_xlabel('Cycle', fontsize=12)
-            ax2.set_ylabel('CE specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax2.set_ylabel('CE %s' % ylabel, fontsize=12)
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.ce, y)()[self.c[0]:self.c[1],0], 'ko-', label='charge')
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.ce, y)()[self.c[0]:self.c[1],1], 'kD-', label='discharge')
             ylim = ax2.get_ylim()
             ax2.set_ylim([0,ylim[1]])
             
             # Put a legend below current axis
             ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=2, fontsize=12)
             fig.tight_layout(rect=(0,0.05,1,1))
-        
     
+
+    def figSpecificCapacity(self):
+        """specific capacity plot"""
+
+        self._TemplateStatPlot(6, "specific capacity",
+                               "Specific capacity [mAh g$^{-1}$]",
+                               statSpecificCapacity)
+        
+
+    def figVolumetricCapacity(self):
+        """volumetric capacity plot"""
+        
+        self._TemplateStatPlot(7, "volumetric capacity",
+                               "Volumetric capacity [Ah L$^{-1}$]",
+                               self.bat.we.statVolumetricCapacity,
+                               self.bat.ce.statVolumetricCapacity)
+
+    
+    def figSpecificEnergy(self):
+        """specific energy plot"""
+        
+        self._TemplateStatPlot(8, "specific energy",
+                              "Specific energy [Wh kg$^{-1}$]",
+                               self.bat.we.statSpecificEnergy,
+                               self.bat.ce.statSpecificEnergy)
+
+
+    def figVolumetricEnergy(self):
+        """volumetric energy plot"""
+
+        self._TemplateStatPlot(9, "volumetric energy",
+                              "Volumetric energy [Wh L$^{-1}$]",
+                               self.bat.we.statVolumetricEnergy,
+                               self.bat.ce.statVolumetricEnergy)
+            
+
     def smooth(self, x, window_len=11, window='hanning'):
         """smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth
         smooth the data using a window with requested size.

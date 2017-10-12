@@ -36,7 +36,7 @@ class Electrode(DbManager):
         self.volume = 0       # volume of electrode [µL]
         
         # mass 
-        if any([x in [1,2,6,11] for x in self.showArgs['plots']]):
+        if any([x in [1,2,6,8] for x in self.showArgs['plots']]):
             self.setMass()
         # capacity
         if 10 in self.showArgs['plots']:
@@ -45,7 +45,7 @@ class Electrode(DbManager):
         if 12 in self.showArgs['plots']:
             self.setArea()
         # volume
-        if 8 in self.showArgs['plots']:
+        if any([x in [7,9] for x in self.showArgs['plots']]):
             self.setVolume()
         
         
@@ -65,6 +65,8 @@ class Electrode(DbManager):
             while True:
                 try:
                     prop = float(input("Please give %s in [%s]: " % (desc, unit)))
+                    if prop == 0:
+                        continue
                     break
                 except ValueError as e:
                     continue
@@ -75,6 +77,8 @@ class Electrode(DbManager):
                 while True:
                     try:
                         prop = float(input("Please give new %s in [%s]: " % (desc, unit)))
+                        if prop == 0:
+                            continue
                         break
                     except ValueError as e:
                         continue
@@ -152,7 +156,7 @@ class Electrode(DbManager):
             self.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
-        self.voltage = np.squeeze(np.array(self.fetchall()))
+        self.voltage = np.array(self.fetchall())
 
         
     def getVoltage(self):
@@ -163,12 +167,10 @@ class Electrode(DbManager):
     def setCapacity(self):
         """capacity"""
         self.query('''SELECT Capacity FROM Channel_Normal_Table''')
-        self.capacity = np.squeeze(np.array(self.fetchall()))
+        self.capacity = np.array(self.fetchall())
         # convert capacity from As to mAh/g
-        if self.mass:
+        if self.mass is not 0:
             self.capacity = np.abs(self.capacity / (3.6e-3 * self.mass))
-        else:
-            self.capacity = np.zeros(self.capacity.shape)
 
         
     def getCapacity(self):
@@ -184,12 +186,10 @@ class Electrode(DbManager):
             self.query('''SELECT Energy2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
-        self.energy = np.squeeze(np.array(self.fetchall()))
+        self.energy = np.array(self.fetchall())
         # convert energy from Ws to Wh/kg
-        if self.mass:
+        if self.mass is not 0:
             self.energy = self.energy / (3.6e-3 * self.mass)
-        else:
-            self.energy = np.zeros(self.energy.shape)
 
         
     def getEnergy(self):
@@ -205,7 +205,7 @@ class Electrode(DbManager):
             self.query('''SELECT dQdV2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
-        self.dqdv = np.squeeze(np.array(self.fetchall()))
+        self.dqdv = np.array(self.fetchall())
 
         
     def getDqDv(self):
@@ -219,26 +219,83 @@ class Electrode(DbManager):
         """fetch statistics from raw file"""
         
         # fetch statistics
-        self.setStatCapacity()
+        self.setStatSpecificCapacity()
+        self.setStatVolumetricCapacity()
+        self.setStatSpecificEnergy()
+        self.setStatVolumetricEnergy()
         
-        self.statistics = {'capacity': self.statCapacity}
+        self.statistics = {'specificCapacity': self.statSpecificCapacity,
+                           'volumetricCapacity': self.statVolumetricCapacity,
+                           'specificEnergy': self.statSpecificEnergy,
+                           'volumetricEnergy': self.statVolumetricEnergy}
         
         
     def getStatistics(self):
         """return battery statistics"""
         return self.statistics
+    
 
-    def setStatCapacity(self):
-        """capacity"""
+    def setStatSpecificCapacity(self):
+        """specific capacity"""
         self.query('''SELECT Charge_Capacity,Discharge_Capacity FROM Full_Cycle_Table''')
-        self.statCapacity = np.squeeze(np.array(self.fetchall()))
+        self.statSpecificCapacity = np.array(self.fetchall())
         # convert capacity from As to mAh/g
-        if self.mass:
-            self.statCapacity = np.abs(self.capacity / (3.6e-3 * self.mass))
-        else:
-            self.statCapacity = np.zeros(self.statCapacity.shape)
+        if self.mass is not 0:
+            self.statSpecificCapacity = np.abs(self.statSpecificCapacity / (3.6e-3 * self.mass))
 
         
-    def getStatCapacity(self):
-        """capacity"""
-        return self.capacity
+    def getStatSpecificCapacity(self):
+        """specific capacity"""
+        return self.statSpecificCapacity
+    
+    
+    def setStatVolumetricCapacity(self):
+        """volumetric capacity"""
+        self.query('''SELECT Charge_Capacity,Discharge_Capacity FROM Full_Cycle_Table''')
+        self.statVolumetricCapacity = np.array(self.fetchall())
+        # convert capacity from As to Ah/L
+        if self.volume is not 0:
+            self.statVolumetricCapacity = np.abs(self.statVolumetricCapacity / (3.6e-3 * self.volume))
+
+        
+    def getStatVolumetricCapacity(self):
+        """volumetric capacity"""
+        return self.statVolumetricCapacity
+    
+
+    def setStatSpecificEnergy(self):
+        """specific capacity"""
+        if self.electrode == 'we':
+            self.query('''SELECT Charge_Energy,Discharge_Energy FROM Full_Cycle_Table''')
+        elif self.electrode == 'ce':
+            self.query('''SELECT Charge_Energy2,Discharge_Energy2 FROM Full_Cycle_Table''')
+        else:
+            sys.exit("ERROR: Unknown electrode %s" % self.electrode)
+        self.statSpecificEnergy = np.array(self.fetchall())
+        # convert capacity from Ws to Wh/kg
+        if self.mass is not 0:
+            self.statSpecificEnergy = np.abs(self.statSpecificEnergy / (3.6e-3 * self.mass))
+
+        
+    def getStatSpecificEnergy(self):
+        """specific capacity"""
+        return self.statSpecificEnergy
+    
+    
+    def setStatVolumetricEnergy(self):
+        """volumetric capacity"""
+        if self.electrode == 'we':
+            self.query('''SELECT Charge_Energy,Discharge_Energy FROM Full_Cycle_Table''')
+        elif self.electrode == 'ce':
+            self.query('''SELECT Charge_Energy2,Discharge_Energy2 FROM Full_Cycle_Table''')
+        else:
+            sys.exit("ERROR: Unknown electrode %s" % self.electrode)
+        self.statVolumetricEnergy = np.array(self.fetchall())
+        # convert capacity from Ws to Wh/L
+        if self.volume is not 0:
+            self.statVolumetricEnergy = np.abs(self.statVolumetricEnergy / (3.6e-3 * self.volume))
+
+        
+    def getStatVolumetricEnergy(self):
+        """volumetric capacity"""
+        return self.statVolumetricEnergy
