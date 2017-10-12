@@ -412,9 +412,9 @@ class Plot(object):
             ax1.set_xlabel('Cycle', fontsize=12)
             ax1.set_ylabel(ylabel, fontsize=12)            
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
-                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],0], 'ko-', label='charge')
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
-                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],1], 'kD-', label='discharge')
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
             ylim = ax1.get_ylim()
             ax1.set_ylim([0,ylim[1]])
             
@@ -432,9 +432,9 @@ class Plot(object):
             ax1.set_xlabel('Cycle', fontsize=12)
             ax1.set_ylabel('WE %s' % ylabel, fontsize=12)            
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
-                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],0], 'ko-', label='charge')
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
-                     getattr(self.bat.we, y)()[self.c[0]:self.c[1],1], 'kD-', label='discharge')
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
             ylim = ax1.get_ylim()
             ax1.set_ylim([0,ylim[1]])
             
@@ -443,9 +443,9 @@ class Plot(object):
             ax2.set_xlabel('Cycle', fontsize=12)
             ax2.set_ylabel('CE %s' % ylabel, fontsize=12)
             ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
-                     getattr(self.bat.ce, y)()[self.c[0]:self.c[1],0], 'ko-', label='charge')
+                     getattr(self.bat.ce, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
-                     getattr(self.bat.ce, y)()[self.c[0]:self.c[1],1], 'kD-', label='discharge')
+                     getattr(self.bat.ce, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
             ylim = ax2.get_ylim()
             ax2.set_ylim([0,ylim[1]])
             
@@ -459,7 +459,7 @@ class Plot(object):
 
         self._TemplateStatPlot(6, "specific capacity",
                                "Specific capacity [mAh g$^{-1}$]",
-                               statSpecificCapacity)
+                               "statSpecificCapacity")
         
 
     def figVolumetricCapacity(self):
@@ -467,8 +467,7 @@ class Plot(object):
         
         self._TemplateStatPlot(7, "volumetric capacity",
                                "Volumetric capacity [Ah L$^{-1}$]",
-                               self.bat.we.statVolumetricCapacity,
-                               self.bat.ce.statVolumetricCapacity)
+                               "statVolumetricCapacity")
 
     
     def figSpecificEnergy(self):
@@ -476,8 +475,7 @@ class Plot(object):
         
         self._TemplateStatPlot(8, "specific energy",
                               "Specific energy [Wh kg$^{-1}$]",
-                               self.bat.we.statSpecificEnergy,
-                               self.bat.ce.statSpecificEnergy)
+                              "statSpecificEnergy")
 
 
     def figVolumetricEnergy(self):
@@ -485,8 +483,7 @@ class Plot(object):
 
         self._TemplateStatPlot(9, "volumetric energy",
                               "Volumetric energy [Wh L$^{-1}$]",
-                               self.bat.we.statVolumetricEnergy,
-                               self.bat.ce.statVolumetricEnergy)
+                              "statVolumetricEnergy")
             
 
     def smooth(self, x, window_len=11, window='hanning'):
