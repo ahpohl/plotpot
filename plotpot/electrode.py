@@ -23,6 +23,9 @@ class Electrode(DbManager):
         # set electrode statistics
         self.setStatistics()
         
+        # set electrode half cycle statistics
+        self.setHalfStatistics()
+        
         
     ### property methods ###
     
@@ -36,10 +39,10 @@ class Electrode(DbManager):
         self.volume = 0       # volume of electrode [µL]
         
         # mass 
-        if any([x in [1,2,6,8] for x in self.showArgs['plots']]):
+        if any([x in [1,2,6,8,10] for x in self.showArgs['plots']]):
             self.setMass()
         # capacity
-        if 10 in self.showArgs['plots']:
+        if 11 in self.showArgs['plots']:
             self.setCapacity()
         # area
         if 12 in self.showArgs['plots']:
@@ -213,6 +216,47 @@ class Electrode(DbManager):
         return self.dqdv
     
     
+    ### per half cycle statistics methods ###
+    
+    def setHalfStatistics(self):
+        """fetch half cycle statistics from raw file"""
+        
+        # fetch half statistics
+        self.setHalfStatCurrent()
+
+        self.halfStatistics = {'averageCurrent': self.halfStatCurrent}
+        
+        
+    def getStatistics(self):
+        """get half cycle battery statistics"""
+        return self.halfStatistics
+    
+    
+    def setHalfStatCurrent(self):
+        """average current per half cycle"""
+        
+        # get current in mA
+        self.query('''SELECT Current FROM Channel_Normal_Table''')
+        current = np.squeeze(np.array(self.fetchall())) * 1e3
+        
+        # get half cycle boundaries
+        self.query('''SELECT Cycle_Start,Cycle_End FROM Half_Cycle_Table''')
+        halfStatPoints = np.array(self.fetchall())
+        
+        # calcuate average current for each half cycle ignoring rest time
+        self.halfStatCurrent = np.empty((0))
+        for (a,b) in halfStatPoints:
+            self.halfStatCurrent = np.append(self.halfStatCurrent, 
+                                             np.true_divide(current[a:b].sum(),(current[a:b]!=0).sum()))
+            
+        print(self.halfStatCurrent[0:6]*1e3)
+    
+    
+    def getHalfStatCurrent(self):
+        """average current per half cycle"""
+        return self.halfStatCurrent
+    
+    
     ### per cycle statistics methods ###
     
     def setStatistics(self):
@@ -223,11 +267,13 @@ class Electrode(DbManager):
         self.setStatVolumetricCapacity()
         self.setStatSpecificEnergy()
         self.setStatVolumetricEnergy()
+        self.setStatSpecificCurrentDensity()
         
         self.statistics = {'specificCapacity': self.statSpecificCapacity,
                            'volumetricCapacity': self.statVolumetricCapacity,
                            'specificEnergy': self.statSpecificEnergy,
-                           'volumetricEnergy': self.statVolumetricEnergy}
+                           'volumetricEnergy': self.statVolumetricEnergy,
+                           'specificCurrentDensity': self.statSpecificCurrentDensity}
         
         
     def getStatistics(self):
@@ -299,3 +345,34 @@ class Electrode(DbManager):
     def getStatVolumetricEnergy(self):
         """volumetric capacity"""
         return self.statVolumetricEnergy
+    
+    
+    def setStatCurrent(self):
+        """average current"""
+        
+        self.statCurrent = np.empty((0,2))
+        for i in self.halfStatCurrent:
+            charge = 0; discharge = 0
+            if i > 0:
+                charge = i
+            elif i < 0:
+                discharge = i
+    
+    
+    def setStatSpecificCurrentDensity(self):
+        """specific current density"""
+        
+        # calculate average current in each half cycle
+        # I = Q / t [As / s = A ]
+        # [ mAh  ]
+        # step time is wrong if there was rest time
+        # J_mass = I / m [A/mg] * 1e6 = [mA/g]
+        if self.mass is not 0:
+            self.statSpecificCurrentDensity = np.abs(self.statSpecificCapacity / (self.mass))
+        else:
+            self.statSpecificCurrentDensity = np.zeros(self.statSpecificCapacity.shape)
+            
+            
+    def getStatSpecificCurrentDensity(self):
+        """specific current density"""
+        return self.statSpecificCurrentDensity

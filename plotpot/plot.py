@@ -484,7 +484,14 @@ class Plot(object):
         self._TemplateStatPlot(9, "volumetric energy",
                               "Volumetric energy [Wh L$^{-1}$]",
                               "statVolumetricEnergy")
-            
+
+    def figSpecificCurrentDensity(self):
+        """Specific current density vs. cycle number"""
+        
+        self._TemplateStatPlot(10, "specific current density",
+                              "Specific current density [mA g$^{-1}$]",
+                              "statSpecificCurrentDensity")
+
 
     def smooth(self, x, window_len=11, window='hanning'):
         """smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth
@@ -541,5 +548,3 @@ class Plot(object):
         
         # make 'y output lengtj' == 'y input length'
         return y[(window_len//2):-(window_len//2)] # "//" integer division e.g. 15//2 = 7
-    
-    
