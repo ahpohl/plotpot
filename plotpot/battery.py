@@ -142,9 +142,13 @@ class Battery(DbManager):
         # fetch statistics
         self.setStatCycles()
         self.setStatPoints()
+        self.setStatAverageCurrent()
+        self.setStatEfficiency()
         
         self.statistics = {'cycles': self.statCycles,
-                           'points': self.statPoints}
+                           'points': self.statPoints,
+                           'averageCurrent': self.statAverageCurrent,
+                           'efficiency': self.statEfficiency}
         
         
     def getStatistics(self):
@@ -172,6 +176,28 @@ class Battery(DbManager):
     def getStatPoints(self):
         """start and end data point of cycle"""
         return self.statPoints
+    
+    
+    def setStatAverageCurrent(self):
+        """average current in mA"""
+        self.query('''SELECT Charge_Current,Discharge_Current FROM Full_Cycle_Table''')
+        self.statAverageCurrent = np.array(self.fetchall()) * 1e3       
+        
+    
+    def getStatAverageCurrent(self):
+        """average current in mA"""
+        return self.statAverageCurrent
+    
+    
+    def setStatEfficiency(self):
+        """coulombic efficiency in %"""
+        self.query('''SELECT Efficiency FROM Full_Cycle_Table''')
+        self.statEfficiency = np.array(self.fetchall()) * 100      
+        
+    
+    def getStatEfficiency(self):
+        """coulombic efficiency in %"""
+        return self.statEfficiency
     
     
     ### half cycle statistics methods ###

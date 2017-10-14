@@ -44,13 +44,13 @@ class Plot(object):
             elif n == 10:
                 self.figSpecificCurrentDensity()
             elif n == 11:
-                self.figVolumetricCurrentDensity()
+                self.figAreaCurrentDensity()
             elif n == 12:
-                self.figEfficiency()
+                self.figCRate()
             elif n == 13:
                 self.figHysteresis()
             elif n == 14:
-                self.figCRate()
+                self.figEfficiency()
             else:
                 sys.exit("ERROR: Plot number not defined.")
         
@@ -415,8 +415,9 @@ class Plot(object):
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
-            ylim = ax1.get_ylim()
-            ax1.set_ylim([0,ylim[1]])
+            if plotnum in [6,7,8,9]:
+                ylim = ax1.get_ylim()
+                ax1.set_ylim([0,ylim[1]])
             
             # Put a legend below current axis
             ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, fontsize=12)
@@ -435,8 +436,9 @@ class Plot(object):
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
-            ylim = ax1.get_ylim()
-            ax1.set_ylim([0,ylim[1]])
+            if plotnum in [6,7,8,9]:
+                ylim = ax1.get_ylim()
+                ax1.set_ylim([0,ylim[1]])
             
             # counter electrode
             ax2 = fig.add_subplot(122)
@@ -446,8 +448,9 @@ class Plot(object):
                      getattr(self.bat.ce, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
                      getattr(self.bat.ce, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
-            ylim = ax2.get_ylim()
-            ax2.set_ylim([0,ylim[1]])
+            if plotnum in [6,7,8,9]:
+                ylim = ax2.get_ylim()
+                ax2.set_ylim([0,ylim[1]])
             
             # Put a legend below current axis
             ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=2, fontsize=12)
@@ -456,23 +459,20 @@ class Plot(object):
 
     def figSpecificCapacity(self):
         """specific capacity plot"""
-
         self._TemplateStatPlot(6, "specific capacity",
                                "Specific capacity [mAh g$^{-1}$]",
                                "statSpecificCapacity")
         
 
     def figVolumetricCapacity(self):
-        """volumetric capacity plot"""
-        
+        """volumetric capacity plot"""        
         self._TemplateStatPlot(7, "volumetric capacity",
                                "Volumetric capacity [Ah L$^{-1}$]",
                                "statVolumetricCapacity")
 
     
     def figSpecificEnergy(self):
-        """specific energy plot"""
-        
+        """specific energy plot"""        
         self._TemplateStatPlot(8, "specific energy",
                               "Specific energy [Wh kg$^{-1}$]",
                               "statSpecificEnergy")
@@ -480,18 +480,110 @@ class Plot(object):
 
     def figVolumetricEnergy(self):
         """volumetric energy plot"""
-
         self._TemplateStatPlot(9, "volumetric energy",
                               "Volumetric energy [Wh L$^{-1}$]",
                               "statVolumetricEnergy")
+        
 
     def figSpecificCurrentDensity(self):
-        """Specific current density vs. cycle number"""
-        
+        """Specific current density vs. cycle number"""        
         self._TemplateStatPlot(10, "specific current density",
                               "Specific current density [mA g$^{-1}$]",
                               "statSpecificCurrentDensity")
+        
 
+    def figAreaCurrentDensity(self):
+        """Specific current density vs. cycle number"""        
+        self._TemplateStatPlot(11, "area current density",
+                              "Area current density [mA cm$^{-1}$]",
+                              "statAreaCurrentDensity")
+        
+
+    def figCRate(self):
+        """C-rate vs cycle number"""        
+        self._TemplateStatPlot(12, "C-rate",
+                              "t in C t$^{-1}$ [h]",
+                              "statCRate")
+        
+        
+    def figHysteresis(self):
+        """average voltages and hysteresis vs. cycle number"""
+
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(13)
+            fig.canvas.set_window_title("Figure 13 - voltage hysteresis")
+        
+            # working electrode
+            ax1 = fig.add_subplot(111)
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel('Voltage [V]', fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],0], 'ko--', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],1], 'kD--', label='discharge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statHysteresis[self.c[0]:self.c[1]], 'ks-', label='hysteresis')
+            ylim = ax1.get_ylim()
+            ax1.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=12)
+            fig.tight_layout(rect=(0,0.06,1,1))
+    
+        # full cell
+        else:
+            fig = plt.figure(13, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 13 - full cell voltage hysteresis")
+        
+            # working electrode
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel('WE potential [v]', fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],0], 'ko--', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],1], 'kD--', label='discharge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statHysteresis[self.c[0]:self.c[1]], 'ks-', label='hysteresis')
+            #ylim = ax1.get_ylim()
+            #ax1.set_ylim([0,ylim[1]])
+            
+            # counter electrode
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel('Cycle', fontsize=12)
+            ax2.set_ylabel('CE potential [V]', fontsize=12)
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.ce.statAverageVoltage[self.c[0]:self.c[1],0], 'ko--', label='charge')
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.ce.statAverageVoltage[self.c[0]:self.c[1],1], 'kD--', label='discharge')
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.ce.statHysteresis[self.c[0]:self.c[1]], 'ks-', label='hysteresis')
+            #ylim = ax2.get_ylim()
+            #ax2.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=3, fontsize=12)
+            fig.tight_layout(rect=(0,0.05,1,1))
+            
+
+    def figEfficiency(self):
+        """coulombic efficiency vs. cycle number"""
+
+        fig = plt.figure(14)
+        fig.canvas.set_window_title("Figure 14 - coulombic efficiency")
+    
+        # working electrode
+        ax1 = fig.add_subplot(111)
+        ax1.set_xlabel('Cycle', fontsize=12)
+        ax1.set_ylabel('Coulombic efficiency [%]', fontsize=12)            
+        ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                 self.bat.statEfficiency[self.c[0]:self.c[1],0], 'ko-')
+        ylim = ax1.get_ylim()
+        ax1.set_ylim([0,ylim[1]+0.1*ylim[1]])
+        
+        fig.tight_layout()
+    
 
     def smooth(self, x, window_len=11, window='hanning'):
         """smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth

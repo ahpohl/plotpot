@@ -23,9 +23,6 @@ class Electrode(DbManager):
         # set electrode statistics
         self.setStatistics()
         
-        # set electrode half cycle statistics
-        self.setHalfStatistics()
-        
         
     ### property methods ###
     
@@ -34,18 +31,18 @@ class Electrode(DbManager):
         
         # set initial properties
         self.mass = 0         # active mass [mg]
-        self.capacity = 0     # theoretical capacity [mAh/g]
+        self.theoCapacity = 0     # theoretical capacity [mAh/g]
         self.area = 0         # electrode area [cm²]
         self.volume = 0       # volume of electrode [µL]
         
         # mass 
-        if any([x in [1,2,6,8,10] for x in self.showArgs['plots']]):
+        if any([x in [1,2,6,8,10,12] for x in self.showArgs['plots']]):
             self.setMass()
         # capacity
-        if 11 in self.showArgs['plots']:
-            self.setCapacity()
-        # area
         if 12 in self.showArgs['plots']:
+            self.setTheoCapacity()
+        # area
+        if 11 in self.showArgs['plots']:
             self.setArea()
         # volume
         if any([x in [7,9] for x in self.showArgs['plots']]):
@@ -56,7 +53,7 @@ class Electrode(DbManager):
         """return dict of properties"""
         
         return {'mass': self.mass,
-                'capacity': self.propCapacity,
+                'theoCapacity': self.theoCapacity,
                 'area': self.area,
                 'volume': self.volume}
     
@@ -98,14 +95,14 @@ class Electrode(DbManager):
         return self.mass
 
 
-    def setPropCapacity(self):
+    def setTheoCapacity(self):
         """set electrode capacity"""        
-        self.propCapacity = self.__Property(self.propCapacity, "capacity", "mAh/g")
+        self.theoCapacity = self.__Property(self.theoCapacity, "capacity", "mAh/g")
 
 
-    def getPropCapacity(self):
+    def getTheoCapacity(self):
         """return electrode capacity in mAh/g"""        
-        return self.propCapacity
+        return self.theoCapacity
 
     
     def setArea(self):
@@ -216,64 +213,32 @@ class Electrode(DbManager):
         return self.dqdv
     
     
-    ### per half cycle statistics methods ###
-    
-    def setHalfStatistics(self):
-        """fetch half cycle statistics from raw file"""
-        
-        # fetch half statistics
-        self.setHalfStatCurrent()
-
-        self.halfStatistics = {'averageCurrent': self.halfStatCurrent}
-        
-        
-    def getStatistics(self):
-        """get half cycle battery statistics"""
-        return self.halfStatistics
-    
-    
-    def setHalfStatCurrent(self):
-        """average current per half cycle"""
-        
-        # get current in mA
-        self.query('''SELECT Current FROM Channel_Normal_Table''')
-        current = np.squeeze(np.array(self.fetchall())) * 1e3
-        
-        # get half cycle boundaries
-        self.query('''SELECT Cycle_Start,Cycle_End FROM Half_Cycle_Table''')
-        halfStatPoints = np.array(self.fetchall())
-        
-        # calcuate average current for each half cycle ignoring rest time
-        self.halfStatCurrent = np.empty((0))
-        for (a,b) in halfStatPoints:
-            self.halfStatCurrent = np.append(self.halfStatCurrent, 
-                                             np.true_divide(current[a:b].sum(),(current[a:b]!=0).sum()))
-            
-        print(self.halfStatCurrent[0:6]*1e3)
-    
-    
-    def getHalfStatCurrent(self):
-        """average current per half cycle"""
-        return self.halfStatCurrent
-    
-    
     ### per cycle statistics methods ###
     
     def setStatistics(self):
         """fetch statistics from raw file"""
         
-        # fetch statistics
+        # calculate full cycle statistics
         self.setStatSpecificCapacity()
         self.setStatVolumetricCapacity()
         self.setStatSpecificEnergy()
         self.setStatVolumetricEnergy()
         self.setStatSpecificCurrentDensity()
+        self.setStatAreaCurrentDensity()
+        self.setStatCRate()
+        self.setStatAverageVoltage()
+        self.setStatHysteresis()
         
+        # export statistics into a dictionary of numpy arrays
         self.statistics = {'specificCapacity': self.statSpecificCapacity,
                            'volumetricCapacity': self.statVolumetricCapacity,
                            'specificEnergy': self.statSpecificEnergy,
                            'volumetricEnergy': self.statVolumetricEnergy,
-                           'specificCurrentDensity': self.statSpecificCurrentDensity}
+                           'specificCurrentDensity': self.statSpecificCurrentDensity,
+                           'areaCurrentDensity': self.statAreaCurrentDensity,
+                           'CRate': self.statCRate,
+                           'averageVoltage': self.statAverageVoltage,
+                           'hysteresis': self.statHysteresis}
         
         
     def getStatistics(self):
@@ -347,32 +312,89 @@ class Electrode(DbManager):
         return self.statVolumetricEnergy
     
     
-    def setStatCurrent(self):
-        """average current"""
-        
-        self.statCurrent = np.empty((0,2))
-        for i in self.halfStatCurrent:
-            charge = 0; discharge = 0
-            if i > 0:
-                charge = i
-            elif i < 0:
-                discharge = i
-    
-    
     def setStatSpecificCurrentDensity(self):
         """specific current density"""
+
+        # get average current in [µA]
+        self.query('''SELECT Charge_Current,Discharge_Current FROM Full_Cycle_Table''')
+        averageCurrent = np.array(self.fetchall()) * 1e6
         
-        # calculate average current in each half cycle
-        # I = Q / t [As / s = A ]
-        # [ mAh  ]
-        # step time is wrong if there was rest time
-        # J_mass = I / m [A/mg] * 1e6 = [mA/g]
+        # calculate specific current density in [µA mg-1] = [mA g-1]
         if self.mass is not 0:
-            self.statSpecificCurrentDensity = np.abs(self.statSpecificCapacity / (self.mass))
+            self.statSpecificCurrentDensity = np.abs(averageCurrent / self.mass)
         else:
-            self.statSpecificCurrentDensity = np.zeros(self.statSpecificCapacity.shape)
-            
+            self.statSpecificCurrentDensity = np.zeros(averageCurrent.shape)
+
             
     def getStatSpecificCurrentDensity(self):
         """specific current density"""
         return self.statSpecificCurrentDensity
+    
+
+    def setStatAreaCurrentDensity(self):
+        """area current density"""
+
+        # get average current in [mA]
+        self.query('''SELECT Charge_Current,Discharge_Current FROM Full_Cycle_Table''')
+        self.statAreaCurrentDensity = np.array(self.fetchall()) * 1e3
+        
+        # calculate area current density in [mA cm-1]
+        if self.area is not 0:
+            self.statAreaCurrentDensity = np.abs(self.statAreaCurrentDensity / self.area)
+
+            
+    def getStatAreaCurrentDensity(self):
+        """area current density"""
+        return self.statSpecificCurrentDensity
+
+
+    def setStatCRate(self):
+        """C-rate"""
+
+        # get average current in [A]
+        self.query('''SELECT Charge_Current,Discharge_Current FROM Full_Cycle_Table''')
+        self.statCRate = np.array(self.fetchall())
+        
+        # calculate theoretical capacity
+        # C = m * Ctheo [mg * mAh/g = Ah *1e-6]
+        # calculate C-rate / t
+        # t = C / I [Ah / A = h]
+        if (self.mass and self.theoCapacity) is not 0:
+            self.statCRate = np.abs(self.mass * self.theoCapacity * 1e-6 / self.statCRate)
+            
+            
+    def getStatCRate(self):
+        """C-rate"""
+        return self.statCRate
+    
+
+    def setStatAverageVoltage(self):
+        """average voltage"""
+        if self.electrode == 'we':
+            self.query('''SELECT Charge_Voltage,Discharge_Voltage FROM Full_Cycle_Table''')
+        elif self.electrode == 'ce':
+            self.query('''SELECT Charge_Voltage2,Discharge_Voltage2 FROM Full_Cycle_Table''')
+        else:
+            sys.exit("ERROR: Unknown electrode %s" % self.electrode)
+        self.statAverageVoltage = np.array(self.fetchall())
+        
+            
+    def getStatAverageVoltage(self):
+        """average voltage"""
+        return self.statAverageVoltage    
+
+
+    def setStatHysteresis(self):
+        """voltage hysteresis"""
+        if self.electrode == 'we':
+            self.query('''SELECT Hysteresis FROM Full_Cycle_Table''')
+        elif self.electrode == 'ce':
+            self.query('''SELECT Hysteresis2 FROM Full_Cycle_Table''')
+        else:
+            sys.exit("ERROR: Unknown electrode %s" % self.electrode)
+        self.statHysteresis = np.array(self.fetchall())
+        
+            
+    def getStatHysteresis(self):
+        """voltage hysteresis"""
+        return self.statHysteresis
