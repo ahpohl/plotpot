@@ -251,4 +251,3 @@ class Battery(DbManager):
     def getHalfStatStep(self):
         """step index of half cycle"""
         return self.halfStatStep
-    

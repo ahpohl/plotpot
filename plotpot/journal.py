@@ -9,13 +9,69 @@ from plotpot.dbmanager import DbManager
 class Journal(DbManager):
     """class for manipulating the journal"""
     
-    def __init__(self, args):
+    def __init__(self, args, showArgs=None, electrode=None):
         self.args = args
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createJournal()
-        self.setMetaInfo()
         
+        # battery processing
+        if (showArgs and electrode) is not None:
+            self.showArgs = showArgs
+            self.bat = DbManager(showArgs['dataFile'])
+            self.setBatFileCount()
+            self.setBatDate()
+            # set electrode properties
+            if electrode is "we":
+                self.electrode = "working"
+            elif electrode is "ce":
+                self.electrode = "counter"
+            else:
+                sys.exit("ERROR: Unknown electrode %s" % electrode)
+            self.setBatProperties()
+            
+            
+    ### internal methods ###
+            
+    def __isColumn(self, table, column):
+        select_query = '''PRAGMA table_info({0})'''.format(table)
+        self.query(select_query)
+        resultSql = self.fetchall()
+        for row in resultSql:
+            isColumn = False;
+            if row[1] == column:
+                isColumn = True;
+                break
+        return isColumn
+
+
+    def __printSql(self, data, header):
+        # determine len of each column
+        lensHeader = [len(x) for x in header]
+        lensData = []
+        for i in data:
+            lensData.append([len(str(x)) for x in i])
+        lensData.append(lensHeader)
+        lensArray = np.array(lensData)
+        colWidths = np.amax(lensArray, axis=0) # get max in each column
+        
+        formats = []
+        for i in colWidths:
+            formats.append("%%-%ds" % i)
+        pattern = "| "+" | ".join(formats)+" |"
+        separator ="+-"+"-+-".join(['-' * n for n in colWidths])+"-+"
+
+        # output on screen
+        print(separator)
+        print(pattern % header)
+        print(separator)
+        
+        for row in data:
+            print(pattern % tuple(row))
+        print(separator)
+        
+
+    ### journal methods ###
 
     def getJournalPath(self):
         """create journal database in program directory or path specified with
@@ -56,7 +112,8 @@ class Journal(DbManager):
             Mass DOUBLE DEFAULT 0,
             Capacity DOUBLE DEFAULT 0,
             Area DOUBLE DEFAULT 0,
-            Volume DOUBLE DEFAULT 0)''')
+            Volume DOUBLE DEFAULT 0,
+            Electrode TEXT)''')
         
         self.query('''CREATE TABLE IF NOT EXISTS Merge_Table (
             Row_ID INTEGER,
@@ -94,17 +151,145 @@ class Journal(DbManager):
         # add device column
         if not self.__isColumn("Journal_Table", "Device"):
             self.query('''ALTER TABLE Journal_Table ADD COLUMN Device TEXT''')
-            self.query('''update Journal_Table set device = ""''')
-            self.query('''UPDATE Journal_Table SET device = "Arbin BT2000" WHERE File_Name LIKE "%.res"''')
-            self.query('''UPDATE Journal_Table SET device = "Gamry Interface 1000" WHERE File_Name LIKE "%.DTA"''')
-            self.query('''UPDATE Journal_Table SET device = "Biologic VMP3" WHERE File_Name LIKE "%.mpt"''')
-            self.query('''UPDATE Journal_Table SET device = "Ivium CompactStat" WHERE File_Name LIKE "%.idf"''')
-            self.query('''UPDATE Journal_Table SET device = "Zahner IM6" WHERE File_Name LIKE "%.txt"''')
-            self.query('''UPDATE Journal_Table SET device = "merged" WHERE File_Name LIKE "%.sqlite"''')
+            self.query('''UPDATE Journal_Table SET Device = ""''')
+            self.query('''UPDATE Journal_Table SET Device = "Arbin BT2000" WHERE File_Name LIKE "%.res"''')
+            self.query('''UPDATE Journal_Table SET Device = "Gamry Interface 1000" WHERE File_Name LIKE "%.DTA"''')
+            self.query('''UPDATE Journal_Table SET Device = "Biologic VMP3" WHERE File_Name LIKE "%.mpt"''')
+            self.query('''UPDATE Journal_Table SET Device = "Ivium CompactStat" WHERE File_Name LIKE "%.idf"''')
+            self.query('''UPDATE Journal_Table SET Device = "Zahner IM6" WHERE File_Name LIKE "%.txt"''')
+            self.query('''UPDATE Journal_Table SET Device = "merged" WHERE File_Name LIKE "%.sqlite"''')
             print("Column Device created.")
             
+        # add electrode column
+        if not self.__isColumn("Journal_Table", "Electrode"):
+            self.query('''ALTER TABLE Journal_Table ADD COLUMN Electrode''')
+            self.query('''UPDATE Journal_Table SET Electrode = "working"''')
+            print("Column Electrode created.")
             
-    def deleteRowJournalTable(self, row):
+    
+    def printJournal(self):
+        listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume",
+                      "File_Size", "Data_Points", "Start_DateTime", "Device", "Electrode", "Comments"]
+        select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
+        self.query(select_query)
+        data = self.fetchall()
+        header = ("id", "file name", "mass [mg]", "C [mAh/g]", "A [cm²]", "V [µL]",
+                  "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
+        
+        # convert mass to mg, cap to mAh/g and secs since epoch into ctime
+        data = [list(x) for x in data]
+        for i in range(len(data)):
+            data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
+             
+        # output sql query
+        if len(data) > 0:
+            self.__printSql(data, header)
+        
+        print("Journal file: %s." % self.journalPath)
+        
+    
+    def exportJournal(self):
+        """export journal to csv file"""
+        pass
+    
+    
+    ### battery methods ###
+
+    def setBatFileCount(self):
+        """number of files used to create battery"""
+        self.bat.query('''SELECT Count(*) FROM File_Table''')
+        self.batFileCount = self.bat.fetchone()[0]
+        
+        
+    def getBatFileCount(self):
+        """number of files used to create battery"""
+        return self.batFileCount
+
+
+    def setBatDate(self):
+        """battery creation date"""
+        # merged file
+        if self.batFileCount > 1:
+            self.bat.query('''SELECT DateTime FROM Global_Table''')
+        # single file
+        else:
+            self.bat.query('''SELECT Start_DateTime FROM File_Table''')
+        self.batDate = self.bat.fetchone()[0]
+        
+        
+    def getBatDate(self):
+        """battery creation date"""
+        return self.batDate
+
+
+    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0):
+        """set battery properties"""
+        self.mass = mass
+        self.theoCapacity = theoCapacity
+        self.area = area
+        self.volume = volume
+        
+        
+    def getBatProperties(self):
+        """get battery properties"""
+        return self.mass, self.theoCapacity, self.area, self.volume    
+
+
+    def searchBatProperties(self):
+        """search plotpot-journal.dat for existing battery and set properties"""
+        
+        self.query('''
+                   SELECT Mass,Capacity,Area,Volume FROM Journal_Table WHERE 
+                   File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
+                        self.args.filename,
+                        self.batDate,
+                        self.electrode))
+        properties = self.fetchone()
+        if properties is None:
+            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0
+        else:
+            self.mass = properties[0]; self.theoCapacity = properties[1]
+            self.area = properties[2]; self.volume = properties[3]
+    
+
+    def updateBatProperties(self):
+        """update properties in journal and battery"""
+        
+        print(self.mass, self.args.filename, self.batDate, self.electrode)
+        
+        # update journal
+        self.query('''
+            UPDATE Journal_Table 
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}
+            WHERE File_Name = "{4}" AND Start_DateTime = {5} AND Electrode = "{6}"'''.format(
+                    self.mass, 
+                    self.theoCapacity,
+                    self.area,
+                    self.volume,
+                    self.args.filename,
+                    self.batDate,
+                    self.electrode))
+        
+        # update battery
+        self.bat.query('''
+            UPDATE Global_Table 
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}
+            WHERE rowid = 1'''.format(
+                    self.mass, 
+                    self.theoCapacity,
+                    self.area,
+                    self.volume))
+        
+    
+    def insertBat(self):
+        """insert row into journal table"""
+        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", "Device", "Comments", "Mass", "Capacity", "Area", "Volume"]
+        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
+        self.query(insert_query, dataSql)
+        print("INFO: Created new record in journal file.")
+
+
+    def deleteBat(self, row):
         select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(row)
         delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(row)
         
@@ -119,43 +304,9 @@ class Journal(DbManager):
             rc = "Row id %d deleted from journal." % row
             
         return rc
-            
-    
-    def printJournalTable(self):
-        listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Device", "Comments"]
-        select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
-        self.query(select_query)
-        data = self.fetchall()
-        header = ("id", "file name", "mass [mg]", "C [mAh/g]", "A [cm²]", "V [µL]", "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "comment")
-        
-        # convert mass to mg, cap to mAh/g and secs since epoch into ctime
-        data = [list(x) for x in data]
-        for i in range(len(data)):
-            data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
-             
-        # output sql query
-        if len(data) > 0:
-            self.__printSql(data, header)
-        
-        print("Journal file: %s." % self.journalPath)
-    
-    
-    def insertRowJournalTable(self, dataSql):
-        """insert row into journal table"""
-        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", "Device", "Comments", "Mass", "Capacity", "Area", "Volume"]
-        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, dataSql)
-        print("INFO: Created new record in journal file.")
-        
-    
-    def insertRowMergeTable(self, dataSql):
-        """insert row into Merge_Table"""
-        listOfVars = ["Row_ID", "File_ID", "File_Name", "File_Size", "Data_Points", "Comments", "Start_DateTime", "Device"]
-        insert_query = '''INSERT INTO Merge_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, dataSql)
         
         
-    def writeJournalEntry(self, fileNameDate):
+    def exportBat(self, fileNameDate):
         listOfVars = ["File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Comments"]
         select_query = '''SELECT {0} FROM Journal_Table WHERE File_Name = ? AND Start_DateTime = ?'''.format(','.join(listOfVars))
         self.query(select_query, fileNameDate)
@@ -176,136 +327,3 @@ class Journal(DbManager):
         writer = csv.writer(fh)
         writer.writerow(dataSql)
         fh.close()
-
-        
-    def searchJournalTable(self, fileNameDate):
-        # search plotpot-journal.dat if battery exists in file
-        listOfVars = ["Mass", "Capacity", "Area", "Volume"]
-        select_query = '''SELECT {0} FROM Journal_Table WHERE File_Name = "{1}" AND Start_DateTime = {2}'''.format(','.join(listOfVars), fileNameDate[0], fileNameDate[1])
-        self.query(select_query)
-        return self.fetchone()
-
-        
-    def __isColumn(self, table, column):
-        select_query = '''PRAGMA table_info({0})'''.format(table)
-        self.query(select_query)
-        resultSql = self.fetchall()
-        for row in resultSql:
-            isColumn = False;
-            if row[1] == column:
-                isColumn = True;
-                break
-        return isColumn
-
-
-    def __printSql(self, data, header):
-        # determine len of each column
-        lensHeader = [len(x) for x in header]
-        lensData = []
-        for i in data:
-            lensData.append([len(str(x)) for x in i])
-        lensData.append(lensHeader)
-        lensArray = np.array(lensData)
-        colWidths = np.amax(lensArray, axis=0) # get max in each column
-        
-        formats = []
-        for i in colWidths:
-            formats.append("%%-%ds" % i)
-        pattern = "| "+" | ".join(formats)+" |"
-        separator ="+-"+"-+-".join(['-' * n for n in colWidths])+"-+"
-
-        # output on screen
-        print(separator)
-        print(pattern % header)
-        print(separator)
-        
-        for row in data:
-            print(pattern % tuple(row))
-        print(separator)
-
-    
-    def __Template(self, key, attribute, unit):
-          
-        if self.metaInfo[key] == 0:
-            while True:
-                try:
-                    self.metaInfo[key] = float(input("Please give %s in [%s]: " % (attribute, unit)))
-                    break
-                except ValueError as e:
-                    continue
-        else:
-            print("INFO: Found old record %s %s %s in journal." % (attribute, str(self.metaInfo[key]), unit))
-            choice = input("Do you want to use it [Y/n]? ")
-            if choice == 'n':
-                while True:
-                    try:
-                        self.metaInfo[key] = float(input("Please give new %s in [%s]: " % (attribute, unit)))
-                        break
-                    except ValueError as e:
-                        continue
-
-    def setMass(self):       
-        self.__Template("mass", "mass", "mg")
-
-
-    def setCapacity(self):        
-        self.__Template("cap", "capacity", "mAh/g")
-
-    
-    def setArea(self):        
-        self.__Template("area", "area of the electrode", "cm²")
-
-
-    def setVolume(self):        
-        self.__Template("volume", "volume of electrode", "µL")
-        
-    
-    def setMetaInfo(self, mass = 0, capacity = 0, area = 0, volume = 0):
-        """store mass and capacity in dict
-           mass: active mass [mg]
-           cap: theoretical capacity [mAh/g]
-           area: electrode area [cm²]
-           volume: volume of electrode [µL]"""
-
-        self.metaInfo = {'mass': mass, 
-                    'cap': capacity, 
-                    'area': area, 
-                    'volume': volume}
-    
-    
-    def getMetaInfo(self):
-        """return dict with meta info"""
-        return self.metaInfo
-    
-    
-    def tupleMetaInfo(self):
-        """return a tuple with meta info values"""
-        return (self.metaInfo['mass'], self.metaInfo['cap'], self.metaInfo['area'], self.metaInfo['volume'])
-    
-    
-    def updateMetaInfo(self, fileNameDate):
-        """update meta info of journal entry"""
-        update_query = '''
-            UPDATE Journal_Table 
-            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}
-            WHERE File_Name = "{4}" AND Start_DateTime = {5}'''.format(
-                    self.metaInfo['mass'], 
-                    self.metaInfo['cap'],
-                    self.metaInfo['area'],
-                    self.metaInfo['volume'],
-                    fileNameDate[0],
-                    fileNameDate[1])
-            
-        self.query(update_query)
-        
-
-    def askMetaInfo(self, plots):
-        """ask questions and update meta info"""
-        if any([x in [1,4,5,11] for x in plots]):
-            self.setMass()
-        if 10 in plots:
-            self.setCapacity()
-        if any([x in [12] for x in plots]):
-            self.setArea()
-        if 6 in plots:
-            self.setVolume()

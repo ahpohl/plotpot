@@ -8,7 +8,6 @@ import sqlite3
 from plotpot.plot import Plot
 from plotpot.journal import Journal
 from plotpot.battery import Battery
-from plotpot.electrode import Electrode
 from plotpot.dbmanager import DbManager
 
 
@@ -33,15 +32,15 @@ class Plotpot(object):
         """run journal subcommand"""
         
         # create journal object
-        jourObj = Journal(self.args)
+        journal = Journal(self.args)
 
         # delete journal entry
         rc = None
         if self.args.delete:
-            rc = jourObj.deleteRowJournalTable(self.args.delete)
+            rc = journal.deleteRow(self.args.delete)
         
         # print plotpot journal file
-        jourObj.printJournalTable()
+        journal.printJournal()
         
         # print outcome of delete
         if rc is not None:
@@ -87,7 +86,7 @@ class Plotpot(object):
         # call convpot to convert raw data
         self.callConvpot()
         
-        # create battery objectqui
+        # create battery object
         bat = Battery(self.args, showArgs)
         
         # create figures

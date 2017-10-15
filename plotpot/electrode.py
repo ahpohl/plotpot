@@ -4,6 +4,7 @@ import numpy as np
 
 # own modules
 from plotpot.dbmanager import DbManager
+from plotpot.journal import Journal
 
 
 class Electrode(DbManager):
@@ -13,6 +14,9 @@ class Electrode(DbManager):
         self.showArgs = showArgs
         self.electrode = electrode
         super().__init__(showArgs['dataFile'])
+        
+        # create journal object
+        self.journal = Journal(args, showArgs, electrode)
         
         # set electrode properties
         self.setProperties()
@@ -27,13 +31,15 @@ class Electrode(DbManager):
     ### property methods ###
     
     def setProperties(self):
-        """ask electrode properties from user"""
-        
-        # set initial properties
-        self.mass = 0         # active mass [mg]
-        self.theoCapacity = 0     # theoretical capacity [mAh/g]
-        self.area = 0         # electrode area [cm²]
-        self.volume = 0       # volume of electrode [µL]
+        """search journal and set initial properties (zero if battery does not exist)
+           active mass [mg]
+           theoretical capacity [mAh/g]
+           electrode area [cm²]
+           volume of electrode [µL]"""
+           
+        # search journal
+        self.journal.searchBatProperties()
+        self.mass, self.theoCapacity, self.area, self.volume = self.journal.getBatProperties()
         
         # mass 
         if any([x in [1,2,6,8,10,12] for x in self.showArgs['plots']]):
@@ -47,6 +53,10 @@ class Electrode(DbManager):
         # volume
         if any([x in [7,9] for x in self.showArgs['plots']]):
             self.setVolume()
+            
+        # update journal
+        self.journal.setBatProperties(self.mass, self.theoCapacity, self.area, self.volume)
+        self.journal.updateBatProperties()
         
         
     def getProperties(self):
