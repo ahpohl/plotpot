@@ -40,7 +40,7 @@ class Plotpot(object):
             rc = journal.deleteRow(self.args.delete)
         
         # print plotpot journal file
-        journal.printJournal()
+        journal.display()
         
         # print outcome of delete
         if rc is not None:

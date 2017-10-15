@@ -13,7 +13,7 @@ class Journal(DbManager):
         self.args = args
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
-        self.createJournal()
+        self.createSchema()
         
         # battery processing
         if (showArgs and electrode) is not None:
@@ -21,14 +21,15 @@ class Journal(DbManager):
             self.bat = DbManager(showArgs['dataFile'])
             self.setBatFileCount()
             self.setBatDate()
-            # set electrode properties
+            self.setBatProperties()
+            
+            # set electrode type
             if electrode is "we":
                 self.electrode = "working"
             elif electrode is "ce":
                 self.electrode = "counter"
             else:
                 sys.exit("ERROR: Unknown electrode %s" % electrode)
-            self.setBatProperties()
             
             
     ### internal methods ###
@@ -99,7 +100,7 @@ class Journal(DbManager):
         return journalFullPath
     
         
-    def createJournal(self):
+    def createSchema(self):
         # create schema
         self.query('''CREATE TABLE IF NOT EXISTS Journal_Table (
             Row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -167,30 +168,47 @@ class Journal(DbManager):
             print("Column Electrode created.")
             
     
-    def printJournal(self):
+    def display(self):
         listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume",
                       "File_Size", "Data_Points", "Start_DateTime", "Device", "Electrode", "Comments"]
         select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
         self.query(select_query)
         data = self.fetchall()
-        header = ("id", "file name", "mass [mg]", "C [mAh/g]", "A [cm²]", "V [µL]",
-                  "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
         
-        # convert mass to mg, cap to mAh/g and secs since epoch into ctime
+        # convert secs since epoch into ctime
         data = [list(x) for x in data]
         for i in range(len(data)):
             data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
              
         # output sql query
+        header = ("id", "file name", "mass [mg]", "C [mAh/g]", "A [cm²]", "V [µL]",
+                  "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
         if len(data) > 0:
             self.__printSql(data, header)
-        
         print("Journal file: %s." % self.journalPath)
         
     
-    def exportJournal(self):
+    def export(self):
         """export journal to csv file"""
         pass
+    
+    
+    def deleteRow(self, row):
+        """delete row from journal table"""
+        select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(row)
+        delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(row)
+        
+        # check if row with rowid exists
+        self.query(select_query)
+        data = self.fetchone()
+        
+        if data is None:
+            rc = "Row id %d does not exist in journal." % row
+        else:
+            self.query(delete_query)
+            rc = "Row id %d deleted from journal." % row
+            
+        return rc
     
     
     ### battery methods ###
@@ -255,8 +273,6 @@ class Journal(DbManager):
     def updateBatProperties(self):
         """update properties in journal and battery"""
         
-        print(self.mass, self.args.filename, self.batDate, self.electrode)
-        
         # update journal
         self.query('''
             UPDATE Journal_Table 
@@ -280,30 +296,13 @@ class Journal(DbManager):
                     self.area,
                     self.volume))
         
-    
+
     def insertBat(self):
-        """insert row into journal table"""
+        """insert battery into journal table"""
         listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", "Device", "Comments", "Mass", "Capacity", "Area", "Volume"]
         insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
         self.query(insert_query, dataSql)
         print("INFO: Created new record in journal file.")
-
-
-    def deleteBat(self, row):
-        select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(row)
-        delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(row)
-        
-        # check if row with rowid exists
-        self.query(select_query)
-        data = self.fetchone()
-        
-        if data is None:
-            rc = "Row id %d does not exist in journal." % row
-        else:
-            self.query(delete_query)
-            rc = "Row id %d deleted from journal." % row
-            
-        return rc
         
         
     def exportBat(self, fileNameDate):
