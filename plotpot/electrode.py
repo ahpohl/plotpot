@@ -71,7 +71,7 @@ class Electrode(DbManager):
     def __Property(self, prop, desc, unit):
         """ask electrode property from user"""
         
-        if prop == 0:
+        if not prop:
             while True:
                 try:
                     prop = float(input("Please give %s in [%s]: " % (desc, unit)))
@@ -179,7 +179,7 @@ class Electrode(DbManager):
         self.query('''SELECT Capacity FROM Channel_Normal_Table''')
         self.capacity = np.array(self.fetchall())
         # convert capacity from As to mAh/g
-        if self.mass is not 0:
+        if self.mass:
             self.capacity = np.abs(self.capacity / (3.6e-3 * self.mass))
 
         
@@ -198,7 +198,7 @@ class Electrode(DbManager):
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
         self.energy = np.array(self.fetchall())
         # convert energy from Ws to Wh/kg
-        if self.mass is not 0:
+        if self.mass:
             self.energy = self.energy / (3.6e-3 * self.mass)
 
         
@@ -261,7 +261,7 @@ class Electrode(DbManager):
         self.query('''SELECT Charge_Capacity,Discharge_Capacity FROM Full_Cycle_Table''')
         self.statSpecificCapacity = np.array(self.fetchall())
         # convert capacity from As to mAh/g
-        if self.mass is not 0:
+        if self.mass:
             self.statSpecificCapacity = np.abs(self.statSpecificCapacity / (3.6e-3 * self.mass))
 
         
@@ -275,7 +275,7 @@ class Electrode(DbManager):
         self.query('''SELECT Charge_Capacity,Discharge_Capacity FROM Full_Cycle_Table''')
         self.statVolumetricCapacity = np.array(self.fetchall())
         # convert capacity from As to Ah/L
-        if self.volume is not 0:
+        if self.volume:
             self.statVolumetricCapacity = np.abs(self.statVolumetricCapacity / (3.6e-3 * self.volume))
 
         
@@ -294,7 +294,7 @@ class Electrode(DbManager):
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
         self.statSpecificEnergy = np.array(self.fetchall())
         # convert capacity from Ws to Wh/kg
-        if self.mass is not 0:
+        if self.mass:
             self.statSpecificEnergy = np.abs(self.statSpecificEnergy / (3.6e-3 * self.mass))
 
         
@@ -313,7 +313,7 @@ class Electrode(DbManager):
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
         self.statVolumetricEnergy = np.array(self.fetchall())
         # convert capacity from Ws to Wh/L
-        if self.volume is not 0:
+        if self.volume:
             self.statVolumetricEnergy = np.abs(self.statVolumetricEnergy / (3.6e-3 * self.volume))
 
         
@@ -330,7 +330,7 @@ class Electrode(DbManager):
         averageCurrent = np.array(self.fetchall()) * 1e6
         
         # calculate specific current density in [µA mg-1] = [mA g-1]
-        if self.mass is not 0:
+        if self.mass:
             self.statSpecificCurrentDensity = np.abs(averageCurrent / self.mass)
         else:
             self.statSpecificCurrentDensity = np.zeros(averageCurrent.shape)
@@ -349,7 +349,7 @@ class Electrode(DbManager):
         self.statAreaCurrentDensity = np.array(self.fetchall()) * 1e3
         
         # calculate area current density in [mA cm-1]
-        if self.area is not 0:
+        if self.area:
             self.statAreaCurrentDensity = np.abs(self.statAreaCurrentDensity / self.area)
 
             
@@ -369,7 +369,7 @@ class Electrode(DbManager):
         # C = m * Ctheo [mg * mAh/g = Ah *1e-6]
         # calculate C-rate / t
         # t = C / I [Ah / A = h]
-        if (self.mass and self.theoCapacity) is not 0:
+        if self.mass and self.theoCapacity:
             self.statCRate = np.abs(self.mass * self.theoCapacity * 1e-6 / self.statCRate)
             
             

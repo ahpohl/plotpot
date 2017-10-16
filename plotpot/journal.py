@@ -238,6 +238,28 @@ class Journal(DbManager):
     def getBatDate(self):
         """battery creation date"""
         return self.batDate
+    
+    
+    def setBatFileSize(self):
+        """raw data file size"""
+        self.bat.query('''SELECT File_Size FROM Global_Table''')
+        self.batFileSize = self.bat.fetchone()[0]
+        
+    
+    def getBatFileSize(self):
+        """raw data file size"""
+        return self.batFileSize
+    
+
+    def setBatPoints(self):
+        """data points"""
+        self.bat.query('''SELECT Data_Points FROM Global_Table''')
+        self.batPoints = self.bat.fetchone()[0]
+        
+    
+    def getBatPoints(self):
+        """data points"""
+        return self.batPoints
 
 
     def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0):
@@ -265,6 +287,7 @@ class Journal(DbManager):
         properties = self.fetchone()
         if properties is None:
             self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0
+            self.insertBat()
         else:
             self.mass = properties[0]; self.theoCapacity = properties[1]
             self.area = properties[2]; self.volume = properties[3]
@@ -299,10 +322,38 @@ class Journal(DbManager):
 
     def insertBat(self):
         """insert battery into journal table"""
-        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", "Device", "Comments", "Mass", "Capacity", "Area", "Volume"]
+        data = []
+        # file name
+        data.append(self.args.filename)
+        # file size
+        data.append(self.batFileSize)
+        # date
+        data.append(self.batDate)
+        # data points
+        data.append(self.batPoints)
+        # device TODO: add device column to Global_Table
+        if self.batFileCount > 1:
+            data.append("merged")
+        else:
+            self.bat.query('''SELECT Device FROM File_Table''')
+            data.append(self.bat.fetchone()[0])
+        # electrode
+        data.append(self.electrode)
+        # comment
+        if self.batFileCount > 1:
+            data.append("")
+        else:
+            self.bat.query('''SELECT Comment FROM File_Table''')
+            data.append(self.bat.fetchone()[0])    
+        # properties
+        data.extend([self.mass, self.theoCapacity, self.area, self.volume])
+        
+        # insert
+        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", 
+                      "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume"]
         insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, dataSql)
-        print("INFO: Created new record in journal file.")
+        self.query(insert_query, data)
+        #print("INFO: Created new record in journal file.")
         
         
     def exportBat(self, fileNameDate):
