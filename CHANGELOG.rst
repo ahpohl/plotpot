@@ -1,6 +1,12 @@
 Plotpot changelog
 =================
 
+v1.1.0 - upcoming release
+-------------------------
+-  support for full cells (remove --bio_ce)
+-  plots showing working and counter electrode
+-  journal export sub-command
+
 v1.0.8 - 2017-10-02
 -------------------
 -  fix columns in cycle zip export

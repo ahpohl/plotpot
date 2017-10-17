@@ -21,13 +21,17 @@ class Journal(DbManager):
             self.bat = DbManager(showArgs['dataFile'])
             self.setBatFileCount()
             self.setBatDate()
+            self.setBatPoints()
+            self.setBatFileSize()
+            self.setBatDevice()
+            self.setBatComment()
             self.setBatProperties()
             
             # set electrode type
             if electrode is "we":
-                self.electrode = "working"
+                self.batElectrode = "working"
             elif electrode is "ce":
-                self.electrode = "counter"
+                self.batElectrode = "counter"
             else:
                 sys.exit("ERROR: Unknown electrode %s" % electrode)
             
@@ -47,6 +51,8 @@ class Journal(DbManager):
 
 
     def __printSql(self, data, header):
+        """format journal table"""
+        
         # determine len of each column
         lensHeader = [len(x) for x in header]
         lensData = []
@@ -70,6 +76,15 @@ class Journal(DbManager):
         for row in data:
             print(pattern % tuple(row))
         print(separator)
+        
+        
+    def __export(self, data, header):
+        """export journal table"""
+        with open("plotpot-journal.csv", "w") as fh:
+            writer = csv.writer(fh)
+            fh.write(",".join(header)+"\r\n")
+            writer.writerows(data)
+            fh.close()
         
 
     ### journal methods ###
@@ -185,13 +200,9 @@ class Journal(DbManager):
                   "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
         if len(data) > 0:
             self.__printSql(data, header)
+            #self.__export(data, header)
         print("Journal file: %s." % self.journalPath)
         
-    
-    def export(self):
-        """export journal to csv file"""
-        pass
-    
     
     def deleteRow(self, row):
         """delete row from journal table"""
@@ -262,6 +273,31 @@ class Journal(DbManager):
         return self.batPoints
 
 
+    def setBatDevice(self):
+        """device"""
+        self.bat.query('''SELECT Device FROM Global_Table''')
+        self.batDevice = self.bat.fetchone()[0]
+        
+    
+    def getBatDevice(self):
+        """device"""
+        return self.batDevice
+
+        
+    def setBatComment(self):
+        """comment"""
+        if self.batFileCount > 1:
+            self.batComment = ""
+        else:
+            self.bat.query('''SELECT Comment FROM File_Table''')
+            self.batComment = self.bat.fetchone()[0]  
+        
+    
+    def getBatComment(self):
+        """comment"""
+        return self.batComment
+
+
     def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0):
         """set battery properties"""
         self.mass = mass
@@ -283,7 +319,7 @@ class Journal(DbManager):
                    File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
                         self.args.filename,
                         self.batDate,
-                        self.electrode))
+                        self.batElectrode))
         properties = self.fetchone()
         if properties is None:
             self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0
@@ -307,7 +343,7 @@ class Journal(DbManager):
                     self.volume,
                     self.args.filename,
                     self.batDate,
-                    self.electrode))
+                    self.batElectrode))
         
         # update battery
         self.bat.query('''
@@ -322,58 +358,11 @@ class Journal(DbManager):
 
     def insertBat(self):
         """insert battery into journal table"""
-        data = []
-        # file name
-        data.append(self.args.filename)
-        # file size
-        data.append(self.batFileSize)
-        # date
-        data.append(self.batDate)
-        # data points
-        data.append(self.batPoints)
-        # device TODO: add device column to Global_Table
-        if self.batFileCount > 1:
-            data.append("merged")
-        else:
-            self.bat.query('''SELECT Device FROM File_Table''')
-            data.append(self.bat.fetchone()[0])
-        # electrode
-        data.append(self.electrode)
-        # comment
-        if self.batFileCount > 1:
-            data.append("")
-        else:
-            self.bat.query('''SELECT Comment FROM File_Table''')
-            data.append(self.bat.fetchone()[0])    
-        # properties
-        data.extend([self.mass, self.theoCapacity, self.area, self.volume])
-        
-        # insert
         listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", 
                       "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume"]
-        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format((','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, data)
+        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format(
+                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
+        self.query(insert_query, (self.args.filename, self.batFileSize, self.batDate, self.batPoints,
+                                  self.batDevice, self.batElectrode, self.batComment,
+                                  self.mass, self.theoCapacity, self.area, self.volume))
         #print("INFO: Created new record in journal file.")
-        
-        
-    def exportBat(self, fileNameDate):
-        listOfVars = ["File_Name", "Mass", "Capacity", "Area", "Volume", "File_Size", "Data_Points", "Start_DateTime", "Comments"]
-        select_query = '''SELECT {0} FROM Journal_Table WHERE File_Name = ? AND Start_DateTime = ?'''.format(','.join(listOfVars))
-        self.query(select_query, fileNameDate)
-        dataSql = self.fetchone()
-        dataSql = list(dataSql)
-        dataSql[7] = str(datetime.datetime.fromtimestamp(dataSql[7])) # sec since epoch
-        
-        fh = open(self.args.filename.split('.')[0]+'_journal.csv', 'w')
-        header = "%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
-                "file_name", "mass", 
-                "capacity", "area", "volume", "file_size", 
-                "data_points", "start_datetime", 
-                "comments")
-        units = ",%s,%s,%s,%s\n" % ("mg", "mAh/g", "cm²", "µL")
-        
-        fh.write(header)
-        fh.write(units)
-        writer = csv.writer(fh)
-        writer.writerow(dataSql)
-        fh.close()
