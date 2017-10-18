@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+import zipfile, tempfile, shutil
 import numpy as np
 
 # own modules
@@ -88,19 +90,85 @@ class Battery(DbManager):
         return self.data
     
 
-    def exportData(self, bat):
-        """write data to a csv file"""    
-        with open(self.args.filename.split('.')[0]+'_data.csv', 'w') as fh:
-            header = ("point", "cycle", "step", "test time", "step time", "timestamp", "temperature", 
-                      "current", "WE capacity", "CE capacity", "WE voltage", "CE voltage",
-                      "WE energy", "CE energy", "WE dQdV", "CE dQdV")
-            units = ("", "", "", "h", "s", "s", "°C", 
-                     "mA", "mAh/g", "mAh/g", "V", "V",
-                     "Wh/kg", "Wh/kg", "As/V", "As/V")           
-            fh.write(",".join(header)+"\r\n")
-            fh.write(",".join(units)+"\r\n")
-            fh.close()
-        np.savetxt()
+    def exportData(self):
+        """write data to a csv file"""
+        header = ",".join(["point", "cycle", "step", "test time", "step time", "timestamp", "temperature", 
+                           "current", "WE capacity", "CE capacity", "WE voltage", "CE voltage",
+                           "WE energy", "CE energy", "WE dQdV", "CE dQdV"])+"\n"
+        header += ",".join(["", "", "", "h", "s", "s", "°C", 
+                            "mA", "mAh/g", "mAh/g", "V", "V",
+                            "Wh/kg", "Wh/kg", "As/V", "As/V"])       
+        np.savetxt(self.args.filename.split('.')[0]+'_data.csv', 
+                   self.data, delimiter=',', header=header, comments='', 
+                   fmt=['%d','%d','%d','%f','%f','%d','%f',
+                        '%f','%f','%f','%f','%f','%f',
+                        '%f','%f','%f'])
+   
+
+    def exportVoltageProfile(self):
+        """create zip archive with capacity, voltage, dQdV per discharge
+           and charge half cycle for easy generating plots in Origin"""
+        
+        # create temporary directory
+        cwd = os.getcwd() # save current directory
+        os.chdir(tempfile.gettempdir()) # change to tmp dir
+        filestem = self.args.filename.split('.')[0] # create filename
+        if not os.path.exists(filestem):
+            os.makedirs(filestem) # create directory
+        path = os.path.abspath(filestem) # change to directory
+        os.chdir(path)
+        
+        # loop over cycles
+        for c in self.statCycles:
+            d = self.data[self.data[:,1]==c] # select cycle
+            ch = d[d[:,2]==1] # select charge half cycle
+            dc = d[d[:,2]==-1] # select discharge hafl cycle
+            ch = ch[:-1] # discard last data point, zero capacity
+            dc = dc[:-1] # discard last data point, zero capacity
+                
+            # charge
+            if ch.size:
+                header = """# cycle %d
+# charge
+# mass %.2f mg
+# %-12s %-12s %-12s
+# %-12s %-12s %-12s\n""" % (c, self.we.mass, "capacity", "voltage", "dQ/dV", "mAh/g", "V", "As/V")
+                cyclename = filestem+'_%03d_charge.txt' % c
+                fh = open(cyclename, 'w')
+                fh.write(header)
+                for i in range(ch.shape[0]):
+                    line = "%12.6f %12.6f %12.6f\n" % (ch[i,9], ch[i,7], ch[i,11])
+                    fh.write(line)
+                fh.close()
+                
+            # discharge
+            if dc.size:
+                header = """# cycle %d
+# discharge
+# mass %.2f mg
+# %-12s %-12s %-12s
+# %-12s %-12s %-12s\n""" % (c, self.we.mass, "capacity", "voltage", "dQ/dV", "mAh/g", "V", "As/V")
+                cyclename = filestem+'_%03d_discharge.txt' % c
+                fh = open(cyclename, 'w')
+                fh.write(header)
+                for i in range(dc.shape[0]):
+                    line = "%12.6f %12.6f %12.6f\n" % (dc[i,9], dc[i,7], dc[i,11])
+                    fh.write(line)
+                fh.close()
+                
+        # create zip archive
+        os.chdir(tempfile.gettempdir())
+        zfile = filestem + '.zip'
+        zipf = zipfile.ZipFile(zfile, 'w', zipfile.ZIP_DEFLATED)
+        base = os.path.basename(path)
+        for root, dirs, files in os.walk(path, topdown=False):
+            for name in files:
+                zipf.write(os.path.join(base, name))
+        zipf.close()
+        shutil.rmtree(path) # remove tmp directory
+        shutil.copy(zfile, cwd)
+        os.remove(zfile)
+        os.chdir(cwd)
     
     
     def setPoints(self):

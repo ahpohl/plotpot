@@ -75,7 +75,7 @@ class Plot(object):
                   13: '_hysteresis',
                   14: '_c_rate'}
 
-        for n in self.plots:
+        for n in self.showArgs['plots']:
             plt.figure(n)
             plt.savefig(stem + suffix[n] + ext)
            

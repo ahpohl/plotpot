@@ -3,6 +3,7 @@ Plotpot changelog
 
 v1.1.0 - upcoming release
 -------------------------
+-  needs minimum Convpot version v1.2.0
 -  support for full cells (remove --bio_ce)
 -  plots showing working and counter electrode
 -  journal export sub-command
