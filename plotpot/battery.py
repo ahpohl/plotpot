@@ -52,7 +52,7 @@ class Battery(DbManager):
     def getElectrodes(self):
         """return electrode objects"""
         return self.we, self.ce
-        
+            
     
     ### battery data methods ###
     
@@ -62,21 +62,45 @@ class Battery(DbManager):
         # fetch data
         self.setPoints()
         self.setCycles()
+        self.setStepIndex()
         self.setTestTime()
+        self.setStepTime()
+        self.setDateTime()
         self.setCurrent()
         self.setTemperature()
         
-        # assemble data dictionary
-        self.data = {'points': self.points,
-                     'cycles': self.cycles,
-                     'testtime': self.testTime,
-                     'current': self.current,
-                     'temperature': self.temperature}
+        # assemble data numpy array including electrode data
+        if self.isFullCell:
+            self.data = np.concatenate([self.points, self.cycles, self.stepIndex, self.testTime,
+                                        self.stepTime, self.dateTime, self.temperature, self.current,
+                                        self.we.capacity, self.ce.capacity, self.we.voltage, self.ce.voltage,
+                                        self.we.energy, self.ce.energy, self.we.dqdv, self.ce.dqdv], axis=1)
+        else:
+            zeroElements = np.zeros(self.points.shape)
+            self.data = np.concatenate([self.points, self.cycles, self.stepIndex, self.testTime,
+                                        self.stepTime, self.dateTime, self.temperature, self.current,
+                                        self.we.capacity, zeroElements, self.we.voltage, zeroElements,
+                                        self.we.energy, zeroElements, self.we.dqdv, zeroElements], axis=1)
     
     
     def getData(self):
-        """return dictonary with battery data"""
+        """return battery data"""
         return self.data
+    
+
+    def exportData(self, bat):
+        """write data to a csv file"""    
+        with open(self.args.filename.split('.')[0]+'_data.csv', 'w') as fh:
+            header = ("point", "cycle", "step", "test time", "step time", "timestamp", "temperature", 
+                      "current", "WE capacity", "CE capacity", "WE voltage", "CE voltage",
+                      "WE energy", "CE energy", "WE dQdV", "CE dQdV")
+            units = ("", "", "", "h", "s", "s", "°C", 
+                     "mA", "mAh/g", "mAh/g", "V", "V",
+                     "Wh/kg", "Wh/kg", "As/V", "As/V")           
+            fh.write(",".join(header)+"\r\n")
+            fh.write(",".join(units)+"\r\n")
+            fh.close()
+        np.savetxt()
     
     
     def setPoints(self):
@@ -101,6 +125,17 @@ class Battery(DbManager):
         return self.cycles
     
     
+    def setStepIndex(self):
+        """step index"""
+        self.query('''SELECT Step_Index FROM Channel_Normal_Table''')
+        self.stepIndex = np.array(self.fetchall())
+
+        
+    def getStepIndex(self):
+        """full cycles"""
+        return self.stepIndex
+    
+    
     def setTestTime(self):
         """test time in hours"""
         self.query('''SELECT Test_Time FROM Channel_Normal_Table''')
@@ -110,6 +145,28 @@ class Battery(DbManager):
     def getTestTime(self):
         """test time in hours"""
         return self.testTime
+
+
+    def setStepTime(self):
+        """step time in seconds"""
+        self.query('''SELECT Step_Time FROM Channel_Normal_Table''')
+        self.stepTime = np.array(self.fetchall())
+    
+    
+    def getStepTime(self):
+        """step time in hours"""
+        return self.stepTime
+    
+
+    def setDateTime(self):
+        """time stamp in seconds since epoch"""
+        self.query('''SELECT DateTime FROM Channel_Normal_Table''')
+        self.dateTime = np.array(self.fetchall())
+    
+    
+    def getDateTime(self):
+        """time stamp in seconds since epoch"""
+        return self.dateTime
 
 
     def setCurrent(self):

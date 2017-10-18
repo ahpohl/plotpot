@@ -23,7 +23,7 @@ def main():
     subparsers = parser.add_subparsers(title='available commands', metavar='',
                     dest='subcommand') 
 
-    # create the parser for the "plot" command
+    # create the parser for the "show" command
     parser_show = subparsers.add_parser('show',
             formatter_class=argparse.RawDescriptionHelpFormatter,
             help='show plots',
@@ -73,7 +73,9 @@ def main():
     parser_journal = subparsers.add_parser('journal', help='manipulate journal')
     
     parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
-                    help="delete a row from journal")
+                    dest='journalDelete', help="delete a row from journal")
+    parser_journal.add_argument('-e', '--export', action='store_true',
+                    dest='journalExport', help="export journal to csv file")
     
     # parse command line
     args = parser.parse_args()

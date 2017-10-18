@@ -33,18 +33,18 @@ class Plotpot(object):
         
         # create journal object
         journal = Journal(self.args)
+        
+        # display plotpot journal file on screen
+        if not (self.args.journalDelete or self.args.journalExport):
+            journal.display()
 
         # delete journal entry
-        rc = None
-        if self.args.delete:
-            rc = journal.deleteRow(self.args.delete)
-        
-        # print plotpot journal file
-        journal.display()
-        
-        # print outcome of delete
-        if rc is not None:
-            print(rc)
+        if self.args.journalDelete:
+            journal.deleteRow(self.args.journalDelete)
+            
+        # export journal
+        if self.args.journalExport:
+            journal.export()
         
         sys.exit() 
 
@@ -92,6 +92,12 @@ class Plotpot(object):
         # create figures
         plot = Plot(self.args, showArgs, bat)
         plot.drawPlots()
+        
+        # export data and statistics  
+        if self.args.export:
+            print("INFO: Exporting data, statistics and figures.")
+            bat.exportData()
+            plot.savePlots()
         
         # show plots if quiet option not given
         if not self.args.quiet:

@@ -14,6 +14,7 @@ class Journal(DbManager):
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createSchema()
+        self.setData()
         
         # battery processing
         if (showArgs and electrode) is not None:
@@ -76,15 +77,6 @@ class Journal(DbManager):
         for row in data:
             print(pattern % tuple(row))
         print(separator)
-        
-        
-    def __export(self, data, header):
-        """export journal table"""
-        with open("plotpot-journal.csv", "w") as fh:
-            writer = csv.writer(fh)
-            fh.write(",".join(header)+"\r\n")
-            writer.writerows(data)
-            fh.close()
         
 
     ### journal methods ###
@@ -182,26 +174,48 @@ class Journal(DbManager):
             self.query('''UPDATE Journal_Table SET Electrode = "working"''')
             print("Column Electrode created.")
             
-    
-    def display(self):
+
+    def setData(self):
+        """fetch journal table"""
         listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume",
                       "File_Size", "Data_Points", "Start_DateTime", "Device", "Electrode", "Comments"]
         select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
         self.query(select_query)
-        data = self.fetchall()
+        self.data = self.fetchall()
         
         # convert secs since epoch into ctime
-        data = [list(x) for x in data]
-        for i in range(len(data)):
-            data[i][8] = str(datetime.datetime.fromtimestamp(data[i][8])) # sec since epoch
-             
-        # output sql query
+        self.data = [list(x) for x in self.data]
+        for i in range(len(self.data)):
+            self.data[i][8] = str(datetime.datetime.fromtimestamp(self.data[i][8])) # sec since epoch
+            
+            
+    def getData(self):
+        """fetch journal table"""
+        return self.data
+            
+    
+    def display(self):
+        """display journal table on screen"""
         header = ("id", "file name", "mass [mg]", "C [mAh/g]", "A [cm²]", "V [µL]",
                   "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
-        if len(data) > 0:
-            self.__printSql(data, header)
-            #self.__export(data, header)
-        print("Journal file: %s." % self.journalPath)
+        if len(self.data) > 0:
+            self.__printSql(self.data, header)
+        print('''Journal file: "%s".''' % self.journalPath)
+        
+        
+    def export(self):
+        """export journal table to csv file"""
+        journalCSV = self.journalPath[:-3]+"csv"
+        header = ("id", "file name", "mass", "capacity", "area", "volume",
+                  "file size", "data points", "date", "device", "electrode", "comment")
+        units = ("", "", "mg", "mAh/g", "cm²", "µL", "", "", "", "", "", "")
+        with open(journalCSV, "w") as fh:
+            writer = csv.writer(fh)
+            fh.write(",".join(header)+"\r\n")
+            fh.write(",".join(units)+"\r\n")
+            writer.writerows(self.data)
+            fh.close()
+        print('''Journal export written to "%s".''' % journalCSV)
         
     
     def deleteRow(self, row):
@@ -214,12 +228,10 @@ class Journal(DbManager):
         data = self.fetchone()
         
         if data is None:
-            rc = "Row id %d does not exist in journal." % row
+            print("INFO: Row ID %d does not exist." % row)
         else:
             self.query(delete_query)
-            rc = "Row id %d deleted from journal." % row
-            
-        return rc
+            print("INFO: Row ID %d deleted." % row)
     
     
     ### battery methods ###

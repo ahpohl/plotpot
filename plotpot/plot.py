@@ -54,8 +54,8 @@ class Plot(object):
                 sys.exit("ERROR: Plot number not defined.")
         
 
-    def saveFigure(self):
-        """save plot into png image"""
+    def savePlots(self):
+        """save plots into png images"""
 
         stem = self.args.filename.split('.')[0]
         ext = '.png'
