@@ -340,19 +340,21 @@ class Plot(object):
             for ((a,b),s) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatStep[self.h[0]:self.h[1]]):
                 if a < self.p[0]: a = self.p[0]
                 if b > self.p[1]: b = self.p[1]
-
+                # charge
                 if s > 0 and (self.args.smooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
                              self.smooth(self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
                 elif s > 0:
                     ax1.plot(self.bat.we.voltage[a:b], self.bat.we.dqdv[a:b], 'k-')
+                # discharge
                 elif s < 0 and (self.args.smooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
                              self.smooth(-1*self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
                 elif s < 0:
                     ax1.plot(self.bat.we.voltage[a:b], -1*self.bat.we.dqdv[a:b], 'k-')
+                # rest 
                 else:
-                    sys.exit("ERROR: rest cycles not supported")
+                    sys.exit("ERROR: Rest cycles not supported")
                     
         # full cell
         else:
@@ -391,7 +393,7 @@ class Plot(object):
                     ax1.plot(self.bat.we.voltage[a:b], -1*self.bat.we.dqdv[a:b], 'k-')
                     ax2.plot(self.bat.ce.voltage[a:b], -1*self.bat.ce.dqdv[a:b], 'k-')
                 else:
-                    sys.exit("ERROR: rest cycles not supported")
+                    sys.exit("ERROR: Rest cycles not supported")
                     
         fig.tight_layout()
         

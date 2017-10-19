@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
+import os, sys
 import zipfile, tempfile, shutil
 import numpy as np
 
@@ -118,43 +118,36 @@ class Battery(DbManager):
         path = os.path.abspath(filestem) # change to directory
         os.chdir(path)
         
-        # loop over cycles
-        for c in self.statCycles:
-            d = self.data[self.data[:,1]==c] # select cycle
-            ch = d[d[:,2]==1] # select charge half cycle
-            dc = d[d[:,2]==-1] # select discharge hafl cycle
-            ch = ch[:-1] # discard last data point, zero capacity
-            dc = dc[:-1] # discard last data point, zero capacity
-                
+        # file header
+        header = ",".join(["WE capacity", "CE capacity" ,"WE voltage", 
+                                    "CE voltage", "WE dQ/dV",  "CE dQ/dV"])+"\n"
+        header += ",".join(["mAh/g", "mAh/g", "V", "V", "As/V", "As/V"])
+        
+        # construct data array
+        if self.isFullCell:
+            data = np.concatenate([self.we.capacity, self.ce.capacity, self.we.voltage, self.ce.voltage,
+                                   self.we.dqdv, self.ce.dqdv], axis=1)
+        else:
+            zeroElements = np.zeros(self.points.shape)
+            data = np.concatenate([self.we.capacity, zeroElements, self.we.voltage, zeroElements,
+                                   self.we.dqdv, zeroElements], axis=1)        
+        
+        # loop over half cycles
+        c = 0;
+        for ((a,b),s,h) in zip(self.halfStatPoints, self.halfStatStep, self.halfStatCycles):
+            if h % 2 == 0:
+                c += 1;
             # charge
-            if ch.size:
-                header = """# cycle %d
-# charge
-# mass %.2f mg
-# %-12s %-12s %-12s
-# %-12s %-12s %-12s\n""" % (c, self.we.mass, "capacity", "voltage", "dQ/dV", "mAh/g", "V", "As/V")
-                cyclename = filestem+'_%03d_charge.txt' % c
-                fh = open(cyclename, 'w')
-                fh.write(header)
-                for i in range(ch.shape[0]):
-                    line = "%12.6f %12.6f %12.6f\n" % (ch[i,9], ch[i,7], ch[i,11])
-                    fh.write(line)
-                fh.close()
-                
+            if s > 0:
+                filename = filestem+'_%03d_charge.csv' % c
             # discharge
-            if dc.size:
-                header = """# cycle %d
-# discharge
-# mass %.2f mg
-# %-12s %-12s %-12s
-# %-12s %-12s %-12s\n""" % (c, self.we.mass, "capacity", "voltage", "dQ/dV", "mAh/g", "V", "As/V")
-                cyclename = filestem+'_%03d_discharge.txt' % c
-                fh = open(cyclename, 'w')
-                fh.write(header)
-                for i in range(dc.shape[0]):
-                    line = "%12.6f %12.6f %12.6f\n" % (dc[i,9], dc[i,7], dc[i,11])
-                    fh.write(line)
-                fh.close()
+            elif s < 0:
+                filename = filestem+'_%03d_discharge.csv' % c
+            # rest 
+            else:
+                sys.exit("ERROR: Rest cycles not supported")
+            # save data
+            np.savetxt(filename, data[a:b], delimiter=',', header=header, comments='', fmt='%f')
                 
         # create zip archive
         os.chdir(tempfile.gettempdir())
@@ -270,15 +263,65 @@ class Battery(DbManager):
         self.setStatAverageCurrent()
         self.setStatEfficiency()
         
-        self.statistics = {'cycles': self.statCycles,
-                           'points': self.statPoints,
-                           'averageCurrent': self.statAverageCurrent,
-                           'efficiency': self.statEfficiency}
+        # assemble statistics numpy array including electrode data
+        if self.isFullCell:
+            self.statistics = np.concatenate(
+                    [self.statCycles,
+                     self.statPoints,
+                     
+                     self.statAverageCurrent,
+                     self.statEfficiency,
+                     self.we.statSpecificCapacity,
+                     self.ce.statSpecificCapacity,
+                     self.we.statVolumetricCapacity,
+                     self.ce.statVolumetricCapacity,
+                     self.we.statSpecificEnergy,
+                     self.ce.statSpecificEnergy,
+                     self.we.statVolumetricEnergy,
+                     self.ce.statVolumetricEnergy,
+                     self.we.statSpecificCurrentDensity,
+                     self.ce.statSpecificCurrentDensity,
+                     self.we.statAreaCurrentDensity,
+                     self.ce.statAreaCurrentDensity,
+                     self.we.statCRate,
+                     self.ce.statCRate,
+                     self.we.statAverageVoltage,
+                     self.ce.statAverageVoltage,
+                     self.we.statHysteresis,
+                     self.ce.statHysteresis], axis=1)
         
+        else:
+            zeroElements = np.zeros(self.we.statSpecificCapacity.shape)
+            
         
     def getStatistics(self):
         """return battery statistics"""
         return self.statistics
+    
+
+    def exportStatistics(self):
+        """write battery statistics to a csv file"""
+        
+        filename = self.args.filename.split('.')[0]+'_statistics.csv'
+            
+        # write statistics
+        header = ",".join([
+                "cycle_index", "start", "end",
+                "time(c)", "time(d)", 
+                "capacity(c)", "capacity(d)", 
+                "energy(c)", "energy(d)",
+                "energy(c)", "energy(d)",
+                "Vav(c)", "Vav(d)",
+                "current(c)", "current(d)",
+                "efficiency", "hysteresis",
+                "density(c)", "density(d)",
+                "density(c)", "density(d)",
+                "c-rate(c)", "c-rate(d)"])+"\n"
+        
+        header += ",".join([
+                "s", "s", "mAh/g", "mAh/g", "Wh/kg",
+                "Wh/kg", "Wh/L", "Wh/L", "V", "V", "A", "A", "%", "V",
+                "mA/g", "mA/g", "mA/cm²", "mA/cm²", "h", "h"])
         
     
     def setStatCycles(self):

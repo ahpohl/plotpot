@@ -98,6 +98,8 @@ class Plotpot(object):
             print("INFO: Exporting data, statistics and figures.")
             bat.exportData()
             bat.exportVoltageProfile()
+            bat.exportStatistics()
+            # TODO: bat.exportProperties()
             plot.savePlots()
         
         # show plots if quiet option not given

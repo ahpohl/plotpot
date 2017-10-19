@@ -97,7 +97,7 @@ class Journal(DbManager):
             
         # check if journal file exists
         try:
-            fh = open(journalFullPath, "r")
+            open(journalFullPath, "r")
         except IOError as e:
             print(e)
             create = input("Do you want to create a new journal file (Y,n)? ")

@@ -35,7 +35,8 @@ class Electrode(DbManager):
            active mass [mg]
            theoretical capacity [mAh/g]
            electrode area [cm²]
-           volume of electrode [µL]"""
+           volume of electrode [µL]
+           mass loading [mA/cm²]"""
            
         # search journal
         self.journal.searchBatProperties()
@@ -58,6 +59,11 @@ class Electrode(DbManager):
         self.journal.setBatProperties(self.mass, self.theoCapacity, self.area, self.volume)
         self.journal.updateBatProperties()
         
+        if self.area:
+            self.loading = self.mass / self.area
+        else:
+            self.loading = 0
+        
         
     def getProperties(self):
         """return dict of properties"""
@@ -65,7 +71,8 @@ class Electrode(DbManager):
         return {'mass': self.mass,
                 'theoCapacity': self.theoCapacity,
                 'area': self.area,
-                'volume': self.volume}
+                'volume': self.volume,
+                'loading': self.loading}
     
     
     def __Property(self, prop, desc, unit):
@@ -238,17 +245,6 @@ class Electrode(DbManager):
         self.setStatCRate()
         self.setStatAverageVoltage()
         self.setStatHysteresis()
-        
-        # export statistics into a dictionary of numpy arrays
-        self.statistics = {'specificCapacity': self.statSpecificCapacity,
-                           'volumetricCapacity': self.statVolumetricCapacity,
-                           'specificEnergy': self.statSpecificEnergy,
-                           'volumetricEnergy': self.statVolumetricEnergy,
-                           'specificCurrentDensity': self.statSpecificCurrentDensity,
-                           'areaCurrentDensity': self.statAreaCurrentDensity,
-                           'CRate': self.statCRate,
-                           'averageVoltage': self.statAverageVoltage,
-                           'hysteresis': self.statHysteresis}
         
         
     def getStatistics(self):
