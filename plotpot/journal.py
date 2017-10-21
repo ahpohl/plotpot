@@ -3,6 +3,8 @@ import os,sys
 import datetime
 import csv
 import numpy as np
+import sqlite3
+from operator import itemgetter
 from plotpot.dbmanager import DbManager
   
 
@@ -79,7 +81,7 @@ class Journal(DbManager):
         print(separator)
         
 
-    ### journal methods ###
+    ### general methods ###
 
     def getJournalPath(self):
         """create journal database in program directory or path specified with
@@ -133,6 +135,10 @@ class Journal(DbManager):
             Start_DateTime INTEGER,
             Data_Points INTEGER,
             Comments TEXT)''')
+       
+        
+    def upgradeSchema(self):
+        """upgrade journal database schema"""
         
         # table upgrade: test if Global_Table exists ***
         self.query('''SELECT name FROM sqlite_master WHERE type="table" AND name="Global_Table" ''')
@@ -180,37 +186,7 @@ class Journal(DbManager):
             self.query('''ALTER TABLE Journal_Table ADD COLUMN Loading DOUBLE DEFAULT 0''')
             print("Column Loading created.")
             
-
-    def setData(self):
-        """fetch journal table"""
-        listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume", "Loading",
-                      "File_Size", "Data_Points", "Start_DateTime", "Device", "Electrode", "Comments"]
-        select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
-        self.query(select_query)
-        self.data = self.fetchall()
-        
-        # convert secs since epoch into ctime
-        self.data = [list(x) for x in self.data]
-        for i in range(len(self.data)):
-            self.data[i][9] = str(datetime.datetime.fromtimestamp(self.data[i][9])) # sec since epoch
             
-            
-    def getData(self):
-        """fetch journal table"""
-        return self.data
-    
-    
-    def setID(self):
-        """row ID"""
-        self.query('''SELECT row_ID FROM Journal_Table''')
-        self.id = self.fetchall()
-        
-
-    def getID(self):
-        """row ID"""
-        return self.id
-            
-    
     def display(self):
         """display journal table on screen"""
         header = ("id", "file name", "m [mg]", "C [mAh/g]", "A [cm²]", "V [µL]", "L [mg/cm²]",
@@ -248,7 +224,185 @@ class Journal(DbManager):
         else:
             self.query(delete_query)
             print("INFO: Row ID %d deleted." % row)
+            
     
+    ### journal methods ###
+
+    def setData(self):
+        """fetch journal table"""
+        
+        try:
+            self.setID()
+            self.setFileName()
+            self.setMass()
+            self.setTheoCapacity()
+            self.setArea()
+            self.setVolume()
+            self.setLoading()
+            self.setFileSize()
+            self.setPoints()
+            self.setDate()
+            self.setDevice()
+            self.setElectrode()
+            self.setComments()
+            
+        except sqlite3.OperationalError as e:
+            self.upgradeSchema()
+            sys.exit("INFO: Upgraded journal database schema.")
+            
+        self.data = zip(self.id, self.fileName, self.mass, self.theoCapacity,
+                        self.area, self.volume, self.loading, self.fileSize,
+                        self.points, self.date, self.device, self.electrode,
+                        self.comments)
+            
+            
+    def getData(self):
+        """fetch journal table"""
+        return self.data
+    
+    
+    def setID(self):
+        """row ID"""
+        self.query('''SELECT row_ID FROM Journal_Table''')
+        self.id = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getID(self):
+        """row ID"""
+        return self.id
+    
+    
+    def setFileName(self):
+        """file name"""
+        self.query('''SELECT File_Name FROM Journal_Table''')
+        self.fileName = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getFileName(self):
+        """file name"""
+        return self.fileName
+    
+
+    def setFileSize(self):
+        """file size"""
+        self.query('''SELECT File_Size FROM Journal_Table''')
+        self.fileSize = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getFileSize(self):
+        """file size"""
+        return self.fileSize
+            
+
+    def setPoints(self):
+        """data points"""
+        self.query('''SELECT Data_Points FROM Journal_Table''')
+        self.points = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getPoints(self):
+        """data points"""
+        return self.points
+    
+
+    def setDate(self):
+        """battery creation date"""
+        self.query('''SELECT Start_DateTime FROM Journal_Table''')
+        self.date = [str(datetime.datetime.fromtimestamp(x[0])) for x in self.fetchall()]
+        
+
+    def getDate(self):
+        """battery creation date"""
+        return self.date
+
+
+    def setDevice(self):
+        """device"""
+        self.query('''SELECT Device FROM Journal_Table''')
+        self.device = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getDevice(self):
+        """device"""
+        return self.device
+    
+    
+    def setElectrode(self):
+        """working or counter electrode"""
+        self.query('''SELECT Electrode FROM Journal_Table''')
+        self.electrode = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getElectrode(self):
+        """working or counter electrode"""
+        return self.electrode
+    
+    
+    def setComments(self):
+        """comment"""
+        self.query('''SELECT Comments FROM Journal_Table''')
+        self.comments = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getComments(self):
+        """comment"""
+        return self.comments
+    
+    
+    def setMass(self):
+        """mass in mg"""
+        self.query('''SELECT Mass FROM Journal_Table''')
+        self.mass = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getMass(self):
+        """mass in mg"""
+        return self.mass
+    
+    
+    def setTheoCapacity(self):
+        """theoretical capacity in mAh/g"""
+        self.query('''SELECT Capacity FROM Journal_Table''')
+        self.theoCapacity = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getTheoCapacity(self):
+        """theoretical capacity in mAh/g"""
+        return self.theoCapacity
+
+
+    def setArea(self):
+        """area in cm²"""
+        self.query('''SELECT Area FROM Journal_Table''')
+        self.area = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getArea(self):
+        """area in cm²"""
+        return self.area
+
+
+    def setVolume(self):
+        """volume in µL"""
+        self.query('''SELECT Volume FROM Journal_Table''')
+        self.volume = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getVolume(self):
+        """volume in µL"""
+        return self.volume
+    
+    
+    def setLoading(self):
+        """mass loading in mg/cm²"""
+        self.query('''SELECT Loading FROM Journal_Table''')
+        self.loading = list(map(itemgetter(0),self.fetchall()))
+        
+
+    def getLoading(self):
+        """mass loading in mg/cm²"""
+        return self.loading
+        
     
     ### battery methods ###
 
