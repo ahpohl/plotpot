@@ -70,6 +70,9 @@ An example plot generated with ``plotpot show arbintest.res`` looks like this:
 
 .. image:: https://raw.githubusercontent.com/ahpohl/plotpot/master/resources/arbintest.png
 
+Both half cell and full cell battery configurations are supported. With full cell data
+plots of both working and counter electrodes are shown together.
+
 Select data
 ~~~~~~~~~~~
 
@@ -114,19 +117,10 @@ the following plot types:
 8.  Specific energy [Wh/kg]
 9.  Volumetric energy [Wh/L] 
 10.  Specific current density [mA/g]
-11.  Current density [mA/cm²]
+11.  Current density [mA/cmÂ²]
 12.  C-rate 
 13.  Hysteresis
 14.  Coulombic efficiency
-
-Both full cell and half cell battery configurations are supported. With full cell data 
-plots of both working and counter electrodes are shown.
-
-::
-	
-	plotpot show biologic-fullcell.mpt
-	
-.. image:: https://raw.githubusercontent.com/ahpohl/plotpot/master/resources/biologic-fullcell.png
 
 Smooth dQ/dV plot
 ~~~~~~~~~~~~~~~~~
