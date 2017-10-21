@@ -121,6 +121,7 @@ class Journal(DbManager):
             Capacity DOUBLE DEFAULT 0,
             Area DOUBLE DEFAULT 0,
             Volume DOUBLE DEFAULT 0,
+            Loading DOUBLE DEFAULT 0,
             Electrode TEXT)''')
         
         self.query('''CREATE TABLE IF NOT EXISTS Merge_Table (
@@ -174,10 +175,15 @@ class Journal(DbManager):
             self.query('''UPDATE Journal_Table SET Electrode = "working"''')
             print("Column Electrode created.")
             
+        # add loading column
+        if not self.__isColumn("Journal_Table", "Loading"):
+            self.query('''ALTER TABLE Journal_Table ADD COLUMN Loading DOUBLE DEFAULT 0''')
+            print("Column Loading created.")
+            
 
     def setData(self):
         """fetch journal table"""
-        listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume",
+        listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume", "Loading",
                       "File_Size", "Data_Points", "Start_DateTime", "Device", "Electrode", "Comments"]
         select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
         self.query(select_query)
@@ -186,7 +192,7 @@ class Journal(DbManager):
         # convert secs since epoch into ctime
         self.data = [list(x) for x in self.data]
         for i in range(len(self.data)):
-            self.data[i][8] = str(datetime.datetime.fromtimestamp(self.data[i][8])) # sec since epoch
+            self.data[i][9] = str(datetime.datetime.fromtimestamp(self.data[i][9])) # sec since epoch
             
             
     def getData(self):
@@ -196,7 +202,7 @@ class Journal(DbManager):
     
     def display(self):
         """display journal table on screen"""
-        header = ("id", "file name", "mass [mg]", "C [mAh/g]", "A [cm²]", "V [µL]",
+        header = ("id", "file name", "m [mg]", "C [mAh/g]", "A [cm²]", "V [µL]", "L [mg/cm²]",
                   "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
         if len(self.data) > 0:
             self.__printSql(self.data, header)
@@ -206,9 +212,9 @@ class Journal(DbManager):
     def export(self):
         """export journal table to csv file"""
         journalCSV = self.journalPath[:-3]+"csv"
-        header = ("id", "file name", "mass", "capacity", "area", "volume",
+        header = ("id", "file name", "mass", "capacity", "area", "volume", "loading",
                   "file size", "data points", "date", "device", "electrode", "comment")
-        units = ("", "", "mg", "mAh/g", "cm²", "µL", "", "", "", "", "", "")
+        units = ("", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", "")
         with open(journalCSV, "w") as fh:
             writer = csv.writer(fh)
             fh.write(",".join(header)+"\r\n")
@@ -310,35 +316,37 @@ class Journal(DbManager):
         return self.batComment
 
 
-    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0):
+    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0, loading = 0):
         """set battery properties"""
         self.mass = mass
         self.theoCapacity = theoCapacity
         self.area = area
         self.volume = volume
+        self.loading = loading
         
         
     def getBatProperties(self):
         """get battery properties"""
-        return self.mass, self.theoCapacity, self.area, self.volume    
+        return self.mass, self.theoCapacity, self.area, self.volume, self.loading    
 
 
     def searchBatProperties(self):
         """search plotpot-journal.dat for existing battery and set properties"""
         
         self.query('''
-                   SELECT Mass,Capacity,Area,Volume FROM Journal_Table WHERE 
+                   SELECT Mass,Capacity,Area,Volume,Loading FROM Journal_Table WHERE 
                    File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
                         self.args.filename,
                         self.batDate,
                         self.batElectrode))
         properties = self.fetchone()
         if properties is None:
-            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0
+            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0; self.loading = 0
             self.insertBat()
         else:
             self.mass = properties[0]; self.theoCapacity = properties[1]
             self.area = properties[2]; self.volume = properties[3]
+            self.loading = properties[4]
     
 
     def updateBatProperties(self):
@@ -347,12 +355,13 @@ class Journal(DbManager):
         # update journal
         self.query('''
             UPDATE Journal_Table 
-            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}
-            WHERE File_Name = "{4}" AND Start_DateTime = {5} AND Electrode = "{6}"'''.format(
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
+            WHERE File_Name = "{5}" AND Start_DateTime = {6} AND Electrode = "{7}"'''.format(
                     self.mass, 
                     self.theoCapacity,
                     self.area,
                     self.volume,
+                    self.loading,
                     self.args.filename,
                     self.batDate,
                     self.batElectrode))
@@ -360,21 +369,22 @@ class Journal(DbManager):
         # update battery
         self.bat.query('''
             UPDATE Global_Table 
-            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
             WHERE rowid = 1'''.format(
                     self.mass, 
                     self.theoCapacity,
                     self.area,
-                    self.volume))
+                    self.volume,
+                    self.loading))
         
 
     def insertBat(self):
         """insert battery into journal table"""
         listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", 
-                      "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume"]
+                      "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume", "Loading"]
         insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format(
                 (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
         self.query(insert_query, (self.args.filename, self.batFileSize, self.batDate, self.batPoints,
                                   self.batDevice, self.batElectrode, self.batComment,
-                                  self.mass, self.theoCapacity, self.area, self.volume))
+                                  self.mass, self.theoCapacity, self.area, self.volume, self.loading))
         #print("INFO: Created new record in journal file.")

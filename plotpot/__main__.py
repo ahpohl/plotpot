@@ -29,21 +29,23 @@ def main():
             help='show plots',
             description=textwrap.dedent("""
             available plot types:
-               1  Voltage vs. specific capacity
-               2  Voltage + current vs. time
-               3  Temperature vs. time
-               4  Specific capacity [mAh/g]
-               5  Specific energy [Wh/kg]
-               6  Volumetric energy [Wh/L] 
-               7  Coulombic efficiency
-               8  Mean voltages and hysteresis
-               9  dQ/dV
-              10  C-rate
-              11  Specific current density [mA/g]
-              12  Current density [mA/cm²]
-              13  Specific capacity (circle plot)""")                    
+               1  Specific capacity
+               2  Specific capacity (circle plot) 
+               3  Voltage and current
+               4  Temperature
+               5  dQ/dV
+               6  Specific capacity [mAh/g]
+               7  Volumetric capacity [Ah/L]
+               8  Specific energy [Wh/kg]
+               9  Volumetric energy [Wh/L] 
+              10  Specific current density [mA/g]
+              11  Current density [mA/cm²]
+              12  C-rate 
+              13  Hysteresis
+              14  Coulombic efficiency
+              """)                    
     )
-    
+ 
     # positional plot argument
     parser_show.add_argument('filename', help="data file name")    
     
@@ -71,11 +73,11 @@ def main():
     
     # create the parser for the "journal" command
     parser_journal = subparsers.add_parser('journal', help='manipulate journal')
-    
+
+    parser_journal.add_argument('-e', '--export', action='store_true',
+                    dest='journalExport', help="export journal to csv file")    
     parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
                     dest='journalDelete', help="delete a row from journal")
-    parser_journal.add_argument('-e', '--export', action='store_true',
-                    dest='journalExport', help="export journal to csv file")
     
     # parse command line
     args = parser.parse_args()

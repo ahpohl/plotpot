@@ -40,7 +40,7 @@ class Electrode(DbManager):
            
         # search journal
         self.journal.searchBatProperties()
-        self.mass, self.theoCapacity, self.area, self.volume = self.journal.getBatProperties()
+        self.mass, self.theoCapacity, self.area, self.volume, self.loading = self.journal.getBatProperties()
         
         # mass 
         if any([x in [1,2,6,8,10,12] for x in self.showArgs['plots']]):
@@ -54,25 +54,22 @@ class Electrode(DbManager):
         # volume
         if any([x in [7,9] for x in self.showArgs['plots']]):
             self.setVolume()
+        # loading, rounded to 2 decimal places
+        if self.area and self.mass:
+            self.loading = round((self.mass / self.area), 2)
             
         # update journal
-        self.journal.setBatProperties(self.mass, self.theoCapacity, self.area, self.volume)
+        self.journal.setBatProperties(self.mass, self.theoCapacity, self.area, self.volume, self.loading)
         self.journal.updateBatProperties()
-        
-        if self.area:
-            self.loading = self.mass / self.area
-        else:
-            self.loading = 0
         
         
     def getProperties(self):
-        """return dict of properties"""
-        
-        return {'mass': self.mass,
-                'theoCapacity': self.theoCapacity,
-                'area': self.area,
-                'volume': self.volume,
-                'loading': self.loading}
+        """return list with electrode properties"""   
+        return [self.mass,
+                self.theoCapacity,
+                self.area,
+                self.volume,
+                self.loading]
     
     
     def __Property(self, prop, desc, unit):
@@ -140,6 +137,11 @@ class Electrode(DbManager):
     def getVolume(self):
         """return electrode volume in µL"""        
         return self.volume
+    
+    
+    def getLoading(self):
+        """return electrode mass loading in mg/cm²"""
+        return self.loading
 
 
     ### data methods ###
