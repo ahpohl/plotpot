@@ -198,6 +198,17 @@ class Journal(DbManager):
     def getData(self):
         """fetch journal table"""
         return self.data
+    
+    
+    def setID(self):
+        """row ID"""
+        self.query('''SELECT row_ID FROM Journal_Table''')
+        self.id = self.fetchall()
+        
+
+    def getID(self):
+        """row ID"""
+        return self.id
             
     
     def display(self):
@@ -212,13 +223,12 @@ class Journal(DbManager):
     def export(self):
         """export journal table to csv file"""
         journalCSV = self.journalPath[:-3]+"csv"
-        header = ("id", "file name", "mass", "capacity", "area", "volume", "loading",
-                  "file size", "data points", "date", "device", "electrode", "comment")
-        units = ("", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", "")
+        header = ",".join(["id", "file name", "mass", "capacity", "area", "volume", "loading",
+                  "file size", "data points", "date", "device", "electrode", "comment"])+"\n"
+        header += ",".join(["", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", ""])+"\n"
         with open(journalCSV, "w") as fh:
             writer = csv.writer(fh)
-            fh.write(",".join(header)+"\r\n")
-            fh.write(",".join(units)+"\r\n")
+            fh.write(header)
             writer.writerows(self.data)
             fh.close()
         print('''Journal export written to "%s".''' % journalCSV)

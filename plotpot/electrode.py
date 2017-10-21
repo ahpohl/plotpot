@@ -54,9 +54,8 @@ class Electrode(DbManager):
         # volume
         if any([x in [7,9] for x in self.showArgs['plots']]):
             self.setVolume()
-        # loading, rounded to 2 decimal places
-        if self.area and self.mass:
-            self.loading = round((self.mass / self.area), 2)
+        # loading
+        self.setLoading()
             
         # update journal
         self.journal.setBatProperties(self.mass, self.theoCapacity, self.area, self.volume, self.loading)
@@ -137,6 +136,14 @@ class Electrode(DbManager):
     def getVolume(self):
         """return electrode volume in µL"""        
         return self.volume
+
+
+    def setLoading(self):
+        """set mass loading in mA/cm², rounded to 2 decimal places"""
+        if self.area and self.mass:
+            self.loading = round((self.mass / self.area), 2)
+        else:
+            self.loading = 0
     
     
     def getLoading(self):

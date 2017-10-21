@@ -2,6 +2,7 @@
 import os, sys
 import zipfile, tempfile, shutil
 import numpy as np
+import csv
 
 # own modules
 from plotpot.dbmanager import DbManager
@@ -54,6 +55,29 @@ class Battery(DbManager):
     def getElectrodes(self):
         """return electrode objects"""
         return self.we, self.ce
+
+
+    def exportProperties(self):
+        """write battery properties to csv file"""
+        properties = []
+        properties.append(["working"]+self.we.getProperties())
+        if self.isFullCell:
+            properties.append(["counter"]+self.ce.getProperties())
+        header = ",".join(["", "mass", "capacity", "area", "volume", "loading"])+"\n"
+        header += ",".join(["", "mg", "mAh/g", "cm²", "µL", "mg/cm²"])+"\n"
+        with open(self.args.filename.split('.')[0]+'_properties.csv', "w") as fh:
+            writer = csv.writer(fh)
+            fh.write(header)
+            writer.writerows(properties)
+            fh.close()
+        
+    
+    def export(self):
+        """export battery data, statistics, voltage profile and properties"""
+        self.exportData()
+        self.exportVoltageProfile()
+        self.exportStatistics()
+        self.exportProperties()
             
     
     ### battery data methods ###
@@ -260,6 +284,7 @@ class Battery(DbManager):
         # fetch statistics
         self.setStatCycles()
         self.setStatPoints()
+        self.setStatTime()
         self.setStatAverageCurrent()
         self.setStatEfficiency()
         
@@ -268,7 +293,7 @@ class Battery(DbManager):
             self.statistics = np.concatenate(
                     [self.statCycles,
                      self.statPoints,
-                     
+                     self.statTime,
                      self.statAverageCurrent,
                      self.statEfficiency,
                      self.we.statSpecificCapacity,
@@ -291,8 +316,31 @@ class Battery(DbManager):
                      self.ce.statHysteresis], axis=1)
         
         else:
-            zeroElements = np.zeros(self.we.statSpecificCapacity.shape)
-            
+            zeroElements = np.zeros(self.statPoints.shape)
+            self.statistics = np.concatenate(
+                    [self.statCycles,
+                     self.statPoints,
+                     self.statTime,
+                     self.statAverageCurrent,
+                     self.statEfficiency,
+                     self.we.statSpecificCapacity,
+                     zeroElements,
+                     self.we.statVolumetricCapacity,
+                     zeroElements,
+                     self.we.statSpecificEnergy,
+                     zeroElements,
+                     self.we.statVolumetricEnergy,
+                     zeroElements,
+                     self.we.statSpecificCurrentDensity,
+                     zeroElements,
+                     self.we.statAreaCurrentDensity,
+                     zeroElements,
+                     self.we.statCRate,
+                     zeroElements,
+                     self.we.statAverageVoltage,
+                     zeroElements,
+                     self.we.statHysteresis,
+                     np.zeros(self.statCycles.shape)], axis=1)
         
     def getStatistics(self):
         """return battery statistics"""
@@ -301,27 +349,42 @@ class Battery(DbManager):
 
     def exportStatistics(self):
         """write battery statistics to a csv file"""
-        
-        filename = self.args.filename.split('.')[0]+'_statistics.csv'
             
-        # write statistics
         header = ",".join([
-                "cycle_index", "start", "end",
-                "time(c)", "time(d)", 
-                "capacity(c)", "capacity(d)", 
-                "energy(c)", "energy(d)",
-                "energy(c)", "energy(d)",
-                "Vav(c)", "Vav(d)",
-                "current(c)", "current(d)",
-                "efficiency", "hysteresis",
-                "density(c)", "density(d)",
-                "density(c)", "density(d)",
-                "c-rate(c)", "c-rate(d)"])+"\n"
+                "cycle",
+                "points", "", 
+                "time", "",
+                "current", "", 
+                "efficiency",
+                "WE capacity", "", "CE capacity", "", 
+                "WE capacity", "", "CE capacity", "", 
+                "WE energy", "", "CE energy", "", 
+                "WE energy", "", "CE energy", "", 
+                "WE density", "", "CE density", "", 
+                "WE density", "", "CE density", "", 
+                "WE C-rate", "", "CE C-rate", "", 
+                "WE voltage", "", "CE voltage","", 
+                "WE hysteresis", "CE hysteresis"])+"\n"
         
         header += ",".join([
-                "s", "s", "mAh/g", "mAh/g", "Wh/kg",
-                "Wh/kg", "Wh/L", "Wh/L", "V", "V", "A", "A", "%", "V",
-                "mA/g", "mA/g", "mA/cm²", "mA/cm²", "h", "h"])
+                 "",
+                 "", "",
+                 "h", "", 
+                 "mA", "", 
+                 "%",
+                 "mAh/g", "", "mAh/g", "", 
+                 "Ah/L", "", "Ah/L", "", 
+                 "Wh/kg","", "Wh/kg", "", 
+                 "Wh/L", "", "Wh/L", "", 
+                 "mA/g", "", "mA/g", "", 
+                 "mA/cm²", "", "mA/cm²", "", 
+                 "h", "", "h", "", 
+                 "V", "", "V", "", 
+                 "V", "V"])
+       
+        np.savetxt(self.args.filename.split('.')[0]+'_statistics.csv', 
+                   self.statistics, delimiter=',', header=header, comments='',
+                   fmt='%f')
         
     
     def setStatCycles(self):
@@ -344,6 +407,17 @@ class Battery(DbManager):
     def getStatPoints(self):
         """start and end data point of cycle"""
         return self.statPoints
+    
+    
+    def setStatTime(self):
+        """charge and discharge time in hours"""
+        self.query('''SELECT Charge_Time,Discharge_Time FROM Full_Cycle_Table''')
+        self.statTime = np.array(self.fetchall()) * 3.6e-3
+
+        
+    def getStatTime(self):
+        """charge and discharge time in hours"""
+        return self.statTime
     
     
     def setStatAverageCurrent(self):
