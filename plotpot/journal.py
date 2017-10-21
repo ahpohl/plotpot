@@ -230,16 +230,6 @@ class Journal(DbManager):
 
     def setData(self):
         """fetch journal table"""
-        listOfVars = ["row_ID", "File_Name", "Mass", "Capacity", "Area", "Volume", "Loading",
-                      "File_Size", "Data_Points", "Start_DateTime", "Device", "Electrode", "Comments"]
-        select_query = '''SELECT {0} FROM Journal_Table'''.format(','.join(listOfVars))
-        self.query(select_query)
-        self.data = self.fetchall()
-        
-        # convert secs since epoch into ctime
-        self.data = [list(x) for x in self.data]
-        for i in range(len(self.data)):
-            self.data[i][9] = str(datetime.datetime.fromtimestamp(self.data[i][9])) # sec since epoch
         
         try:
             self.setID()
