@@ -552,3 +552,22 @@ class Journal(DbManager):
                                   self.batDevice, self.batElectrode, self.batComment,
                                   self.mass, self.theoCapacity, self.area, self.volume, self.loading))
         #print("INFO: Created new record in journal file.")
+        
+        
+    ### merged files methods ###
+        
+    def exportMergedFiles(self):
+        """write merged files to csv file"""
+        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Localtime", "Comment"]
+        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
+        self.bat.query(select_query)
+        metadata = self.bat.fetchall()
+        
+        # write file 
+        with open(self.args.filename.split('.')[0]+'_merged.csv', 'w',  newline='') as fh:
+            header = ",".join(["file_ID", "file_name", "file_size", "data_points", "start_datetime", 
+                "comment"])
+            fh.write(header)
+            writer = csv.writer(fh, dialect='excel')
+            writer.writerows(metadata)
+            fh.close()
