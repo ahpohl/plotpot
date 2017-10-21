@@ -48,26 +48,6 @@ class Plotpot(object):
         
         sys.exit() 
 
-    """       
-    def subcommandShow_backup(self):
-        run show subcommand
-        
-        # create plot object
-        plotObj = Plot(self.args)
-
-        # create figures    
-        plotObj.drawPlots()
-        
-        # export  
-        if self.args.export:
-            print("INFO: Exporting data, statistics and figures.")
-            plotObj.exportData()
-            plotObj.saveFigure()
-            
-        # show plots if quiet option not given
-        if not self.args.quiet:
-            plotObj.showPlots()
-    """            
     
     def subcommandShow(self):
         """run show subcommand"""

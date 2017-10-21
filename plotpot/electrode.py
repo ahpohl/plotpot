@@ -215,7 +215,7 @@ class Electrode(DbManager):
         self.energy = np.array(self.fetchall())
         # convert energy from Ws to Wh/kg
         if self.mass:
-            self.energy = self.energy / (3.6e-3 * self.mass)
+            self.energy = np.abs(self.energy / (3.6e-3 * self.mass))
 
         
     def getEnergy(self):
@@ -407,7 +407,7 @@ class Electrode(DbManager):
             self.query('''SELECT Hysteresis2 FROM Full_Cycle_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
-        self.statHysteresis = np.array(self.fetchall())
+        self.statHysteresis = np.abs(np.array(self.fetchall()))
         
             
     def getStatHysteresis(self):
