@@ -63,11 +63,11 @@ class Battery(DbManager):
         properties.append(["working"]+self.we.getProperties())
         if self.isFullCell:
             properties.append(["counter"]+self.ce.getProperties())
-        header = ",".join(["", "mass", "capacity", "area", "volume", "loading"])+"\n"
-        header += ",".join(["", "mg", "mAh/g", "cm²", "µL", "mg/cm²"])+"\n"
-        with open(self.args.filename.split('.')[0]+'_properties.csv', "w") as fh:
-            writer = csv.writer(fh)
+        header = ",".join(["electrode", "mass", "capacity", "area", "volume", "loading"])+"\r\n"
+        header += ",".join(["", "mg", "mAh/g", "cm²", "µL", "mg/cm²"])+"\r\n"
+        with open(self.args.filename.split('.')[0]+'_properties.csv', "w", encoding='utf-8') as fh:
             fh.write(header)
+            writer = csv.writer(fh)
             writer.writerows(properties)
             fh.close()
         
@@ -118,15 +118,18 @@ class Battery(DbManager):
         """write data to a csv file"""
         header = ",".join(["point", "cycle", "step", "test time", "step time", "timestamp", "temperature", 
                            "current", "WE capacity", "CE capacity", "WE voltage", "CE voltage",
-                           "WE energy", "CE energy", "WE dQdV", "CE dQdV"])+"\n"
+                           "WE energy", "CE energy", "WE dQdV", "CE dQdV"])+"\r\n"
         header += ",".join(["", "", "", "h", "s", "s", "°C", 
                             "mA", "mAh/g", "mAh/g", "V", "V",
-                            "Wh/kg", "Wh/kg", "As/V", "As/V"])       
-        np.savetxt(self.args.filename.split('.')[0]+'_data.csv', 
-                   self.data, delimiter=',', header=header, comments='', 
+                            "Wh/kg", "Wh/kg", "As/V", "As/V"])+"\r\n"
+    
+        with open(self.args.filename.split('.')[0]+'_data.csv', "wb") as fh:
+            fh.write(header.encode('utf-8'))
+            np.savetxt(fh, self.data, delimiter=',', newline="\r\n", 
                    fmt=['%d','%d','%d','%f','%f','%d','%f',
                         '%f','%f','%f','%f','%f','%f',
                         '%f','%f','%f'])
+            fh.close()
    
 
     def exportVoltageProfile(self):
@@ -364,7 +367,7 @@ class Battery(DbManager):
                 "WE density", "", "CE density", "", 
                 "WE C-rate", "", "CE C-rate", "", 
                 "WE voltage", "", "CE voltage","", 
-                "WE hysteresis", "CE hysteresis"])+"\n"
+                "WE hysteresis", "CE hysteresis"])+"\r\n"
         
         header += ",".join([
                  "",
@@ -380,12 +383,13 @@ class Battery(DbManager):
                  "mA/cm²", "", "mA/cm²", "", 
                  "h", "", "h", "", 
                  "V", "", "V", "", 
-                 "V", "V"])
-       
-        np.savetxt(self.args.filename.split('.')[0]+'_statistics.csv', 
-                   self.statistics, delimiter=',', header=header, comments='',
-                   fmt='%f')
-        
+                 "V", "V"])+"\r\n"
+    
+        with open(self.args.filename.split('.')[0]+'_statistics.csv', "wb") as fh:
+            fh.write(header.encode('utf-8'))
+            np.savetxt(fh, self.statistics, delimiter=',', newline="\r\n", fmt='%f')
+            fh.close()
+            
     
     def setStatCycles(self):
         """full cycle statistics"""

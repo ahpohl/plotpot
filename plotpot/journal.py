@@ -200,11 +200,11 @@ class Journal(DbManager):
         """export journal table to csv file"""
         journalCSV = self.journalPath[:-3]+"csv"
         header = ",".join(["id", "file name", "mass", "capacity", "area", "volume", "loading",
-                  "file size", "data points", "date", "device", "electrode", "comment"])+"\n"
-        header += ",".join(["", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", ""])+"\n"
-        with open(journalCSV, "w") as fh:
-            writer = csv.writer(fh)
+                  "file size", "data points", "date", "device", "electrode", "comment"])+"\r\n"
+        header += ",".join(["", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", ""])+"\r\n"
+        with open(journalCSV, "w", encoding='utf-8') as fh:
             fh.write(header)
+            writer = csv.writer(fh)
             writer.writerows(self.data)
             fh.close()
         print('''Journal export written to "%s".''' % journalCSV)
@@ -247,13 +247,14 @@ class Journal(DbManager):
             self.setComments()
             
         except sqlite3.OperationalError as e:
+            print(e)
             self.upgradeSchema()
             sys.exit("INFO: Upgraded journal database schema.")
             
-        self.data = zip(self.id, self.fileName, self.mass, self.theoCapacity,
-                        self.area, self.volume, self.loading, self.fileSize,
-                        self.points, self.date, self.device, self.electrode,
-                        self.comments)
+        self.data = list(zip(self.id, self.fileName, self.mass, self.theoCapacity,
+                             self.area, self.volume, self.loading, self.fileSize,
+                             self.points, self.date, self.device, self.electrode,
+                             self.comments))
             
             
     def getData(self):
@@ -563,11 +564,12 @@ class Journal(DbManager):
         self.bat.query(select_query)
         metadata = self.bat.fetchall()
         
+        header = ",".join(["file_ID", "file_name", "file_size", "data_points", "start_datetime", 
+                "comment"])+"\r\n"
+        
         # write file 
-        with open(self.args.filename.split('.')[0]+'_merged.csv', 'w',  newline='') as fh:
-            header = ",".join(["file_ID", "file_name", "file_size", "data_points", "start_datetime", 
-                "comment"])
+        with open(self.args.filename.split('.')[0]+'_merged.csv', 'w', encoding='utf-8') as fh:
             fh.write(header)
-            writer = csv.writer(fh, dialect='excel')
+            writer = csv.writer(fh)
             writer.writerows(metadata)
             fh.close()

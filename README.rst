@@ -1,9 +1,9 @@
 Plotpot
 =======
 
-Plotpot is a Python module that plots potentiostatic data automatically
-imported with `Convpot <https://github.com/ahpohl/convpot>`__. It keeps
-a journal with meta information such as mass of active material,
+Plotpot is a Python module that plots half and full cell potentiostatic 
+data automatically imported with `Convpot <https://github.com/ahpohl/convpot>`__. 
+It keeps a journal with meta information such as mass of active material,
 capacity etc. for later use.
 
 Getting Started
@@ -69,9 +69,6 @@ sub-command options are printed with ``plotpot <sub-command> -h``
 An example plot generated with ``plotpot show arbintest.res`` looks like this:
 
 .. image:: https://raw.githubusercontent.com/ahpohl/plotpot/master/resources/arbintest.png
-
-Both half cell and full cell battery configurations are supported. With full cell data
-plots of both working and counter electrodes are shown together.
 
 Select data
 ~~~~~~~~~~~
