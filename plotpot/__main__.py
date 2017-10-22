@@ -82,17 +82,20 @@ def main():
     # create the parser for the "merge" command
     parser_merge = subparsers.add_parser('merge', help='merge files')
     
-    parser_merge.add_argument('mergeFileNames', metavar='filenames', 
-                    help="data filenames to merge")
-    parser_merge.add_argument('-l', '--list', metavar='FILE',
-                    dest='mergeList', help="text file with filenames")    
+    parser_merge.add_argument('mergeFileNames', metavar='file', nargs='*',
+                    help="filenames of data to merge")
+    parser_merge.add_argument('-l', '--list', metavar='FN',
+                    dest='mergeList', help="text file with filenames")
+    parser_merge.add_argument('-o', '--output', metavar='FN',
+                    dest='mergeOutput', help="change output filename")      
     
     # parse command line
     args = parser.parse_args()
     
     # print help if no subcommand is given
-    if args.subcommand is None:
+    if not args.subcommand:
         parser.print_help()
+        parser.exit()
     
     # run main program
     Plotpot(args)

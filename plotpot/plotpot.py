@@ -15,11 +15,7 @@ class Plotpot(object):
     
     def __init__(self, args):
         self.args = args
-        self.runSubcommands()        
-
-    
-    def runSubcommands(self):
-        """run plotpot subcommands"""
+        self.setConvpotPath()
         
         if self.args.subcommand == "show":
             self.subcommandShow()
@@ -27,28 +23,10 @@ class Plotpot(object):
         if self.args.subcommand == "journal":
             self.subcommandJournal()
             
-
-    def subcommandJournal(self):
-        """run journal subcommand"""
-        
-        # create journal object
-        journal = Journal(self.args)
-        
-        # display plotpot journal file on screen
-        if not (self.args.journalDelete or self.args.journalExport):
-            journal.display()
-
-        # delete journal entry
-        if self.args.journalDelete:
-            journal.deleteRow(self.args.journalDelete)
+        if self.args.subcommand == "merge":
+            self.subcommandMerge()
             
-        # export journal
-        if self.args.journalExport:
-            journal.export()
-        
-        sys.exit() 
 
-    
     def subcommandShow(self):
         """run show subcommand"""
         
@@ -82,6 +60,57 @@ class Plotpot(object):
         # show plots if quiet option not given
         if not self.args.quiet:
             plot.showPlots()
+
+            
+    def subcommandJournal(self):
+        """run journal subcommand"""
+        
+        # create journal object
+        journal = Journal(self.args)
+        
+        # display plotpot journal file on screen
+        if not (self.args.journalDelete or self.args.journalExport):
+            journal.display()
+
+        # delete journal entry
+        if self.args.journalDelete:
+            journal.deleteRow(self.args.journalDelete)
+            
+        # export journal
+        if self.args.journalExport:
+            journal.export()
+        
+        
+    def subcommandMerge(self):
+        """run merge subcommand"""
+
+        # # construct call to convpot
+        convpotArgs = []
+        convpotArgs.append(self.convpotPath)
+        
+        # verbose arg
+        if self.args.verbose:
+            convpotArgs.append("-{0}".format(self.args.verbose * 'v'))
+        
+        # output filename
+        if self.args.mergeOutput:
+            convpotArgs.extend(["-o", self.args.mergeOutput])
+        
+        # merge list
+        if self.args.mergeList:
+            convpotArgs.extend(["-m", self.args.mergeList])
+        
+        # files given after merge subcommand
+        elif self.args.mergeFileNames:
+            convpotArgs.extend(self.args.mergeFileNames)
+        
+        # call external Convpot program
+        if len(convpotArgs) > 1:
+            try:
+                subprocess.check_call(convpotArgs)
+            except subprocess.CalledProcessError as e:
+                sys.exit(e)
+    
     
     ### internal methods ###
     
@@ -219,25 +248,34 @@ class Plotpot(object):
         
         return dataFileName
     
+
+    def setConvpotPath(self):
+        """check if Convpot is installed and return path of executable"""
+        
+        # search path for Convpot program
+        self.convpotPath = find_executable("convpot")
+        
+        # search in current dir
+        if self.convpotPath is None:
+            self.convpotPath = find_executable("convpot", sys.argv[0])
+        
+        if not self.convpotPath:
+            sys.exit("ERROR: Convpot program not installed.")
+            
+        # test if convpot is executable
+        if not os.access(self.convpotPath, os.X_OK):
+            sys.exit("ERROR: Convpot program not executable.")
+            
+
+    def getConvpotPath(self):
+        """return Convpot path"""
+        return self.convpotPath
+    
     
     def callConvpot(self):
         """create the sqlite database by calling Convpot to convert raw
         data. Check if sqlite file is up-to-date and skip conversion 
         if necessary."""
-        
-        # search path for Convpot program
-        convpotPath = find_executable("convpot")
-        
-        # search in current dir
-        if convpotPath is None:
-            convpotPath = find_executable("convpot", sys.argv[0])
-        
-        if not convpotPath:
-            sys.exit("ERROR: Convpot program not installed.")
-            
-        # test if convpot is executable
-        if not os.access(convpotPath, os.X_OK):
-            sys.exit("ERROR: Convpot program not executable.")
         
         # get extension of raw file
         rawFileExtension = self.args.filename.rsplit('.')[1]
@@ -249,7 +287,7 @@ class Plotpot(object):
         
             # construct call to convpot
             convpotArgs = []
-            convpotArgs.append(convpotPath)
+            convpotArgs.append(self.convpotPath)
         
             # verbose arg
             if self.args.verbose:
