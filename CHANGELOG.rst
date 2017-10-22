@@ -1,7 +1,7 @@
 Plotpot changelog
 =================
 
-v1.1.0 - upcoming release
+v1.1.0 - 2017-10-22
 -------------------------
 -  needs minimum Convpot version v1.2.0
 -  support for full cells (remove --bio_ce)
