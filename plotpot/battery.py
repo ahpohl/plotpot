@@ -147,8 +147,8 @@ class Battery(DbManager):
         
         # file header
         header = ",".join(["WE capacity", "CE capacity" ,"WE voltage", 
-                                    "CE voltage", "WE dQ/dV",  "CE dQ/dV"])+"\n"
-        header += ",".join(["mAh/g", "mAh/g", "V", "V", "As/V", "As/V"])
+                                    "CE voltage", "WE dQ/dV",  "CE dQ/dV"])+"\r\n"
+        header += ",".join(["mAh/g", "mAh/g", "V", "V", "As/V", "As/V"])+"\r\n"
         
         # construct data array
         if self.isFullCell:
@@ -174,7 +174,10 @@ class Battery(DbManager):
             else:
                 sys.exit("ERROR: Rest cycles not supported")
             # save data
-            np.savetxt(filename, data[a:b], delimiter=',', header=header, comments='', fmt='%f')
+            with open(filename, "wb") as fh:
+                fh.write(header.encode('utf-8'))
+                np.savetxt(fh, data[a:b], delimiter=',', newline="\r\n", fmt='%f')
+                fh.close()
                 
         # create zip archive
         os.chdir(tempfile.gettempdir())
@@ -416,7 +419,7 @@ class Battery(DbManager):
     def setStatTime(self):
         """charge and discharge time in hours"""
         self.query('''SELECT Charge_Time,Discharge_Time FROM Full_Cycle_Table''')
-        self.statTime = np.array(self.fetchall()) * 3.6e-3
+        self.statTime = np.array(self.fetchall()) / 3.6e3
 
         
     def getStatTime(self):
