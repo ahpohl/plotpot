@@ -127,14 +127,17 @@ class Journal(DbManager):
             Electrode TEXT)''')
         
         self.query('''CREATE TABLE IF NOT EXISTS Merge_Table (
-            Row_ID INTEGER,
+            Merge_ID INTEGER PRIMARY KEY,
             File_ID INTEGER,
             File_Name TEXT,
             Device TEXT,
+            Plot_Type TEXT,
             File_Size INTEGER,
             Start_DateTime INTEGER,
+            Localtime TEXT,
             Data_Points INTEGER,
-            Comments TEXT)''')
+            Test_Time DOUBLE,
+            Comment TEXT)''')
        
         
     def upgradeSchema(self):

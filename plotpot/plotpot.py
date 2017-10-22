@@ -105,6 +105,7 @@ class Plotpot(object):
             convpotArgs.extend(self.args.mergeFileNames)
         
         # call external Convpot program
+        # TODO: print merge command help if no Convpot arguments
         if len(convpotArgs) > 1:
             try:
                 subprocess.check_call(convpotArgs)
