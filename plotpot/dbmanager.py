@@ -20,6 +20,3 @@ class DbManager(object):
     def fetchone(self):
         data = self.cur.fetchone()
         return data
-
-    #def __del__(self):
-    #    self.conn.close()

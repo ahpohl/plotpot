@@ -2,30 +2,14 @@
 import sys, os
 import numpy as np
 import matplotlib.pyplot as plt
-from plotpot.data import Data
 
 
-class Plot(Data):
+class Plot(object):
 
-    def __init__(self, args):
-        """Data array: 
-            0: data point
-            1: cycle index
-            2: step index
-            3: test time [s]
-            4: step time [s]
-            5: datetime [sec since epoch]
-            6: current [A]
-            7: voltage, working electrode [V]
-            8: voltage2, counter electrode [V]
-            9: capacity [As]
-            10: energy [VAs]
-            11: dQdV [As V-1]
-            12: aux channel"""
-        
+    def __init__(self, args, showArgs, bat):
         self.args = args
-        # call Data base class constructor
-        super().__init__(args)
+        self.showArgs = showArgs
+        self.bat = bat
         
     
     def drawPlots(self):
@@ -34,399 +18,574 @@ class Plot(Data):
         # set current working directory
         plt.rcParams['savefig.directory'] = os.getcwd()
         
-        for n in self.plots:
+        # set plot range according to show arguments cycles, time and points
+        self.setPlotRange()
+        
+        for n in self.bat.showArgs['plots']:
             if n == 1:
                 self.figVoltageCapacity()
             elif n == 2:
-                self.figVoltageCurrentTime()
-            elif n == 3:
-                self.figAuxChannelTime()
-            elif n == 4:
-                self.figCapacity()
-            elif n == 5:
-                self.figSpecificEnergy()
-            elif n == 6:
-                self.figVolumetricEnergy()
-            elif n == 7:
-                self.figEfficiency()
-            elif n == 8:
-                self.figHysteresis()
-            elif n == 9:
-                self.figDQDV()
-            elif n == 10:
-                self.figCRate()
-            elif n == 11:
-                self.figSpecificCurrentDensity()
-            elif n == 12:
-                self.figAreaCurrentDensity()
-            elif n == 13:
                 self.figVoltageCapacityCircle()
+            elif n == 3:
+                self.figVoltageCurrent()
+            elif n == 4:
+                self.figTemperature()
+            elif n == 5:
+                self.figDQDV()
+            elif n == 6:
+                self.figSpecificCapacity()
+            elif n == 7:
+                self.figVolumetricCapacity()
+            elif n == 8:
+                self.figSpecificEnergy()
+            elif n == 9:
+                self.figVolumetricEnergy()
+            elif n == 10:
+                self.figSpecificCurrentDensity()
+            elif n == 11:
+                self.figAreaCurrentDensity()
+            elif n == 12:
+                self.figCRate()
+            elif n == 13:
+                self.figHysteresis()
+            elif n == 14:
+                self.figEfficiency()
             else:
                 sys.exit("ERROR: Plot number not defined.")
         
 
-    def saveFigure(self):
-        """This function saves figures."""
+    def savePlots(self):
+        """save plots into png images"""
 
-        ext = '.png'
         stem = self.args.filename.split('.')[0]
+        ext = '.png'
         
-        filename = {1: '_voltage_vs_capacity',
-                    2: '_voltage_current_vs_time',
-                    3: '_temperature_vs_time',
-                    4: '_capacity',
-                    5: '_specific_energy',
-                    6: '_volumetric_energy',
-                    7: '_efficiency',
-                    8: '_hysteresis',
-                    9: '_dqdv',
-                    10: '_c_rate',
-                    11: '_specific_current_density',
-                    12: '_current_density',
-                    13: '_capacity_circle'}
-        
-        for n in self.plots:
-            fig = plt.figure(n)
-            plt.savefig(stem + filename[n] + ext)
+        suffix = {1: '_voltage_vs_capacity',
+                  2: '_capacity_circle',
+                  3: '_voltage_current_vs_time',
+                  4: '_temperature_vs_time',
+                  5: '_dqdv',
+                  6: '_specific_capacity',
+                  7: '_volumetric_capacity',
+                  8: '_specific_energy',
+                  9: '_volumetric_energy',
+                  10: '_specific_current_density',
+                  11: '_volumetric_current_density',                 
+                  12: '_efficiency',
+                  13: '_hysteresis',
+                  14: '_c_rate'}
+
+        for n in self.showArgs['plots']:
+            plt.figure(n)
+            plt.savefig(stem + suffix[n] + ext)
            
     
     def showPlots(self):
         """show plots on sceen"""
         plt.show()
-        
     
-    def figVoltageCapacity(self): # data, cycles, metaInfo
+
+    def setPlotRange(self):
+        """set plot range according to show arguments cycles, time and points"""
+        
+        # get indices of full cycle limits
+        if self.bat.showArgs['cycles'] is not None:
+            # convert cycles to zero based index
+            self.c = (self.bat.showArgs['cycles'][0]-1, self.bat.showArgs['cycles'][1])
+            # get indices of half cycle limits
+            # convert full cycles into half cycles (with zero based index)
+            self.h = ((2*(self.bat.showArgs['cycles'][0])-1)-1, 2*(self.bat.showArgs['cycles'][1]))
+            #self.h = (2*self.c[0]-1, 2*self.c[1])
+            # get indices of data point limits
+            self.p = (self.bat.statPoints[self.c[0]:self.c[1]].flatten()[0],
+                      self.bat.statPoints[self.c[0]:self.c[1]].flatten()[-1])
+        
+        # get indices with --time argument
+        elif self.bat.showArgs['time'] is not None:
+            # get indices of data point limits
+            self.p = np.searchsorted(self.bat.testTime[:,0], self.bat.showArgs['time'])
+            # get indices of half cycle limits
+            self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
+            self.h[1] += 1 
+            # get indices of full cycle limits
+            self.c = np.searchsorted(self.bat.statPoints[:,1], self.p)
+            self.c[1] += 1
+            
+        # get indices with --data argument
+        elif self.bat.showArgs['points'] is not None:
+            # get indices of data point limits
+            self.p = self.bat.showArgs['points']
+            # get indices of half cycle limits
+            self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
+            self.h[1] += 1 
+            # get indices of full cycle limits
+            self.c = np.searchsorted(self.bat.statPoints[:,1], self.p)
+            self.c[1] += 1
+            
+        # no range argument given
+        else:
+            self.c = (0, len(self.bat.statCycles))
+            self.h = (0, len(self.bat.halfStatCycles))
+            self.p = (0, len(self.bat.points))
+            
+        if self.args.verbose:
+            print("Full cycles: %d-%d, Half cycles: %d-%d, Data Points: %d-%d" 
+                  % (self.c[0], self.c[1], self.h[0], self.h[1], self.p[0], self.p[1]))
+        
+        
+    ### data plot methods ###
+    
+    def figVoltageCapacity(self):
         """plot galvanostatic profile"""
-        
-        fig = plt.figure(1)
-        fig.canvas.set_window_title("Figure 1 - galvanostatic profile")
-        ax1 = fig.add_subplot(111)
-        
-        for c in self.cycles:
-            d = self.data[self.data[:,1]==c] # select cycle
-            ch = d[d[:,2]==1] # select charge half cycle
-            dc = d[d[:,2]==-1] # select discharge hafl cycle
-            ch = ch[:-1] # discard last data point, zero capacity
-            dc = dc[:-1] # discard last data point, zero capacity
-            
-            with np.errstate(invalid='ignore'):
-                ax1.plot(ch[:,9]/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
-                ax1.plot(dc[:,9]/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
-    
-        ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
-        ax1.set_ylabel('Voltage [V]')
-    
-    
-    def figVoltageCurrentTime(self): # data
-        """Voltage and current vs. time plot"""
-          
-        fig = plt.figure(2)
-        fig.canvas.set_window_title("Figure 2 - voltage, current vs. time")
-        plt.subplots_adjust(left=0.11, right=0.87, top=0.92, bottom=0.10)
-        plt.rc('legend', numpoints=1) # change points in legend
-        
-        ax1 = fig.add_subplot(111)
-        ax1.plot(self.data[:,3]/3600, self.data[:,7], 'k-', label='Voltage')
-        ax1.set_xlabel('Time [h]')
-        ax1.set_ylabel('Voltage [V]')
-        ax2 = ax1.twinx()
-        ax2.plot(self.data[:,3]/3600, self.data[:,6]*1e3, 'k--', label='Current')
-        ax2.set_ylabel('Current [mA]')
-        
-    
-    def figAuxChannelTime(self): # data
-        """auxiliary channel vs. time plot"""
-    
-        fig = plt.figure(3)
-        fig.canvas.set_window_title("Figure 3 - auxiliary channel")
-        plt.subplots_adjust(left=0.11, right=0.87, top=0.92, bottom=0.10)
-        plt.rc('legend', numpoints=1) # change points in legend
-        
-        ax1 = fig.add_subplot(111)
-        ax1.plot(self.data[:,3]/3600, self.data[:,12], 'k-', label='Auxiliary channel')
-        ax1.set_xlabel('Time [h]')
-        ax1.set_ylabel('Temperature [°C]')
-        #ax1.legend()
-        
-    
-    def figCapacity(self): # stats, metaInfo
-        """capacity plot"""
-        
-        fig = plt.figure(4)
-        fig.canvas.set_window_title("Figure 4 - specific capacity")
-        plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
-    
-        # specific capacity
-        ax1 = fig.add_subplot(111)
-        ax1.plot(self.fullStats[:,0], self.fullStats[:,5], 'ko-', label='charge')
-        ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,6]), 'kD-', label='discharge')
-        ax1.set_xlabel('Cycle')
-        ax1.set_ylabel('Specific capacity [mAh g$^{-1}$]')
-        
-        # Shrink current axis's height by 10% on the bottom
-        box = ax1.get_position()
-        ax1.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-    
-        # Put a legend below current axis
-        ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=2)
-    
-        # set ylim
-        lim = plt.ylim()
-        plt.ylim(ymin=0, ymax=lim[1])
-        
-    
-    def figSpecificEnergy(self): # stats, metaInfo
-        """energy plot per mass""" 
-    
-        fig = plt.figure(5)
-        fig.canvas.set_window_title("Figure 5 - specific energy")
-        plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
-    
-        # specific energy
-        ax2 = fig.add_subplot(111)
-        ax2.plot(self.fullStats[:,0], self.fullStats[:,7], 'ko-', label='charge')
-        ax2.plot(self.fullStats[:,0], np.abs(self.fullStats[:,8]), 'kD-', label='discharge')
-        ax2.set_xlabel('Cycle')
-        ax2.set_ylabel('Specific energy [Wh kg$^{-1}$]')
-        
-        # Shrink current axis's height by 10% on the bottom
-        box = ax2.get_position()
-        ax2.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-    
-        # Put a legend below current axis
-        ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=2)
-       
-        # set ylim
-        lim = plt.ylim()
-        plt.ylim(ymin=0, ymax=lim[1])
-     
 
-    def figVolumetricEnergy(self): # stats, metaInfo
-        """energy plot per volume""" 
-    
-        fig = plt.figure(6)
-        fig.canvas.set_window_title("Figure 6 - volumetric energy density")
-        plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
-    
-        # specific energy in Wh/L
-        ax2 = fig.add_subplot(111)
-        ax2.plot(self.fullStats[:,0], self.fullStats[:,9], 'ko-', label='charge')
-        ax2.plot(self.fullStats[:,0], np.abs(self.fullStats[:,10]), 'kD-', label='discharge')
-        ax2.set_xlabel('Cycle')
-        ax2.set_ylabel('Volumetric energy [Wh L$^{-1}$]')
-        
-        # Shrink current axis's height by 10% on the bottom
-        box = ax2.get_position()
-        ax2.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-    
-        # Put a legend below current axis
-        ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=2)
-       
-        # set ylim
-        lim = plt.ylim()
-        plt.ylim(ymin=0, ymax=lim[1])
-     
-    
-    def figEfficiency(self): # stats
-        """coulombic efficiency plot"""
-    
-        fig = plt.figure(7)
-        fig.canvas.set_window_title("Figure 7 - coulombic efficiency")
-        plt.rc('legend', numpoints=1) # change points in legend
-       
-        # coulombic efficiency
-        ax3 = fig.add_subplot(111)
-        ax3.plot(self.fullStats[:,0], self.fullStats[:,16]*100, 'ks-')
-        ax3.set_xlabel('Cycle')
-        ax3.set_ylabel('Coulombic efficiency [%]')
-        
-    
-    def figHysteresis(self): # stats
-        """average voltage and hysteresis plot"""
-    
-        fig = plt.figure(8)
-        fig.canvas.set_window_title("Figure 8 - voltage hysteresis")
-        plt.subplots_adjust(left=0.11, right=0.87, top=0.92, bottom=0.10)
-        plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
-       
-        # voltage hysteresis
-        ax4 = fig.add_subplot(111)
-        
-        p1 = ax4.plot(self.fullStats[:,0], self.fullStats[:,11], 'ko--', label='charge voltage')
-        p2 = ax4.plot(self.fullStats[:,0], self.fullStats[:,12], 'kD--', label='discharge voltage')
-        p3 = ax4.plot(self.fullStats[:,0], self.fullStats[:,15], 'ks-', label='hysteresis')
-        ax4.set_xlabel('Cycle')
-        ax4.set_ylabel('Voltage [V]')
-        
-        # set ylim
-        lim = plt.ylim()
-        plt.ylim(ymin=0, ymax=lim[1])
-        
-        # Shrink current axis's height by 10% on the bottom
-        box = ax4.get_position()
-        ax4.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-        
-        # Put a legend below current axis
-        lines = p1+p2+p3
-        plt.legend(lines, [l.get_label() for l in lines], loc='upper center', 
-                   bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=3)
-        
-    
-    def figDQDV(self): # data, cycles
-        """cyclovoltammogram from galvanostatic self.cycles
-        7: voltage
-        8: capacity
-        10: dQdV
-        """
-        
-        fig = plt.figure(9)
-        fig.canvas.set_window_title("Figure 9 - differential capacity")
-        ax1 = fig.add_subplot(111)
-        
-        # translate smooth level to window length
-        dictLevel = {'1': 5, '2': 11, '3': 17, '4': 23} # level odd integer
-        
-        for cyc in self.cycles:
-            ch = self.data[np.logical_and(self.data[:,1] == cyc, self.data[:,2] == 1)]
-            dc = self.data[np.logical_and(self.data[:,1] == cyc, self.data[:,2] == -1)]
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(1, figsize=(9,6))
+            fig.canvas.set_window_title("Figure 1 - galvanostatic profile")
             
-            # skip last two data points
-            ch = ch[:-2]
-            dc = dc[:-2]
+            # working electrode plot
+            ax1 = fig.add_subplot(111)
+            #ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax1.set_ylabel('Voltage [V]', fontsize=12)
             
-            dc[:,11] = -dc[:,11] # dQdV negative on discharge
-            
-            if ch.shape[0] > 0:
-                if self.args.smooth:
-                    level = dictLevel[str(self.args.smooth)]
-                    ych = self.smooth(ch[:,11], window_len=level, window='hamming')
-                    ax1.plot(ch[:,7], ych, 'k-', label='')
-                # disable smooth
-                else:
-                    ax1.plot(ch[:,7], ch[:,11], 'k-', label='')
-                
-            if dc.shape[0] > 0:
-                if self.args.smooth:
-                    level = dictLevel[str(self.args.smooth)]
-                    ydc = self.smooth(dc[:,11], window_len=level, window='hamming')
-                    ax1.plot(dc[:,7], ydc, 'k-', label='')
-                else:
-                    ax1.plot(dc[:,7], dc[:,11], 'k-', label='')
-                
-        ax1.set_xlabel('Voltage [V]')
-        ax1.set_ylabel('dQ/dV [As V$^{-1}$]')
+            # loop over half cycles
+            for (a,b) in self.bat.halfStatPoints[self.h[0]:self.h[1]]:
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+                ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-')
     
-    
-    def figCRate(self): # stats, metaInfo
-        """C-rate vs. cycle number"""
+        # full cell
+        else:
+            fig = plt.figure(1, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 1 - full cell galvanostatic profile")
         
-        fig = plt.figure(10)
-        fig.canvas.set_window_title("Figure 10 - C-rate")
-        plt.subplots_adjust(left=0.11, right=0.87, top=0.92, bottom=0.10)
-        plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
-       
-        ax1 = fig.add_subplot(111)
-        p1 = ax1.plot(self.fullStats[:,0], self.fullStats[:,21], 'ko-', label='charge')
-        p2 = ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,22]), 'kD-', label='discharge')
+            # working electrode plot
+            ax1 = fig.add_subplot(121)
+            ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax1.set_ylabel('WE potential [V]', fontsize=12)
         
-        ax1.set_xlabel('Cycle number')
-        ax1.set_ylabel('x in C x$^{-1}$ [h]')
+            # counter electrode plot
+            ax2 = fig.add_subplot(122)
+            ax2.autoscale(axis='x', tight='tight')
+            ax2.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax2.set_ylabel('CE potential [V]', fontsize=12)
         
-        # Shrink current axis's height by 10% on the bottom
-        box = ax1.get_position()
-        ax1.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-        
-        # Put a legend below current axis
-        lines = p1+p2
-        plt.legend(lines, [l.get_label() for l in lines], loc='upper center', 
-                   bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=3)
-    
-        # set ylim
-        #lim = plt.ylim()
-        #plt.ylim(ymin=0, ymax=lim[1])
-        
+             # loop over half cycles
+            for (a,b) in self.bat.halfStatPoints[self.h[0]:self.h[1]]:
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+                ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-')
+                ax2.plot(self.bat.ce.capacity[a:b], self.bat.ce.voltage[a:b], 'k-')                
 
-    def figSpecificCurrentDensity(self): # stats, metaInfo
-        """Specific current density vs. cycle number"""
-        
-        fig = plt.figure(11)
-        fig.canvas.set_window_title("Figure 11 - specific current")
-        plt.subplots_adjust(left=0.11, right=0.87, top=0.92, bottom=0.10)
-        plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
-       
-        ax1 = fig.add_subplot(111)
-        p1 = ax1.plot(self.fullStats[:,0], self.fullStats[:,17], 'ko-', label='charge')
-        p2 = ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,18]), 'kD-', label='discharge')
-        
-        ax1.set_xlabel('Cycle number')
-        ax1.set_ylabel('Specific current density [mA g$^{-1}$]')
-        
-        # Shrink current axis's height by 10% on the bottom
-        box = ax1.get_position()
-        ax1.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-        
-        # Put a legend below current axis
-        lines = p1+p2
-        plt.legend(lines, [l.get_label() for l in lines], loc='upper center', 
-                   bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=3)
-    
-        # set ylim
-        #lim = plt.ylim()
-        #plt.ylim(ymin=0, ymax=lim[1])
+        fig.tight_layout()
         
     
-    def figAreaCurrentDensity(self):
-        """Specific current density vs. cycle number"""
-        
-        fig = plt.figure(12)
-        fig.canvas.set_window_title("Figure 12 - current per electrode area")
-        plt.subplots_adjust(left=0.14, right=0.87, top=0.92, bottom=0.10)
-        plt.rc('legend', numpoints=1, fontsize=12) # change points in legend
-       
-        ax1 = fig.add_subplot(111)
-        p1 = ax1.plot(self.fullStats[:,0], self.fullStats[:,19], 'ko-', label='charge')
-        p2 = ax1.plot(self.fullStats[:,0], np.abs(self.fullStats[:,20]), 'kD-', label='discharge')
-        
-        ax1.set_xlabel('Cycle number')
-        ax1.set_ylabel('Current density [mA cm$^{-2}$]')
-        
-        # Shrink current axis's height by 10% on the bottom
-        box = ax1.get_position()
-        ax1.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-        
-        # Put a legend below current axis
-        lines = p1+p2
-        plt.legend(lines, [l.get_label() for l in lines], loc='upper center', 
-                   bbox_to_anchor=(0.5, -0.12), fancybox=False, shadow=False, ncol=3)
-    
-        # set ylim
-        #lim = plt.ylim()
-        #plt.ylim(ymin=0, ymax=lim[1])
-        
-    
-    def figVoltageCapacityCircle(self): # data, cycles, metaInfo
+    def figVoltageCapacityCircle(self):
         """plot galvanostatic profile (circle)"""
         
-        fig = plt.figure(13)
-        fig.canvas.set_window_title("Figure 13 - galvanostatic profile")
-        ax1 = fig.add_subplot(111)
-        
-        for c in self.cycles:
-            d = self.data[self.data[:,1]==c] # select cycle
-            ch = d[d[:,2]==1] # select charge half cycle
-            dc = d[d[:,2]==-1] # select discharge hafl cycle
-            ch = ch[:-1] # discard last data point, zero capacity
-            dc = dc[:-1] # discard last data point, zero capacity
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(2, figsize=(9,6))
+            fig.canvas.set_window_title("Figure 2 - galvanostatic profile (circle)")
             
-            with np.errstate(invalid='ignore'):
-                if dc.shape[0] > 0 and ch.shape[0] > 0:
-                    ax1.plot((-1*ch[:,9]+np.abs(dc[-1:,9]))/(3.6e-3*self.metaInfo['mass']), ch[:,7], 'k-', label='charge')
-                    ax1.plot(np.abs(dc[:,9])/(3.6e-3*self.metaInfo['mass']), dc[:,7], 'k-', label='discharge')
+            # working electrode plot
+            ax1 = fig.add_subplot(111)
+            #ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax1.set_ylabel('Voltage [V]', fontsize=12)
+            
+            # loop over half cycles
+            curCap = 0; prevCap = 0
+            for ((a,b),h) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatCycles[self.h[0]:self.h[1]]):
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+                curCap = self.bat.we.capacity[b-1]
+                if h % 2 == 0:
+                    ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-')
+                else:
+                    ax1.plot(-1*self.bat.we.capacity[a:b]+prevCap, self.bat.we.voltage[a:b], 'k-')
+                prevCap = curCap
+                
+        # full cell
+        else:
+            fig = plt.figure(2, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 2 - full cell galvanostatic profile (circle)")
+            
+            # working electrode
+            ax1 = fig.add_subplot(121)
+            ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax1.set_ylabel('WE potential [V]', fontsize=12)
     
-        ax1.set_xlabel('Specific capacity [mAh g$^{-1}$]')
-        ax1.set_ylabel('Voltage [V]')
+            # counter electrode
+            ax2 = fig.add_subplot(122)
+            ax2.autoscale(axis='x', tight='tight')
+            ax2.set_xlabel('Specific capacity [mAh g$^{-1}$]', fontsize=12)
+            ax2.set_ylabel('CE potential [V]', fontsize=12)
+            
+            
+            # loop over half cycles
+            curCap = []; prevCap = [0,0]
+            for ((a,b),h) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatCycles[self.h[0]:self.h[1]]):
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+                curCap = [self.bat.we.capacity[b-1], self.bat.ce.capacity[b-1]]
+                if h % 2 == 0:
+                    ax1.plot(self.bat.we.capacity[a:b], self.bat.we.voltage[a:b], 'k-')
+                    ax2.plot(self.bat.ce.capacity[a:b], self.bat.ce.voltage[a:b], 'k-')
+                else:
+                    ax1.plot(-1*self.bat.we.capacity[a:b]+prevCap[0], self.bat.we.voltage[a:b], 'k-')
+                    ax2.plot(-1*self.bat.ce.capacity[a:b]+prevCap[1], self.bat.ce.voltage[a:b], 'k-')
+                prevCap = curCap
+        
+        fig.tight_layout()
+        
+        
+    def figVoltageCurrent(self):
+        """voltage and current"""
+        
+        # half cell
+        if not self.bat.isFullCell:       
+            fig = plt.figure(3, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 3 - voltage, current")
+
+            # working electrode plot
+            ax1 = fig.add_subplot(111)
+            ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Time [h]', fontsize=12)
+            ax1.set_ylabel('Voltage [V]', fontsize=12)
+            ax2 = ax1.twinx()
+            ax2.autoscale(axis='x', tight='tight')
+            ax2.set_ylabel('Current [mA]', fontsize=12)
+           
+            ax1.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.we.voltage[self.p[0]:self.p[1]], 'k-', label='voltage')
+            ax2.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.current[self.p[0]:self.p[1]], 'k--', label='current')
+            
+        # full cell
+        else:
+            fig = plt.figure(3, figsize=(12,8))
+            fig.canvas.set_window_title("Figure 3 - full cell voltage, current vs. time")
+            
+            # working electrode plot
+            ax1 = fig.add_subplot(211)
+            ax1.autoscale(axis='x', tight='tight')
+            ax1.set_xlabel('Time [h]', fontsize=12)
+            ax1.set_ylabel('WE potential [V]', fontsize=12)
+            ax2 = ax1.twinx()
+            ax2.autoscale(axis='x', tight='tight')
+            ax2.set_ylabel('Current [mA]', fontsize=12)
+           
+            ax1.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.we.voltage[self.p[0]:self.p[1]], 'k-', label='voltage')
+            ax2.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.current[self.p[0]:self.p[1]], 'k--', label='current')
+            
+            # counter electrode plot
+            ax3 = fig.add_subplot(212)
+            ax3.autoscale(axis='x', tight='tight')
+            ax3.set_xlabel('Time [h]', fontsize=12)
+            ax3.set_ylabel('CE potential [V]', fontsize=12)
+            ax4 = ax3.twinx()
+            ax4.autoscale(axis='x', tight='tight')
+            ax4.set_ylabel('Current [mA]', fontsize=12)
+           
+            ax3.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     self.bat.ce.voltage[self.p[0]:self.p[1]], 'k-', label='voltage')
+            ax4.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                     -1*self.bat.current[self.p[0]:self.p[1]], 'k--', label='current')
+        
+        fig.tight_layout()
+        
+
+    def figTemperature(self):
+        """auxiliary channel, e.g. temperature"""
     
+        fig = plt.figure(4, figsize=(12,6))
+        fig.canvas.set_window_title("Figure 4 - temperature")
+        
+        ax1 = fig.add_subplot(111)
+        ax1.autoscale(axis='x', tight='tight')
+        ax1.set_xlabel('Time [h]', fontsize=12)
+        ax1.set_ylabel('Temperature [°C]', fontsize=12)
+
+        ax1.plot(self.bat.testTime[self.p[0]:self.p[1]], 
+                 self.bat.temperature[self.p[0]:self.p[1]], 'k-')
+        
+        fig.tight_layout()
+        
+        
+    def figDQDV(self):
+        """cyclovoltammogram from galvanostatic cycles"""
+
+        # translate smooth level to window length (odd integer)
+        level = 0
+        if self.args.smooth:
+            level = (self.args.smooth-1) * 6 + 5
+            
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(5, figsize=(9,6))
+            fig.canvas.set_window_title("Figure 5 - differential capacity")
+            
+            # working electrode
+            ax1 = fig.add_subplot(111)
+            ax1.set_xlabel('Voltage [V]', fontsize=12)
+            ax1.set_ylabel('dQ/dV [As V$^{-1}$]', fontsize=12) 
+            
+            # loop over half cycles
+            for ((a,b),s) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatStep[self.h[0]:self.h[1]]):
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+                # charge
+                if s > 0 and (self.args.smooth is not None):
+                    ax1.plot(self.smooth(self.bat.we.voltage[a:b,0], window_len=level, window='hamming'),
+                             self.smooth(self.bat.we.dqdv[a:b,0], window_len=level, window='hamming'), 'k-')
+                elif s > 0:
+                    ax1.plot(self.bat.we.voltage[a:b], self.bat.we.dqdv[a:b], 'k-')
+                # discharge
+                elif s < 0 and (self.args.smooth is not None):
+                    ax1.plot(self.smooth(self.bat.we.voltage[a:b,0], window_len=level, window='hamming'),
+                             self.smooth(-1*self.bat.we.dqdv[a:b,0], window_len=level, window='hamming'), 'k-')
+                elif s < 0:
+                    ax1.plot(self.bat.we.voltage[a:b], -1*self.bat.we.dqdv[a:b], 'k-')
+                # rest 
+                else:
+                    sys.exit("ERROR: Rest cycles not supported")
+                    
+        # full cell
+        else:
+            fig = plt.figure(5, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 5 - full cell differential capacity")
+            
+            # working electrode
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel('WE potential [V]', fontsize=12)
+            ax1.set_ylabel('dQ/dV [As V$^{-1}$]', fontsize=12)
+            
+            # counter electrode
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel('CE potential [V]', fontsize=12)
+            ax2.set_ylabel('dQ/dV [As V$^{-1}$]', fontsize=12)
+                    
+            # loop over half cycles
+            for ((a,b),s) in zip(self.bat.halfStatPoints[self.h[0]:self.h[1]], self.bat.halfStatStep[self.h[0]:self.h[1]]):
+                if a < self.p[0]: a = self.p[0]
+                if b > self.p[1]: b = self.p[1]
+
+                if s > 0 and (self.args.smooth is not None):
+                    ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
+                             self.smooth(self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
+                    ax2.plot(self.smooth(self.bat.ce.voltage[a:b], window_len=level, window='hamming'),
+                             self.smooth(self.bat.ce.dqdv[a:b], window_len=level, window='hamming'), 'k-')
+                elif s > 0:
+                    ax1.plot(self.bat.we.voltage[a:b], self.bat.we.dqdv[a:b], 'k-')
+                    ax2.plot(self.bat.ce.voltage[a:b], self.bat.ce.dqdv[a:b], 'k-')
+                elif s < 0 and (self.args.smooth is not None):
+                    ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
+                             self.smooth(-1*self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
+                    ax2.plot(self.smooth(self.bat.ce.voltage[a:b], window_len=level, window='hamming'),
+                             self.smooth(-1*self.bat.ce.dqdv[a:b], window_len=level, window='hamming'), 'k-')
+                elif s < 0:
+                    ax1.plot(self.bat.we.voltage[a:b], -1*self.bat.we.dqdv[a:b], 'k-')
+                    ax2.plot(self.bat.ce.voltage[a:b], -1*self.bat.ce.dqdv[a:b], 'k-')
+                else:
+                    sys.exit("ERROR: Rest cycles not supported")
+                    
+        fig.tight_layout()
+        
+        
+    ### statistics plot methods ###
     
+    def _TemplateStatPlot(self, plotnum, title, ylabel, y):
+        """template for plots vs. cycle number"""
+
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(plotnum, figsize=(9,6))
+            fig.canvas.set_window_title("Figure %d - %s" % (plotnum, title))
+        
+            # working electrode
+            ax1 = fig.add_subplot(111)
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel(ylabel, fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
+            if plotnum in [6,7,8,9]:
+                ylim = ax1.get_ylim()
+                ax1.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.11), ncol=2, fontsize=12)
+            fig.tight_layout(rect=(0,0.06,1,1))
+    
+        # full cell
+        else:
+            fig = plt.figure(plotnum, figsize=(12,6))
+            fig.canvas.set_window_title("Figure %d - full cell %s" % (plotnum, title))
+        
+            # working electrode
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel('WE %s' % ylabel, fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
+            if plotnum in [6,7,8,9]:
+                ylim = ax1.get_ylim()
+                ax1.set_ylim([0,ylim[1]])
+            
+            # counter electrode
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel('Cycle', fontsize=12)
+            ax2.set_ylabel('CE %s' % ylabel, fontsize=12)
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.ce, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     getattr(self.bat.ce, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
+            if plotnum in [6,7,8,9]:
+                ylim = ax2.get_ylim()
+                ax2.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=2, fontsize=12)
+            fig.tight_layout(rect=(0,0.05,1,1))
+    
+
+    def figSpecificCapacity(self):
+        """specific capacity plot"""
+        self._TemplateStatPlot(6, "specific capacity",
+                               "Specific capacity [mAh g$^{-1}$]",
+                               "statSpecificCapacity")
+        
+
+    def figVolumetricCapacity(self):
+        """volumetric capacity plot"""        
+        self._TemplateStatPlot(7, "volumetric capacity",
+                               "Volumetric capacity [Ah L$^{-1}$]",
+                               "statVolumetricCapacity")
+
+    
+    def figSpecificEnergy(self):
+        """specific energy plot"""        
+        self._TemplateStatPlot(8, "specific energy",
+                              "Specific energy [Wh kg$^{-1}$]",
+                              "statSpecificEnergy")
+
+
+    def figVolumetricEnergy(self):
+        """volumetric energy plot"""
+        self._TemplateStatPlot(9, "volumetric energy",
+                              "Volumetric energy [Wh L$^{-1}$]",
+                              "statVolumetricEnergy")
+        
+
+    def figSpecificCurrentDensity(self):
+        """Specific current density"""        
+        self._TemplateStatPlot(10, "specific current density",
+                              "Specific current density [mA g$^{-1}$]",
+                              "statSpecificCurrentDensity")
+        
+
+    def figAreaCurrentDensity(self):
+        """Area current density"""        
+        self._TemplateStatPlot(11, "current density",
+                              "Current density [mA cm$^{-2}$]",
+                              "statAreaCurrentDensity")
+        
+
+    def figCRate(self):
+        """C-rate"""        
+        self._TemplateStatPlot(12, "C-rate",
+                              "C-rate (x in C x$^{-1}$) [h]",
+                              "statCRate")
+        
+        
+    def figHysteresis(self):
+        """average voltages and hysteresis"""
+
+        # half cell
+        if not self.bat.isFullCell:
+            fig = plt.figure(13, figsize=(9,6))
+            fig.canvas.set_window_title("Figure 13 - voltage hysteresis")
+        
+            # working electrode
+            ax1 = fig.add_subplot(111)
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel('Voltage [V]', fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],0], 'ko--', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],1], 'kD--', label='discharge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statHysteresis[self.c[0]:self.c[1]], 'ks-', label='hysteresis')
+            #ylim = ax1.get_ylim()
+            #ax1.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=12)
+            fig.tight_layout(rect=(0,0.06,1,1))
+    
+        # full cell
+        else:
+            fig = plt.figure(13, figsize=(12,6))
+            fig.canvas.set_window_title("Figure 13 - full cell voltage hysteresis")
+        
+            # working electrode
+            ax1 = fig.add_subplot(121)
+            ax1.set_xlabel('Cycle', fontsize=12)
+            ax1.set_ylabel('WE potential [v]', fontsize=12)            
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],0], 'ko--', label='charge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statAverageVoltage[self.c[0]:self.c[1],1], 'kD--', label='discharge')
+            ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.we.statHysteresis[self.c[0]:self.c[1]], 'ks-', label='hysteresis')
+            #ylim = ax1.get_ylim()
+            #ax1.set_ylim([0,ylim[1]])
+            
+            # counter electrode
+            ax2 = fig.add_subplot(122)
+            ax2.set_xlabel('Cycle', fontsize=12)
+            ax2.set_ylabel('CE potential [V]', fontsize=12)
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.ce.statAverageVoltage[self.c[0]:self.c[1],0], 'ko--', label='charge')
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.ce.statAverageVoltage[self.c[0]:self.c[1],1], 'kD--', label='discharge')
+            ax2.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                     self.bat.ce.statHysteresis[self.c[0]:self.c[1]], 'ks-', label='hysteresis')
+            #ylim = ax2.get_ylim()
+            #ax2.set_ylim([0,ylim[1]])
+            
+            # Put a legend below current axis
+            ax1.legend(loc='upper center', bbox_to_anchor=(1, -0.09), ncol=3, fontsize=12)
+            fig.tight_layout(rect=(0,0.05,1,1))
+            
+
+    def figEfficiency(self):
+        """coulombic efficiency"""
+
+        fig = plt.figure(14, figsize=(9,6))
+        fig.canvas.set_window_title("Figure 14 - coulombic efficiency")
+    
+        # working electrode
+        ax1 = fig.add_subplot(111)
+        ax1.set_xlabel('Cycle', fontsize=12)
+        ax1.set_ylabel('Coulombic efficiency [%]', fontsize=12)            
+        ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
+                 self.bat.statEfficiency[self.c[0]:self.c[1],0], 'ko-')
+        #ylim = ax1.get_ylim()
+        #ax1.set_ylim([0,ylim[1]+0.1*ylim[1]])
+        
+        fig.tight_layout()
+    
+
     def smooth(self, x, window_len=11, window='hanning'):
         """smooth.py from http://wiki.scipy.org/Cookbook/SignalSmooth
         smooth the data using a window with requested size.
@@ -482,5 +641,3 @@ class Plot(Data):
         
         # make 'y output lengtj' == 'y input length'
         return y[(window_len//2):-(window_len//2)] # "//" integer division e.g. 15//2 = 7
-    
-    
