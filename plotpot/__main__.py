@@ -79,6 +79,14 @@ def main():
     parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
                     dest='journalDelete', help="delete a row from journal")
     
+    # create the parser for the "merge" command
+    parser_merge = subparsers.add_parser('merge', help='merge files')
+    
+    parser_merge.add_argument('mergeFileNames', metavar='filenames', 
+                    help="data filenames to merge")
+    parser_merge.add_argument('-l', '--list', metavar='FILE',
+                    dest='mergeList', help="text file with filenames")    
+    
     # parse command line
     args = parser.parse_args()
     
