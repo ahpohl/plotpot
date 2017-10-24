@@ -33,6 +33,10 @@ class Journal(DbManager):
             # set electrode type
             if electrode is "we":
                 self.batElectrode = "working"
+                # process merged files (only once)
+                if self.batFileCount > 1:
+                    self.setMergeFiles()
+                    self.insertMergeFiles()
             elif electrode is "ce":
                 self.batElectrode = "counter"
             else:
@@ -133,8 +137,7 @@ class Journal(DbManager):
             Device TEXT,
             Plot_Type TEXT,
             File_Size INTEGER,
-            Start_DateTime INTEGER,
-            Localtime TEXT,
+            Timestamp INTEGER,
             Data_Points INTEGER,
             Test_Time DOUBLE,
             Comment TEXT)''')
@@ -560,9 +563,37 @@ class Journal(DbManager):
         
     ### merged files methods ###
         
-    def exportMergedFiles(self):
-        """write merged files to csv file"""
-        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "Localtime", "Comment"]
+    def setMergeFiles(self):
+        """fetch merged files table"""
+        
+        self.setMergeID()
+        self.setMergeFileID()
+        self.setMergeFileName()
+        self.setMergeDevice()
+        self.setMergePlot()
+        self.setMergeFileSize()
+        self.setMergeTimeStamp()
+        self.setMergeDate()
+        self.setMergePoints()
+        self.setMergeTestTime()
+        self.setMergeComment()
+        
+        self.mergeFiles = list(zip(self.mergeID, self.mergeFileID, self.mergeFileName, self.mergeDevice,
+                                   self.mergePlot, self.mergeFileSize, self.mergeTimeStamp,
+                                   self.mergePoints, self.mergeTestTime, self.mergeComment))
+        
+        print(self.mergeFiles)
+        
+    
+    def getMergeFiles(self):
+        """fetch merged files table"""
+        return self.mergeFiles
+    
+    
+    # TODO: update method
+    def exportMergeFiles(self):
+        """write merged files table to csv file"""
+        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "DateTime", "Comment"]
         select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
         self.bat.query(select_query)
         metadata = self.bat.fetchall()
@@ -576,3 +607,144 @@ class Journal(DbManager):
             writer = csv.writer(fh)
             writer.writerows(metadata)
             fh.close()
+            
+            
+    def insertMergeFiles(self):
+        """insert file details into merge table"""
+        listOfVars = ["Merge_ID", "File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "Timestamp",
+                      "Data_Points", "Test_Time", "Comment"]
+        insert_query = '''INSERT INTO Merge_Table ({0}) VALUES ({1})'''.format(
+                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
+        for i in self.mergeFiles:
+            self.query(insert_query, self.mergeFiles[i])
+        
+        
+    def setMergeID(self):
+        """fetch row id of battery from journal table"""
+        self.query('''
+                   SELECT row_ID FROM Journal_Table WHERE 
+                   File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
+                        self.args.filename,
+                        self.batDate,
+                        self.batElectrode))
+        
+        self.mergeID = self.fetchone()[0]
+        self.mergeID = [self.mergeID for x in range(self.batFileCount)]
+        
+    
+    def getMergeID(self):
+        """return row id of battery"""
+        return self.mergeID
+    
+    
+    def setMergeFileID(self):
+        """file id"""
+        self.bat.query('''SELECT File_ID FROM File_Table''')
+        self.mergeFileID = self.bat.fetchall()
+        
+    
+    def getMergeFileID(self):
+        """file id"""
+        return self.mergeFileID
+    
+
+    def setMergeFileName(self):
+        """file name"""
+        self.bat.query('''SELECT File_Name FROM File_Table''')
+        self.mergeFileName = self.bat.fetchall()
+        
+    
+    def getMergeFileName(self):
+        """file id"""
+        return self.mergeFileName
+    
+    
+    def setMergeFileSize(self):
+        """file size"""
+        self.bat.query('''SELECT File_Size FROM File_Table''')
+        self.mergeFileSize = self.bat.fetchall()
+        
+    
+    def getMergeFileSize(self):
+        """file size"""
+        return self.mergeFileSize
+    
+    
+    def setMergePoints(self):
+        """data points"""
+        self.bat.query('''SELECT Data_Points FROM File_Table''')
+        self.mergePoints = self.bat.fetchall()
+        
+    
+    def getMergePoints(self):
+        """data points"""
+        return self.mergePoints
+
+
+    def setMergeTimeStamp(self):
+        """creation time in secs since epoch"""
+        self.bat.query('''SELECT Start_DateTime FROM File_Table''')
+        self.mergeTimeStamp = self.bat.fetchall()
+        
+    
+    def getMergeTimeStamp(self):
+        """creation time in secs since epoch"""
+        return self.mergeTimeStamp
+    
+    
+    def setMergeDate(self):
+        """battery creation date"""
+        self.mergeDate = [datetime.datetime.fromtimestamp(x[0]) for x in self.mergeTimeStamp]
+        
+
+    def getMergeDate(self):
+        """battery creation date"""
+        return self.mergeDate
+    
+    
+    def setMergeComment(self):
+        """comment"""
+        self.bat.query('''SELECT Comment FROM File_Table''')
+        self.mergeComment = self.bat.fetchall()
+        
+    
+    def getMergeComment(self):
+        """comment"""
+        return self.mergeComment
+    
+    
+    def setMergeDevice(self):
+        """device"""
+        self.bat.query('''SELECT Device FROM File_Table''')
+        self.mergeDevice = self.bat.fetchall()
+        
+    
+    def getMergeDevice(self):
+        """device"""
+        return self.mergeDevice
+    
+
+    def setMergePlot(self):
+        """plot type"""
+        self.bat.query('''SELECT Plot_Type FROM File_Table''')
+        self.mergePlot = self.bat.fetchall()
+        
+    
+    def getMergePlot(self):
+        """plot type"""
+        return self.mergePlot
+    
+    
+    def setMergeTestTime(self):
+        """test time"""
+        self.bat.query('''SELECT Test_Time FROM File_Table''')
+        self.mergeTestTime = self.bat.fetchall()
+        
+    
+    def getMergeTestTime(self):
+        """test time"""
+        return self.mergeTestTime
+    
+    
+    
+    
