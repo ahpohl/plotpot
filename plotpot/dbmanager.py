@@ -7,9 +7,15 @@ class DbManager(object):
     def __init__(self, db):
         self.conn = sqlite3.connect(db)
         self.cur = self.conn.cursor()
+        self.query("PRAGMA foreign_keys = 1")
 
     def query(self, arg, bind=()):
         self.cur.execute(arg, bind)
+        self.conn.commit()
+        return self.cur
+    
+    def querymany(self, arg, bind=()):
+        self.cur.executemany(arg, bind)
         self.conn.commit()
         return self.cur
     

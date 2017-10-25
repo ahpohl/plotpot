@@ -33,10 +33,6 @@ class Journal(DbManager):
             # set electrode type
             if electrode is "we":
                 self.batElectrode = "working"
-                # process merged files (only once)
-                if self.batFileCount > 1:
-                    self.setMergeFiles()
-                    self.insertMergeFiles()
             elif electrode is "ce":
                 self.batElectrode = "counter"
             else:
@@ -131,7 +127,8 @@ class Journal(DbManager):
             Electrode TEXT)''')
         
         self.query('''CREATE TABLE IF NOT EXISTS Merge_Table (
-            Merge_ID INTEGER PRIMARY KEY,
+            Row_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Merge_ID INTEGER,
             File_ID INTEGER,
             File_Name TEXT,
             Device TEXT,
@@ -140,7 +137,8 @@ class Journal(DbManager):
             Timestamp INTEGER,
             Data_Points INTEGER,
             Test_Time DOUBLE,
-            Comment TEXT)''')
+            Comment TEXT,
+            FOREIGN KEY(Merge_ID) REFERENCES Journal_Table(Row_ID) ON DELETE CASCADE)''')
        
         
     def upgradeSchema(self):
@@ -511,14 +509,22 @@ class Journal(DbManager):
                         self.batDate,
                         self.batElectrode))
         properties = self.fetchone()
+        # battery not found in journal
         if properties is None:
             self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0; self.loading = 0
+            # insert new battery into journal
             self.insertBat()
+            if self.batFileCount > 1:
+                # fetch battery files table
+                self.setMergeFiles()
+                # insert batteries into merged files table
+                self.insertMergeFiles()
+        # fetch battery properties from journal
         else:
             self.mass = properties[0]; self.theoCapacity = properties[1]
             self.area = properties[2]; self.volume = properties[3]
             self.loading = properties[4]
-    
+            
 
     def updateBatProperties(self):
         """update properties in journal and battery"""
@@ -582,8 +588,6 @@ class Journal(DbManager):
                                    self.mergePlot, self.mergeFileSize, self.mergeTimeStamp,
                                    self.mergePoints, self.mergeTestTime, self.mergeComment))
         
-        print(self.mergeFiles)
-        
     
     def getMergeFiles(self):
         """fetch merged files table"""
@@ -615,21 +619,14 @@ class Journal(DbManager):
                       "Data_Points", "Test_Time", "Comment"]
         insert_query = '''INSERT INTO Merge_Table ({0}) VALUES ({1})'''.format(
                 (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        for i in self.mergeFiles:
-            self.query(insert_query, self.mergeFiles[i])
+        self.querymany(insert_query, self.mergeFiles)
         
         
     def setMergeID(self):
         """fetch row id of battery from journal table"""
-        self.query('''
-                   SELECT row_ID FROM Journal_Table WHERE 
-                   File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
-                        self.args.filename,
-                        self.batDate,
-                        self.batElectrode))
-        
-        self.mergeID = self.fetchone()[0]
-        self.mergeID = [self.mergeID for x in range(self.batFileCount)]
+        self.query('''SELECT max(row_ID) FROM Journal_Table''') 
+        row_id = self.fetchone()[0]
+        self.mergeID = [row_id for x in range(self.batFileCount)]
         
     
     def getMergeID(self):
@@ -640,7 +637,7 @@ class Journal(DbManager):
     def setMergeFileID(self):
         """file id"""
         self.bat.query('''SELECT File_ID FROM File_Table''')
-        self.mergeFileID = self.bat.fetchall()
+        self.mergeFileID = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergeFileID(self):
@@ -651,7 +648,7 @@ class Journal(DbManager):
     def setMergeFileName(self):
         """file name"""
         self.bat.query('''SELECT File_Name FROM File_Table''')
-        self.mergeFileName = self.bat.fetchall()
+        self.mergeFileName = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergeFileName(self):
@@ -662,7 +659,7 @@ class Journal(DbManager):
     def setMergeFileSize(self):
         """file size"""
         self.bat.query('''SELECT File_Size FROM File_Table''')
-        self.mergeFileSize = self.bat.fetchall()
+        self.mergeFileSize = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergeFileSize(self):
@@ -673,7 +670,7 @@ class Journal(DbManager):
     def setMergePoints(self):
         """data points"""
         self.bat.query('''SELECT Data_Points FROM File_Table''')
-        self.mergePoints = self.bat.fetchall()
+        self.mergePoints = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergePoints(self):
@@ -684,7 +681,7 @@ class Journal(DbManager):
     def setMergeTimeStamp(self):
         """creation time in secs since epoch"""
         self.bat.query('''SELECT Start_DateTime FROM File_Table''')
-        self.mergeTimeStamp = self.bat.fetchall()
+        self.mergeTimeStamp = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergeTimeStamp(self):
@@ -694,7 +691,7 @@ class Journal(DbManager):
     
     def setMergeDate(self):
         """battery creation date"""
-        self.mergeDate = [datetime.datetime.fromtimestamp(x[0]) for x in self.mergeTimeStamp]
+        self.mergeDate = [datetime.datetime.fromtimestamp(x) for x in self.mergeTimeStamp]
         
 
     def getMergeDate(self):
@@ -705,7 +702,7 @@ class Journal(DbManager):
     def setMergeComment(self):
         """comment"""
         self.bat.query('''SELECT Comment FROM File_Table''')
-        self.mergeComment = self.bat.fetchall()
+        self.mergeComment = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergeComment(self):
@@ -716,7 +713,7 @@ class Journal(DbManager):
     def setMergeDevice(self):
         """device"""
         self.bat.query('''SELECT Device FROM File_Table''')
-        self.mergeDevice = self.bat.fetchall()
+        self.mergeDevice = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergeDevice(self):
@@ -727,7 +724,7 @@ class Journal(DbManager):
     def setMergePlot(self):
         """plot type"""
         self.bat.query('''SELECT Plot_Type FROM File_Table''')
-        self.mergePlot = self.bat.fetchall()
+        self.mergePlot = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergePlot(self):
@@ -738,13 +735,9 @@ class Journal(DbManager):
     def setMergeTestTime(self):
         """test time"""
         self.bat.query('''SELECT Test_Time FROM File_Table''')
-        self.mergeTestTime = self.bat.fetchall()
+        self.mergeTestTime = list(map(itemgetter(0),self.bat.fetchall()))
         
     
     def getMergeTestTime(self):
         """test time"""
         return self.mergeTestTime
-    
-    
-    
-    
