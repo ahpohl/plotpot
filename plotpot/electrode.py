@@ -37,9 +37,8 @@ class Electrode(DbManager):
            electrode area [cm²]
            volume of electrode [µL]
            mass loading [mA/cm²]"""
-           
-        # search journal
-        self.journal.searchBatProperties()
+        
+        # get properties from journal
         self.mass, self.theoCapacity, self.area, self.volume, self.loading = self.journal.getBatProperties()
         
         # mass 

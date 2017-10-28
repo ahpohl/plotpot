@@ -78,6 +78,9 @@ def main():
                     dest='journalExport', help="export journal to csv file")    
     parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
                     dest='journalDelete', help="delete a row from journal")
+    parser_journal.add_argument('-m', '--merge', type=int, metavar='ID',
+                    dest='journalMerge', help="show merged files for row")
+    
     
     # create the parser for the "merge" command
     parser_merge = subparsers.add_parser('merge', help='merge files')

@@ -28,7 +28,6 @@ class Journal(DbManager):
             self.setBatFileSize()
             self.setBatDevice()
             self.setBatComment()
-            self.setBatProperties()
             
             # set electrode type
             if electrode is "we":
@@ -36,7 +35,17 @@ class Journal(DbManager):
             elif electrode is "ce":
                 self.batElectrode = "counter"
             else:
-                sys.exit("ERROR: Unknown electrode %s" % electrode)
+                sys.exit("ERROR: Unknown electrode %s" % electrode)       # search journal
+        
+            # journal
+            if not self.searchBatProperties():
+                # insert new battery into journal
+                self.insertBat()
+                if self.batFileCount > 1:
+                    # fetch battery files table
+                    self.setMergeFiles()
+                    # insert batteries into merged files table
+                    self.insertMergeFiles()
             
             
     ### internal methods ###
@@ -190,47 +199,8 @@ class Journal(DbManager):
             self.query('''ALTER TABLE Journal_Table ADD COLUMN Loading DOUBLE DEFAULT 0''')
             print("Column Loading created.")
             
-            
-    def display(self):
-        """display journal table on screen"""
-        header = ("id", "file name", "m [mg]", "C [mAh/g]", "A [cm²]", "V [µL]", "L [mg/cm²]",
-                  "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
-        if len(self.data) > 0:
-            self.__printSql(self.data, header)
-        print('''Journal file: "%s".''' % self.journalPath)
-        
-        
-    def export(self):
-        """export journal table to csv file"""
-        journalCSV = self.journalPath[:-3]+"csv"
-        header = ",".join(["id", "file name", "mass", "capacity", "area", "volume", "loading",
-                  "file size", "data points", "date", "device", "electrode", "comment"])+"\r\n"
-        header += ",".join(["", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", ""])+"\r\n"
-        with open(journalCSV, "w", encoding='utf-8') as fh:
-            fh.write(header)
-            writer = csv.writer(fh)
-            writer.writerows(self.data)
-            fh.close()
-        print('''Journal export written to "%s".''' % journalCSV)
-        
     
-    def deleteRow(self, row):
-        """delete row from journal table"""
-        select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(row)
-        delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(row)
-        
-        # check if row with rowid exists
-        self.query(select_query)
-        data = self.fetchone()
-        
-        if data is None:
-            print("INFO: Row ID %d does not exist." % row)
-        else:
-            self.query(delete_query)
-            print("INFO: Row ID %d deleted." % row)
-            
-    
-    ### journal methods ###
+    ### journal table methods ###
 
     def setData(self):
         """fetch journal table"""
@@ -264,8 +234,47 @@ class Journal(DbManager):
     def getData(self):
         """fetch journal table"""
         return self.data
+            
+            
+    def displayJournal(self):
+        """display journal table on screen"""
+        header = ("id", "file name", "m [mg]", "C [mAh/g]", "A [cm²]", "V [µL]", "L [mg/cm²]",
+                  "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
+        if len(self.data) > 0:
+            self.__printSql(self.data, header)
+        print('''Journal file: "%s".''' % self.journalPath)
+    
+        
+    def exportJournal(self):
+        """export journal table to csv file"""
+        journalCSV = self.journalPath[:-3]+"csv"
+        header = ",".join(["id", "file name", "mass", "capacity", "area", "volume", "loading",
+                  "file size", "data points", "date", "device", "electrode", "comment"])+"\r\n"
+        header += ",".join(["", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", ""])+"\r\n"
+        with open(journalCSV, "w", encoding='utf-8') as fh:
+            fh.write(header)
+            writer = csv.writer(fh)
+            writer.writerows(self.data)
+            fh.close()
+        print('''Journal export written to "%s".''' % journalCSV)
     
     
+    def deleteRowJournal(self, row):
+        """delete row from journal table"""
+        select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(row)
+        delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(row)
+        
+        # check if row with rowid exists
+        self.query(select_query)
+        data = self.fetchone()
+        
+        if data is None:
+            print("INFO: Row ID %d does not exist." % row)
+        else:
+            self.query(delete_query)
+            print("INFO: Row ID %d deleted." % row)
+            
+
     def setID(self):
         """row ID"""
         self.query('''SELECT row_ID FROM Journal_Table''')
@@ -407,168 +416,10 @@ class Journal(DbManager):
     def getLoading(self):
         """mass loading in mg/cm²"""
         return self.loading
-        
-    
-    ### battery methods ###
-
-    def setBatFileCount(self):
-        """number of files used to create battery"""
-        self.bat.query('''SELECT Count(*) FROM File_Table''')
-        self.batFileCount = self.bat.fetchone()[0]
-        
-        
-    def getBatFileCount(self):
-        """number of files used to create battery"""
-        return self.batFileCount
-
-
-    def setBatDate(self):
-        """battery creation date"""
-        # merged file
-        if self.batFileCount > 1:
-            self.bat.query('''SELECT DateTime FROM Global_Table''')
-        # single file
-        else:
-            self.bat.query('''SELECT Start_DateTime FROM File_Table''')
-        self.batDate = self.bat.fetchone()[0]
-        
-        
-    def getBatDate(self):
-        """battery creation date"""
-        return self.batDate
     
     
-    def setBatFileSize(self):
-        """raw data file size"""
-        self.bat.query('''SELECT File_Size FROM Global_Table''')
-        self.batFileSize = self.bat.fetchone()[0]
-        
-    
-    def getBatFileSize(self):
-        """raw data file size"""
-        return self.batFileSize
-    
+    ### merged files table methods ###
 
-    def setBatPoints(self):
-        """data points"""
-        self.bat.query('''SELECT Data_Points FROM Global_Table''')
-        self.batPoints = self.bat.fetchone()[0]
-        
-    
-    def getBatPoints(self):
-        """data points"""
-        return self.batPoints
-
-
-    def setBatDevice(self):
-        """device"""
-        self.bat.query('''SELECT Device FROM Global_Table''')
-        self.batDevice = self.bat.fetchone()[0]
-        
-    
-    def getBatDevice(self):
-        """device"""
-        return self.batDevice
-
-        
-    def setBatComment(self):
-        """comment"""
-        if self.batFileCount > 1:
-            self.batComment = ""
-        else:
-            self.bat.query('''SELECT Comment FROM File_Table''')
-            self.batComment = self.bat.fetchone()[0]  
-        
-    
-    def getBatComment(self):
-        """comment"""
-        return self.batComment
-
-
-    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0, loading = 0):
-        """set battery properties"""
-        self.mass = mass
-        self.theoCapacity = theoCapacity
-        self.area = area
-        self.volume = volume
-        self.loading = loading
-        
-        
-    def getBatProperties(self):
-        """get battery properties"""
-        return self.mass, self.theoCapacity, self.area, self.volume, self.loading    
-
-
-    def searchBatProperties(self):
-        """search plotpot-journal.dat for existing battery and set properties"""
-        
-        self.query('''
-                   SELECT Mass,Capacity,Area,Volume,Loading FROM Journal_Table WHERE 
-                   File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
-                        self.args.filename,
-                        self.batDate,
-                        self.batElectrode))
-        properties = self.fetchone()
-        # battery not found in journal
-        if properties is None:
-            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0; self.loading = 0
-            # insert new battery into journal
-            self.insertBat()
-            if self.batFileCount > 1:
-                # fetch battery files table
-                self.setMergeFiles()
-                # insert batteries into merged files table
-                self.insertMergeFiles()
-        # fetch battery properties from journal
-        else:
-            self.mass = properties[0]; self.theoCapacity = properties[1]
-            self.area = properties[2]; self.volume = properties[3]
-            self.loading = properties[4]
-            
-
-    def updateBatProperties(self):
-        """update properties in journal and battery"""
-        
-        # update journal
-        self.query('''
-            UPDATE Journal_Table 
-            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
-            WHERE File_Name = "{5}" AND Start_DateTime = {6} AND Electrode = "{7}"'''.format(
-                    self.mass, 
-                    self.theoCapacity,
-                    self.area,
-                    self.volume,
-                    self.loading,
-                    self.args.filename,
-                    self.batDate,
-                    self.batElectrode))
-        
-        # update battery
-        self.bat.query('''
-            UPDATE Global_Table 
-            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
-            WHERE rowid = 1'''.format(
-                    self.mass, 
-                    self.theoCapacity,
-                    self.area,
-                    self.volume,
-                    self.loading))
-        
-
-    def insertBat(self):
-        """insert battery into journal table"""
-        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", 
-                      "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume", "Loading"]
-        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format(
-                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, (self.args.filename, self.batFileSize, self.batDate, self.batPoints,
-                                  self.batDevice, self.batElectrode, self.batComment,
-                                  self.mass, self.theoCapacity, self.area, self.volume, self.loading))
-        #print("INFO: Created new record in journal file.")
-        
-        
-    ### merged files methods ###
-        
     def setMergeFiles(self):
         """fetch merged files table"""
         
@@ -592,25 +443,30 @@ class Journal(DbManager):
     def getMergeFiles(self):
         """fetch merged files table"""
         return self.mergeFiles
+
     
-    
-    # TODO: update method
-    def exportMergeFiles(self):
-        """write merged files table to csv file"""
-        listOfVars = ["File_ID", "File_Name", "File_Size", "Data_Points", "DateTime", "Comment"]
-        select_query = '''SELECT {0} FROM File_Table'''.format(','.join(listOfVars))
-        self.bat.query(select_query)
-        metadata = self.bat.fetchall()
+    def displayMergeFiles(self, row):
+        """display merged files table for a merged battery on screen"""
         
-        header = ",".join(["file_ID", "file_name", "file_size", "data_points", "start_datetime", 
-                "comment"])+"\r\n"
+        # test if battery is a merged file
+        self.query('''SELECT Device FROM Journal_Table WHERE row_ID = {0}'''.format(self.args.journalMerge))
+        if not self.fetchone()[0] == "merged":
+            sys.exit("INFO: Row ID %d is not a merged file." % row)
         
-        # write file 
-        with open(self.args.filename.split('.')[0]+'_merged.csv', 'w', encoding='utf-8') as fh:
-            fh.write(header)
-            writer = csv.writer(fh)
-            writer.writerows(metadata)
-            fh.close()
+        listOfVars = ["File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "Timestamp",
+                      "Data_Points", "Test_Time", "Comment"]
+        header = ("id", "file name", "device", "plot", "size", "date",
+                  "points", "test time", "comment")
+        self.query('''SELECT {0} FROM Merge_Table WHERE Merge_ID = {1}'''.format(','.join(listOfVars), row))
+        data = [list(x) for x in self.fetchall()]
+        for i,j in enumerate(data):
+            # convert timestamp to date string
+            data[i][5] = datetime.datetime.fromtimestamp(j[5])
+            # convert test time from [s] to [h]
+            data[i][7] = round(j[7]/3.6e3,2)
+
+        if len(data) > 0:
+            self.__printSql(data, header)
             
             
     def insertMergeFiles(self):
@@ -741,3 +597,156 @@ class Journal(DbManager):
     def getMergeTestTime(self):
         """test time"""
         return self.mergeTestTime
+        
+    
+    ### battery methods ###
+
+    def setBatFileCount(self):
+        """number of files used to create battery"""
+        self.bat.query('''SELECT Count(*) FROM File_Table''')
+        self.batFileCount = self.bat.fetchone()[0]
+        
+        
+    def getBatFileCount(self):
+        """number of files used to create battery"""
+        return self.batFileCount
+
+
+    def setBatDate(self):
+        """battery creation date"""
+        # merged file
+        if self.batFileCount > 1:
+            self.bat.query('''SELECT DateTime FROM Global_Table''')
+        # single file
+        else:
+            self.bat.query('''SELECT Start_DateTime FROM File_Table''')
+        self.batDate = self.bat.fetchone()[0]
+        
+        
+    def getBatDate(self):
+        """battery creation date"""
+        return self.batDate
+    
+    
+    def setBatFileSize(self):
+        """raw data file size"""
+        self.bat.query('''SELECT File_Size FROM Global_Table''')
+        self.batFileSize = self.bat.fetchone()[0]
+        
+    
+    def getBatFileSize(self):
+        """raw data file size"""
+        return self.batFileSize
+    
+
+    def setBatPoints(self):
+        """data points"""
+        self.bat.query('''SELECT Data_Points FROM Global_Table''')
+        self.batPoints = self.bat.fetchone()[0]
+        
+    
+    def getBatPoints(self):
+        """data points"""
+        return self.batPoints
+
+
+    def setBatDevice(self):
+        """device"""
+        self.bat.query('''SELECT Device FROM Global_Table''')
+        self.batDevice = self.bat.fetchone()[0]
+        
+    
+    def getBatDevice(self):
+        """device"""
+        return self.batDevice
+
+        
+    def setBatComment(self):
+        """comment"""
+        if self.batFileCount > 1:
+            self.batComment = ""
+        else:
+            self.bat.query('''SELECT Comment FROM File_Table''')
+            self.batComment = self.bat.fetchone()[0]  
+        
+    
+    def getBatComment(self):
+        """comment"""
+        return self.batComment
+
+
+    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0, loading = 0):
+        """set battery properties"""
+        self.mass = mass
+        self.theoCapacity = theoCapacity
+        self.area = area
+        self.volume = volume
+        self.loading = loading
+        
+        
+    def getBatProperties(self):
+        """get battery properties"""
+        return self.mass, self.theoCapacity, self.area, self.volume, self.loading    
+
+
+    def searchBatProperties(self):
+        """search plotpot-journal.dat for existing battery and set properties"""
+        
+        self.query('''
+                   SELECT Mass,Capacity,Area,Volume,Loading FROM Journal_Table WHERE 
+                   File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
+                        self.args.filename,
+                        self.batDate,
+                        self.batElectrode))
+        properties = self.fetchone()
+        # battery not found in journal
+        if properties is None:
+            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0; self.loading = 0
+            return False
+        # fetch battery properties from journal
+        else:
+            self.mass = properties[0]; self.theoCapacity = properties[1]
+            self.area = properties[2]; self.volume = properties[3]
+            self.loading = properties[4]
+            return True
+            
+
+    def updateBatProperties(self):
+        """update properties in journal and battery"""
+        
+        # update journal
+        self.query('''
+            UPDATE Journal_Table 
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
+            WHERE File_Name = "{5}" AND Start_DateTime = {6} AND Electrode = "{7}"'''.format(
+                    self.mass, 
+                    self.theoCapacity,
+                    self.area,
+                    self.volume,
+                    self.loading,
+                    self.args.filename,
+                    self.batDate,
+                    self.batElectrode))
+        
+        # update battery
+        self.bat.query('''
+            UPDATE Global_Table 
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
+            WHERE rowid = 1'''.format(
+                    self.mass, 
+                    self.theoCapacity,
+                    self.area,
+                    self.volume,
+                    self.loading))
+        
+
+    def insertBat(self):
+        """insert battery into journal table"""
+        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", 
+                      "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume", "Loading"]
+        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format(
+                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
+        self.query(insert_query, (self.args.filename, self.batFileSize, self.batDate, self.batPoints,
+                                  self.batDevice, self.batElectrode, self.batComment,
+                                  self.mass, self.theoCapacity, self.area, self.volume, self.loading))
+        #print("INFO: Created new record in journal file.")
