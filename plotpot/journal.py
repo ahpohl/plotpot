@@ -19,7 +19,7 @@ class Journal(DbManager):
         self.setData()
         
         # battery processing
-        if (showArgs and electrode) is not None:
+        if self.args.subcommand == "show":
             self.showArgs = showArgs
             self.bat = DbManager(showArgs['dataFile'])
             self.setBatFileCount()
@@ -28,22 +28,20 @@ class Journal(DbManager):
             self.setBatFileSize()
             self.setBatDevice()
             self.setBatComment()
-            
+            self.setMergeFiles()
             # set electrode type
             if electrode is "we":
                 self.batElectrode = "working"
             elif electrode is "ce":
                 self.batElectrode = "counter"
             else:
-                sys.exit("ERROR: Unknown electrode %s" % electrode)       # search journal
+                sys.exit("ERROR: Unknown electrode %s" % electrode)
         
-            # journal
+            # journal processing if battery does not exist 
             if not self.searchBatProperties():
                 # insert new battery into journal
                 self.insertBat()
                 if self.batFileCount > 1:
-                    # fetch battery files table
-                    self.setMergeFiles()
                     # insert batteries into merged files table
                     self.insertMergeFiles()
             
@@ -449,10 +447,12 @@ class Journal(DbManager):
         """display merged files table for a merged battery on screen"""
         
         # test if battery is a merged file
-        self.query('''SELECT Device FROM Journal_Table WHERE row_ID = {0}'''.format(self.args.journalMerge))
-        if not self.fetchone()[0] == "merged":
+        self.query('''SELECT Device FROM Journal_Table WHERE row_ID = {0}'''.format(self.args.journalShow))
+        result = self.fetchone()
+        if not result:
+            sys.exit("INFO: Row ID %d does not exist." % row)
+        if not result[0] == "merged":
             sys.exit("INFO: Row ID %d is not a merged file." % row)
-        
         listOfVars = ["File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "Timestamp",
                       "Data_Points", "Test_Time", "Comment"]
         header = ("id", "file name", "device", "plot", "size", "date",
@@ -464,7 +464,6 @@ class Journal(DbManager):
             data[i][5] = datetime.datetime.fromtimestamp(j[5])
             # convert test time from [s] to [h]
             data[i][7] = round(j[7]/3.6e3,2)
-
         if len(data) > 0:
             self.__printSql(data, header)
             

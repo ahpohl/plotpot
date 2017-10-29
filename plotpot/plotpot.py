@@ -70,7 +70,7 @@ class Plotpot(object):
         
         # display plotpot journal file on screen
         if not (self.args.journalDelete or self.args.journalExport or 
-                self.args.journalMerge):
+                self.args.journalShow):
             journal.displayJournal()
 
         # delete journal entry
@@ -82,8 +82,8 @@ class Plotpot(object):
             journal.exportJournal()
             
         # display merged files
-        if self.args.journalMerge:
-            journal.displayMergeFiles(self.args.journalMerge)
+        if self.args.journalShow:
+            journal.displayMergeFiles(self.args.journalShow)
         
         
     def subcommandMerge(self):

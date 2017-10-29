@@ -78,9 +78,8 @@ def main():
                     dest='journalExport', help="export journal to csv file")    
     parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
                     dest='journalDelete', help="delete a row from journal")
-    parser_journal.add_argument('-m', '--merge', type=int, metavar='ID',
-                    dest='journalMerge', help="show merged files for row")
-    
+    parser_journal.add_argument('-s', '--show', type=int, metavar='ID',
+                    dest='journalShow', help="show merged files for row")
     
     # create the parser for the "merge" command
     parser_merge = subparsers.add_parser('merge', help='merge files')
@@ -90,7 +89,7 @@ def main():
     parser_merge.add_argument('-l', '--list', metavar='FN',
                     dest='mergeList', help="text file with filenames")
     parser_merge.add_argument('-o', '--output', metavar='FN',
-                    dest='mergeOutput', help="change output filename")      
+                    dest='mergeOutput', help="change output filename")     
     
     # parse command line
     args = parser.parse_args()
