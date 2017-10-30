@@ -1,5 +1,5 @@
-arbin-merge_1.res
+ !arbin-merge_1.res
 arbin-merge_2.res
-arbin-merge_3.res
+!arbin-merge_3.res
 arbin-merge_4.res
 arbin-merge_5.res

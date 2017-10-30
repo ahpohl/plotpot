@@ -11,41 +11,35 @@ from plotpot.dbmanager import DbManager
 class Journal(DbManager):
     """class for manipulating the journal"""
     
-    def __init__(self, args, showArgs=None, electrode=None):
+    def __init__(self, args, showArgs=None, electrode="working"):
         self.args = args
+        self.showArgs = showArgs
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createSchema()
         self.setData()
         
-        # battery processing
-        if self.args.subcommand == "show":
-            self.showArgs = showArgs
-            self.bat = DbManager(showArgs['dataFile'])
+        if self.args.subcommand == "show" or self.args.subcommand == "merge":
+            if self.args.subcommand == "show":
+                self.batFilename = showArgs['dataFile']
+            elif self.args.subcommand == "merge":
+                self.batFilename = self.getMergeOutputPath()
+            self.bat = DbManager(self.batFilename)
+            self.batElectrode = electrode
+            self.setBatIsFullCell()
             self.setBatFileCount()
             self.setBatDate()
             self.setBatPoints()
             self.setBatFileSize()
             self.setBatDevice()
             self.setBatComment()
-            self.setMergeFiles()
-            # set electrode type
-            if electrode is "we":
-                self.batElectrode = "working"
-            elif electrode is "ce":
-                self.batElectrode = "counter"
-            else:
-                sys.exit("ERROR: Unknown electrode %s" % electrode)
-        
-            # journal processing if battery does not exist 
             if not self.searchBatProperties():
-                # insert new battery into journal
                 self.insertBat()
                 if self.batFileCount > 1:
-                    # insert batteries into merged files table
+                    self.setMergeFiles()
                     self.insertMergeFiles()
-            
-            
+                    
+                    
     ### internal methods ###
             
     def __isColumn(self, table, column):
@@ -223,7 +217,7 @@ class Journal(DbManager):
             self.upgradeSchema()
             sys.exit("INFO: Upgraded journal database schema.")
             
-        self.data = list(zip(self.id, self.fileName, self.mass, self.theoCapacity,
+        self.data = list(zip(self.id, self.batFileName, self.mass, self.theoCapacity,
                              self.area, self.volume, self.loading, self.fileSize,
                              self.points, self.date, self.device, self.electrode,
                              self.comments))
@@ -417,6 +411,23 @@ class Journal(DbManager):
     
     
     ### merged files table methods ###
+    
+    def getMergeOutputPath(self):
+        """set the filename of the merge output file"""
+        
+        if self.args.mergeOutput:
+            filename = self.args.mergeOutput
+            if filename.split('.')[-1] != "sqlite":
+                filename += ".sqlite"
+            
+        elif self.args.mergeList:
+            filename = self.args.mergeList.split('.')[0]+".sqlite"
+            
+        elif self.args.mergeFileNames:
+            filename = self.args.mergeFileNames[0].split('.')[0]+".sqlite"
+            
+        return filename
+    
 
     def setMergeFiles(self):
         """fetch merged files table"""
@@ -475,7 +486,7 @@ class Journal(DbManager):
         insert_query = '''INSERT INTO Merge_Table ({0}) VALUES ({1})'''.format(
                 (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
         self.querymany(insert_query, self.mergeFiles)
-        
+            
         
     def setMergeID(self):
         """fetch row id of battery from journal table"""
@@ -609,6 +620,95 @@ class Journal(DbManager):
     def getBatFileCount(self):
         """number of files used to create battery"""
         return self.batFileCount
+    
+    
+    def setBatIsFullCell(self):
+        """test if voltage2 column is not zero"""
+        self.bat.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
+        self.batIsFullCell = np.any(np.array(self.bat.fetchall()))
+    
+    
+    def getBatIsFullCell(self):
+        """return boolean if full or half cell"""
+        return self.isFullCell
+    
+    
+    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0, loading = 0):
+        """set battery properties"""
+        self.mass = mass
+        self.theoCapacity = theoCapacity
+        self.area = area
+        self.volume = volume
+        self.loading = loading
+        
+        
+    def getBatProperties(self):
+        """get battery properties"""
+        return self.mass, self.theoCapacity, self.area, self.volume, self.loading    
+
+
+    def searchBatProperties(self):
+        """search plotpot-journal.dat for existing battery and set properties"""
+        
+        self.query('''
+                   SELECT Mass,Capacity,Area,Volume,Loading FROM Journal_Table WHERE 
+                   File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
+                        self.batFilename,
+                        self.batDate,
+                        self.batElectrode))
+        properties = self.fetchone()
+        # battery not found in journal
+        if properties is None:
+            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0; self.loading = 0
+            return False
+        # fetch battery properties from journal
+        else:
+            self.mass = properties[0]; self.theoCapacity = properties[1]
+            self.area = properties[2]; self.volume = properties[3]
+            self.loading = properties[4]
+            return True
+            
+
+    def updateBatProperties(self):
+        """update properties in journal and battery"""
+        
+        # update journal
+        self.query('''
+            UPDATE Journal_Table 
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
+            WHERE File_Name = "{5}" AND Start_DateTime = {6} AND Electrode = "{7}"'''.format(
+                    self.mass, 
+                    self.theoCapacity,
+                    self.area,
+                    self.volume,
+                    self.loading,
+                    self.batFilename,
+                    self.batDate,
+                    self.batElectrode))
+        
+        # update battery
+        self.bat.query('''
+            UPDATE Global_Table 
+            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
+            WHERE rowid = 1'''.format(
+                    self.mass, 
+                    self.theoCapacity,
+                    self.area,
+                    self.volume,
+                    self.loading))
+        
+
+    def insertBat(self):
+        """insert battery into journal table"""
+        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", 
+                      "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume", "Loading"]
+        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format(
+                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
+        
+        self.query(insert_query, (self.batFilename, self.batFileSize, self.batDate, self.batPoints,
+                                  self.batDevice, self.batElectrode, self.batComment,
+                                  self.mass, self.theoCapacity, self.area, self.volume, self.loading))
+        #print("INFO: Created new record in journal file.")
 
 
     def setBatDate(self):
@@ -672,80 +772,3 @@ class Journal(DbManager):
     def getBatComment(self):
         """comment"""
         return self.batComment
-
-
-    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0, loading = 0):
-        """set battery properties"""
-        self.mass = mass
-        self.theoCapacity = theoCapacity
-        self.area = area
-        self.volume = volume
-        self.loading = loading
-        
-        
-    def getBatProperties(self):
-        """get battery properties"""
-        return self.mass, self.theoCapacity, self.area, self.volume, self.loading    
-
-
-    def searchBatProperties(self):
-        """search plotpot-journal.dat for existing battery and set properties"""
-        
-        self.query('''
-                   SELECT Mass,Capacity,Area,Volume,Loading FROM Journal_Table WHERE 
-                   File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
-                        self.args.filename,
-                        self.batDate,
-                        self.batElectrode))
-        properties = self.fetchone()
-        # battery not found in journal
-        if properties is None:
-            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0; self.loading = 0
-            return False
-        # fetch battery properties from journal
-        else:
-            self.mass = properties[0]; self.theoCapacity = properties[1]
-            self.area = properties[2]; self.volume = properties[3]
-            self.loading = properties[4]
-            return True
-            
-
-    def updateBatProperties(self):
-        """update properties in journal and battery"""
-        
-        # update journal
-        self.query('''
-            UPDATE Journal_Table 
-            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
-            WHERE File_Name = "{5}" AND Start_DateTime = {6} AND Electrode = "{7}"'''.format(
-                    self.mass, 
-                    self.theoCapacity,
-                    self.area,
-                    self.volume,
-                    self.loading,
-                    self.args.filename,
-                    self.batDate,
-                    self.batElectrode))
-        
-        # update battery
-        self.bat.query('''
-            UPDATE Global_Table 
-            SET Mass = {0}, Capacity = {1}, Area = {2}, Volume = {3}, Loading = {4}
-            WHERE rowid = 1'''.format(
-                    self.mass, 
-                    self.theoCapacity,
-                    self.area,
-                    self.volume,
-                    self.loading))
-        
-
-    def insertBat(self):
-        """insert battery into journal table"""
-        listOfVars = ["File_Name", "File_Size", "Start_DateTime", "Data_Points", 
-                      "Device", "Electrode", "Comments", "Mass", "Capacity", "Area", "Volume", "Loading"]
-        insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format(
-                (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.query(insert_query, (self.args.filename, self.batFileSize, self.batDate, self.batPoints,
-                                  self.batDevice, self.batElectrode, self.batComment,
-                                  self.mass, self.theoCapacity, self.area, self.volume, self.loading))
-        #print("INFO: Created new record in journal file.")

@@ -116,6 +116,11 @@ class Plotpot(object):
                 subprocess.check_call(convpotArgs)
             except subprocess.CalledProcessError as e:
                 sys.exit(e)
+        
+        # journal
+        journal = Journal(self.args)
+        if journal.batIsFullCell:
+            journal = Journal(self.args, None, "counter")
     
     
     ### internal methods ###

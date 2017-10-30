@@ -9,7 +9,7 @@ from plotpot.journal import Journal
 
 class Electrode(DbManager):
     
-    def __init__(self, args, showArgs, electrode = "we"):
+    def __init__(self, args, showArgs, electrode = "working"):
         self.args = args
         self.showArgs = showArgs
         self.electrode = electrode
@@ -175,9 +175,9 @@ class Electrode(DbManager):
 
     def setVoltage(self):
         """voltage"""
-        if self.electrode == 'we':
+        if self.electrode == 'working':
             self.query('''SELECT Voltage FROM Channel_Normal_Table''')
-        elif self.electrode == 'ce':
+        elif self.electrode == 'counter':
             self.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
@@ -205,9 +205,9 @@ class Electrode(DbManager):
     
     def setEnergy(self):
         """energy"""
-        if self.electrode == 'we':
+        if self.electrode == 'working':
             self.query('''SELECT Energy FROM Channel_Normal_Table''')
-        elif self.electrode == 'ce':
+        elif self.electrode == 'counter':
             self.query('''SELECT Energy2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
@@ -224,9 +224,9 @@ class Electrode(DbManager):
     
     def setDqDv(self):
         """dQdV"""
-        if self.electrode == 'we':
+        if self.electrode == 'working':
             self.query('''SELECT dQdV FROM Channel_Normal_Table''')
-        elif self.electrode == 'ce':
+        elif self.electrode == 'counter':
             self.query('''SELECT dQdV2 FROM Channel_Normal_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
@@ -290,9 +290,9 @@ class Electrode(DbManager):
 
     def setStatSpecificEnergy(self):
         """specific capacity"""
-        if self.electrode == 'we':
+        if self.electrode == 'working':
             self.query('''SELECT Charge_Energy,Discharge_Energy FROM Full_Cycle_Table''')
-        elif self.electrode == 'ce':
+        elif self.electrode == 'counter':
             self.query('''SELECT Charge_Energy2,Discharge_Energy2 FROM Full_Cycle_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
@@ -309,9 +309,9 @@ class Electrode(DbManager):
     
     def setStatVolumetricEnergy(self):
         """volumetric capacity"""
-        if self.electrode == 'we':
+        if self.electrode == 'working':
             self.query('''SELECT Charge_Energy,Discharge_Energy FROM Full_Cycle_Table''')
-        elif self.electrode == 'ce':
+        elif self.electrode == 'counter':
             self.query('''SELECT Charge_Energy2,Discharge_Energy2 FROM Full_Cycle_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
@@ -384,9 +384,9 @@ class Electrode(DbManager):
 
     def setStatAverageVoltage(self):
         """average voltage"""
-        if self.electrode == 'we':
+        if self.electrode == 'working':
             self.query('''SELECT Charge_Voltage,Discharge_Voltage FROM Full_Cycle_Table''')
-        elif self.electrode == 'ce':
+        elif self.electrode == 'counter':
             self.query('''SELECT Charge_Voltage2,Discharge_Voltage2 FROM Full_Cycle_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)
@@ -400,9 +400,9 @@ class Electrode(DbManager):
 
     def setStatHysteresis(self):
         """voltage hysteresis"""
-        if self.electrode == 'we':
+        if self.electrode == 'working':
             self.query('''SELECT Hysteresis FROM Full_Cycle_Table''')
-        elif self.electrode == 'ce':
+        elif self.electrode == 'counter':
             self.query('''SELECT Hysteresis2 FROM Full_Cycle_Table''')
         else:
             sys.exit("ERROR: Unknown electrode %s" % self.electrode)

@@ -44,12 +44,12 @@ class Battery(DbManager):
         """create electode objects"""
         
         print("*** Working electrode ***")
-        self.we = Electrode(self.args, self.showArgs, "we")
+        self.we = Electrode(self.args, self.showArgs, "working")
         self.ce = None
  
         if self.isFullCell:
             print("*** Counter electrode ***")
-            self.ce = Electrode(self.args, self.showArgs, "ce")
+            self.ce = Electrode(self.args, self.showArgs, "counter")
           
             
     def getElectrodes(self):
