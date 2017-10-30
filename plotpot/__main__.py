@@ -69,17 +69,7 @@ def main():
     group_select.add_argument('-t', '--time', metavar='N',
                     help="select time [in hours]")
     group_select.add_argument('-d', '--data', metavar='N',
-                    help="select data points")   
-    
-    # create the parser for the "journal" command
-    parser_journal = subparsers.add_parser('journal', help='manipulate journal')
-
-    parser_journal.add_argument('-e', '--export', action='store_true',
-                    dest='journalExport', help="export journal to csv file")    
-    parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
-                    dest='journalDelete', help="delete a row from journal")
-    parser_journal.add_argument('-s', '--show', type=int, metavar='ID',
-                    dest='journalShow', help="show merged files for row")
+                    help="select data points") 
     
     # create the parser for the "merge" command
     parser_merge = subparsers.add_parser('merge', help='merge files')
@@ -89,7 +79,17 @@ def main():
     parser_merge.add_argument('-l', '--list', metavar='FN',
                     dest='mergeList', help="text file with filenames")
     parser_merge.add_argument('-o', '--output', metavar='FN',
-                    dest='mergeOutput', help="change output filename")     
+                    dest='mergeOutput', help="change output filename") 
+    
+    # create the parser for the "journal" command
+    parser_journal = subparsers.add_parser('journal', help='display journal')
+
+    parser_journal.add_argument('-e', '--export', action='store_true',
+                    dest='journalExport', help="export journal to csv file")    
+    parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
+                    dest='journalDelete', help="delete a row from journal")
+    parser_journal.add_argument('-s', '--show', type=int, metavar='ID',
+                    dest='journalShow', help="show merged files for row")    
     
     # parse command line
     args = parser.parse_args()
@@ -97,6 +97,11 @@ def main():
     # print help if no subcommand is given
     if not args.subcommand:
         parser.print_help()
+        parser.exit()
+        
+    # print merge subcommand help
+    if args.subcommand == "merge" and not (args.mergeFileNames or args.mergeList):
+        parser_merge.print_help()
         parser.exit()
     
     # run main program

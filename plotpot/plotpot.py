@@ -111,7 +111,6 @@ class Plotpot(object):
             convpotArgs.extend(self.args.mergeFileNames)
         
         # call external Convpot program
-        # TODO: print merge command help if no Convpot arguments
         if len(convpotArgs) > 1:
             try:
                 subprocess.check_call(convpotArgs)
@@ -119,9 +118,9 @@ class Plotpot(object):
                 sys.exit(e)
         
         # journal
-        journal = Journal(self.args)
+        journal = Journal(self.args, None, "working")
         if journal.batIsFullCell:
-            journal = Journal(self.args, None, "counter")
+            Journal(self.args, None, "counter")
     
     
     ### internal methods ###
