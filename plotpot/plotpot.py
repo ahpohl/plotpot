@@ -52,13 +52,13 @@ class Plotpot(object):
         plot.drawPlots()
         
         # export data and statistics  
-        if self.args.export:
+        if self.args.showExport:
             print("INFO: Exporting data, statistics and figures.")
             bat.export()
             plot.savePlots()
         
         # show plots if quiet option not given
-        if not self.args.quiet:
+        if not self.args.showQuiet:
             plot.showPlots()
 
             
@@ -148,7 +148,7 @@ class Plotpot(object):
                 sys.exit(errormsg_not_recognised)
         elif len(string) == 1:
             if self.isNumber(string[0]):
-                if self.args.time is not None:    
+                if self.args.showTime is not None:    
                     interval = (0,string[0])
                 else:
                     interval = (1,string[0])
@@ -166,9 +166,9 @@ class Plotpot(object):
         # init cycles
         cycles = None
         
-        if self.args.cycles:
+        if self.args.showCycles:
             # parse cycles option
-            cycles = self.parseRange(self.args.cycles)
+            cycles = self.parseRange(self.args.showCycles)
             cycles = [int(x) for x in cycles] # now list of integers
             
             # sanity checks
@@ -184,9 +184,9 @@ class Plotpot(object):
         # init points
         points = None
     
-        if self.args.data:
+        if self.args.showData:
             # parse data point option
-            points = self.parseRange(self.args.data)
+            points = self.parseRange(self.args.showData)
             points = [int(x) for x in points] # now list of integers
             
             #sanity checks
@@ -202,9 +202,9 @@ class Plotpot(object):
         # init time
         time = None
         
-        if self.args.time:
+        if self.args.showTime:
             # parse time option
-            time = self.parseRange(self.args.time)
+            time = self.parseRange(self.args.showTime)
             time = [float(x) for x in time] # now list of floats
             
             # sanity checks
@@ -221,7 +221,7 @@ class Plotpot(object):
         errormsg_range_error = "ERROR: Plot number out of range."
         
         plots = []
-        string_sequence = self.args.plot.split(',')
+        string_sequence = self.args.showPlot.split(',')
         for s in string_sequence:
             if self.isNumber(s):
                 plots.append(int(s))
@@ -247,7 +247,7 @@ class Plotpot(object):
         """check if filename with raw data exists"""
 
         # ckeck if raw file exists        
-        rawFileFullPath = os.path.abspath(self.args.filename)
+        rawFileFullPath = os.path.abspath(self.args.showFileName)
         
         try:
             open(rawFileFullPath, "r")
@@ -255,7 +255,7 @@ class Plotpot(object):
             sys.exit(e)
             
         # construct sqlite filename 
-        dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'        
+        dataFileName = self.args.showFileName.rsplit('.')[0]+'.sqlite'        
         
         return dataFileName
     
@@ -289,12 +289,12 @@ class Plotpot(object):
         if necessary."""
         
         # get extension of raw file
-        rawFileExtension = self.args.filename.rsplit('.')[1]
+        rawFileExtension = self.args.showFileName.rsplit('.')[1]
         
         # test if sqlite file needs updating
         isUpToDate = self.checkRawFileSize()
         
-        if (self.args.force or not isUpToDate) and (rawFileExtension != "sqlite"):
+        if (self.args.showForce or not isUpToDate) and (rawFileExtension != "sqlite"):
         
             # construct call to convpot
             convpotArgs = []
@@ -305,7 +305,7 @@ class Plotpot(object):
                 convpotArgs.append("-{0}".format(self.args.verbose * 'v'))
                 
             # filename arg 
-            convpotArgs.append(self.args.filename)
+            convpotArgs.append(self.args.showFileName)
         
             # call external Convpot program
             try:
@@ -322,7 +322,7 @@ class Plotpot(object):
         db = DbManager(self.dataFileName)
 
         currentSize = 0
-        with open(self.args.filename, 'r') as fh:
+        with open(self.args.showFileName, 'r') as fh:
             fh.seek(0, os.SEEK_END)
             currentSize = fh.tell()
             fh.close()

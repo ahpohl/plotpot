@@ -23,7 +23,10 @@ class Journal(DbManager):
         
         if self.args.subcommand == "show" or self.args.subcommand == "merge":
             self.setBatFileName()
-            self.bat = DbManager(self.batFileName)
+            if self.args.subcommand == "show":
+                self.bat = DbManager(self.showArgs["dataFile"])
+            else:
+                self.bat = DbManager(self.batFileName)
             self.setBattery()
             if not self.searchBatProperties():
                 self.insertBat()
@@ -572,6 +575,24 @@ class Journal(DbManager):
     
     
     ### battery methods ###
+
+    def setBatFileName(self):
+        """set the filename of the battery"""
+        
+        if self.showArgs:
+            self.batFileName = self.args.showFileName
+        
+        elif self.args.mergeOutput:
+            self.batFileName = self.args.mergeOutput
+            if self.batFileName.split('.')[-1] != "sqlite":
+                self.batFileName += ".sqlite"
+            
+        elif self.args.mergeList:
+            self.batFileName = self.args.mergeList.split('.')[0]+".sqlite"
+            
+        elif self.args.mergeFileNames:
+            self.batFileName = self.args.mergeFileNames[0].split('.')[0]+".sqlite"
+
     
     def copyBatteryFiles(self):
         """copy battery file table in journal merge table"""
@@ -586,88 +607,7 @@ class Journal(DbManager):
         mergeTable = [[row_id]+x for x in filesTable]
         insert_query = '''INSERT INTO Merge_Table ({0}) VALUES ({1})'''.format(
                 (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
-        self.querymany(insert_query, mergeTable)
-        
-    
-    def setBattery(self):
-        """battery details"""
-        
-        self.setBatFileCount()
-        self.setBatIsFullCell()        
-        self.setBatFileSize()
-        self.setBatDate()
-        self.setBatPoints()
-        self.setBatDevice()
-        self.setBatComment()
-        self.setBatProperties()
-        
-        self.battery = [self.batFileName, self.batFileSize, self.batDate, self.batPoints,
-                        self.batDevice, self.batElectrode, self.batComment,
-                        self.mass, self.theoCapacity, self.area, self.volume, self.loading]
-        
-        
-    def getBattery(self):
-        """return battery details"""
-        return self.battery
-    
-    
-    def setBatFileName(self):
-        """set the filename of the battery"""
-        
-        if self.showArgs:
-            self.batFileName = self.showArgs['dataFile']
-        
-        elif self.args.mergeOutput:
-            self.batFileName = self.args.mergeOutput
-            if self.batFileName.split('.')[-1] != "sqlite":
-                self.batFileName += ".sqlite"
-            
-        elif self.args.mergeList:
-            self.batFileName = self.args.mergeList.split('.')[0]+".sqlite"
-            
-        elif self.args.mergeFileNames:
-            self.batFileName = self.args.mergeFileNames[0].split('.')[0]+".sqlite"
-            
-    
-    def getBatFileName(self):
-        """return filename of the battery"""
-        return self.batFileName
-        
-
-    def setBatFileCount(self):
-        """number of files used to create battery"""
-        self.bat.query('''SELECT Count(*) FROM File_Table''')
-        self.batFileCount = self.bat.fetchone()[0]
-        
-        
-    def getBatFileCount(self):
-        """number of files used to create battery"""
-        return self.batFileCount
-    
-    
-    def setBatIsFullCell(self):
-        """test if voltage2 column is not zero"""
-        self.bat.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
-        self.batIsFullCell = np.any(np.array(self.bat.fetchall()))
-    
-    
-    def getBatIsFullCell(self):
-        """return boolean if full or half cell"""
-        return self.isFullCell
-    
-    
-    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0, loading = 0):
-        """set battery properties"""
-        self.mass = mass
-        self.theoCapacity = theoCapacity
-        self.area = area
-        self.volume = volume
-        self.loading = loading
-        
-        
-    def getBatProperties(self):
-        """get battery properties"""
-        return self.mass, self.theoCapacity, self.area, self.volume, self.loading    
+        self.querymany(insert_query, mergeTable)    
 
 
     def searchBatProperties(self):
@@ -730,6 +670,69 @@ class Journal(DbManager):
         self.query(insert_query, self.battery)
         #print("INFO: Created new record in journal file.")
 
+
+    def setBatProperties(self, mass = 0, theoCapacity = 0, area = 0, volume = 0, loading = 0):
+        """set battery properties"""
+        self.mass = mass
+        self.theoCapacity = theoCapacity
+        self.area = area
+        self.volume = volume
+        self.loading = loading
+        
+        
+    def getBatProperties(self):
+        """get battery properties"""
+        return self.mass, self.theoCapacity, self.area, self.volume, self.loading        
+
+    
+    def setBattery(self):
+        """battery details"""
+        
+        self.setBatFileCount()
+        self.setBatIsFullCell()        
+        self.setBatFileSize()
+        self.setBatDate()
+        self.setBatPoints()
+        self.setBatDevice()
+        self.setBatComment()
+        self.setBatProperties()
+        
+        self.battery = [self.batFileName, self.batFileSize, self.batDate, self.batPoints,
+                        self.batDevice, self.batElectrode, self.batComment,
+                        self.mass, self.theoCapacity, self.area, self.volume, self.loading]
+        
+        
+    def getBattery(self):
+        """return battery details"""
+        return self.battery
+            
+    
+    def getBatFileName(self):
+        """return filename of the battery"""
+        return self.batFileName
+        
+
+    def setBatFileCount(self):
+        """number of files used to create battery"""
+        self.bat.query('''SELECT Count(*) FROM File_Table''')
+        self.batFileCount = self.bat.fetchone()[0]
+        
+        
+    def getBatFileCount(self):
+        """number of files used to create battery"""
+        return self.batFileCount
+    
+    
+    def setBatIsFullCell(self):
+        """test if voltage2 column is not zero"""
+        self.bat.query('''SELECT Voltage2 FROM Channel_Normal_Table''')
+        self.batIsFullCell = np.any(np.array(self.bat.fetchall()))
+    
+    
+    def getBatIsFullCell(self):
+        """return boolean if full or half cell"""
+        return self.isFullCell
+    
 
     def setBatDate(self):
         """battery creation date"""

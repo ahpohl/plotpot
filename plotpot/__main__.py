@@ -47,29 +47,29 @@ def main():
     )
  
     # positional plot argument
-    parser_show.add_argument('filename', help="data file name")    
+    parser_show.add_argument('showFileName', metavar="filename", help="data file name")    
     
     # optional plot arguments
     parser_show.add_argument('-q', '--quiet', action='store_true',
-                    help="do not show plots")
+                    help="do not show plots", dest="showQuiet")
     parser_show.add_argument('-e', '--export', action='store_true',
-                    help="export data, statistics and figures")
+                    help="export data, statistics and figures", dest="showExport")
     parser_show.add_argument('-f', '--force', action='store_true',
-                    help="skip up-to-date check")
+                    help="skip up-to-date check", dest="showForce")
     parser_show.add_argument('-p', '--plot', default='1', metavar='N',
-                    help="select plot type")
-    parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,6),
+                    help="select plot type", dest="showPlot")
+    parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,6), dest="showSmooth",
                     metavar='N', help="smooth dQ/dV plot [%(choices)s]") # window length
     
     # mutually exclusive arguments for plot command
     group_select = parser_show.add_mutually_exclusive_group()
     
     group_select.add_argument('-c', '--cycles', metavar='N',
-                    help="select cycles")
+                    help="select cycles", dest="showCycles")
     group_select.add_argument('-t', '--time', metavar='N',
-                    help="select time [in hours]")
+                    help="select time [in hours]", dest="showTime")
     group_select.add_argument('-d', '--data', metavar='N',
-                    help="select data points") 
+                    help="select data points", dest="showData") 
     
     # create the parser for the "merge" command
     parser_merge = subparsers.add_parser('merge', help='merge files')

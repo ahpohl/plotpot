@@ -57,7 +57,7 @@ class Plot(object):
     def savePlots(self):
         """save plots into png images"""
 
-        stem = self.args.filename.split('.')[0]
+        stem = self.args.showFileName.split('.')[0]
         ext = '.png'
         
         suffix = {1: '_voltage_vs_capacity',
@@ -323,8 +323,8 @@ class Plot(object):
 
         # translate smooth level to window length (odd integer)
         level = 0
-        if self.args.smooth:
-            level = (self.args.smooth-1) * 6 + 5
+        if self.args.showSmooth:
+            level = (self.args.showSmooth-1) * 6 + 5
             
         # half cell
         if not self.bat.isFullCell:
@@ -341,13 +341,13 @@ class Plot(object):
                 if a < self.p[0]: a = self.p[0]
                 if b > self.p[1]: b = self.p[1]
                 # charge
-                if s > 0 and (self.args.smooth is not None):
+                if s > 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b,0], window_len=level, window='hamming'),
                              self.smooth(self.bat.we.dqdv[a:b,0], window_len=level, window='hamming'), 'k-')
                 elif s > 0:
                     ax1.plot(self.bat.we.voltage[a:b], self.bat.we.dqdv[a:b], 'k-')
                 # discharge
-                elif s < 0 and (self.args.smooth is not None):
+                elif s < 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b,0], window_len=level, window='hamming'),
                              self.smooth(-1*self.bat.we.dqdv[a:b,0], window_len=level, window='hamming'), 'k-')
                 elif s < 0:
@@ -376,7 +376,7 @@ class Plot(object):
                 if a < self.p[0]: a = self.p[0]
                 if b > self.p[1]: b = self.p[1]
 
-                if s > 0 and (self.args.smooth is not None):
+                if s > 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
                              self.smooth(self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
                     ax2.plot(self.smooth(self.bat.ce.voltage[a:b], window_len=level, window='hamming'),
@@ -384,7 +384,7 @@ class Plot(object):
                 elif s > 0:
                     ax1.plot(self.bat.we.voltage[a:b], self.bat.we.dqdv[a:b], 'k-')
                     ax2.plot(self.bat.ce.voltage[a:b], self.bat.ce.dqdv[a:b], 'k-')
-                elif s < 0 and (self.args.smooth is not None):
+                elif s < 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
                              self.smooth(-1*self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
                     ax2.plot(self.smooth(self.bat.ce.voltage[a:b], window_len=level, window='hamming'),
