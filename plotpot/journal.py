@@ -14,25 +14,16 @@ class Journal(DbManager):
     def __init__(self, args, showArgs=None, electrode="working"):
         self.args = args
         self.showArgs = showArgs
+        self.batElectrode = electrode
         self.journalPath = self.getJournalPath()
         super().__init__(self.journalPath)
         self.createSchema()
-        self.setData()
+        self.setJournal()
         
         if self.args.subcommand == "show" or self.args.subcommand == "merge":
-            if self.args.subcommand == "show":
-                self.batFilename = showArgs['dataFile']
-            elif self.args.subcommand == "merge":
-                self.batFilename = self.getMergeOutputPath()
-            self.bat = DbManager(self.batFilename)
-            self.batElectrode = electrode
-            self.setBatIsFullCell()
-            self.setBatFileCount()
-            self.setBatDate()
-            self.setBatPoints()
-            self.setBatFileSize()
-            self.setBatDevice()
-            self.setBatComment()
+            self.setBatFileName()
+            self.bat = DbManager(self.batFileName)
+            self.setBattery()
             if not self.searchBatProperties():
                 self.insertBat()
                 if self.batFileCount > 1:
@@ -135,7 +126,7 @@ class Journal(DbManager):
             Device TEXT,
             Plot_Type TEXT,
             File_Size INTEGER,
-            Timestamp INTEGER,
+            DateTime INTEGER,
             Data_Points INTEGER,
             Test_Time DOUBLE,
             Comment TEXT,
@@ -194,240 +185,265 @@ class Journal(DbManager):
     
     ### journal table methods ###
 
-    def setData(self):
+    def setJournal(self):
         """fetch journal table"""
         
         try:
-            self.setID()
-            self.setFileName()
-            self.setMass()
-            self.setTheoCapacity()
-            self.setArea()
-            self.setVolume()
-            self.setLoading()
-            self.setFileSize()
-            self.setPoints()
-            self.setDate()
-            self.setDevice()
-            self.setElectrode()
-            self.setComments()
+            self.setJournalID()
+            self.setJournalFileName()
+            self.setJournalMass()
+            self.setJournalTheoCapacity()
+            self.setJournalArea()
+            self.setJournalVolume()
+            self.setJournalLoading()
+            self.setJournalFileSize()
+            self.setJournalPoints()
+            self.setJournalDate()
+            self.setJournalDevice()
+            self.setJournalElectrode()
+            self.setJournalComments()
             
         except sqlite3.OperationalError as e:
             print(e)
             self.upgradeSchema()
             sys.exit("INFO: Upgraded journal database schema.")
             
-        self.data = list(zip(self.id, self.batFileName, self.mass, self.theoCapacity,
-                             self.area, self.volume, self.loading, self.fileSize,
-                             self.points, self.date, self.device, self.electrode,
-                             self.comments))
+        self.journal = list(zip(self.journalID, self.journalFileName, self.journalMass, self.journalTheoCapacity,
+                             self.journalArea, self.journalVolume, self.journalLoading, self.journalFileSize,
+                             self.journalPoints, self.journalDate, self.journalDevice, self.journalElectrode,
+                             self.journalComments))
             
             
-    def getData(self):
+    def getJournal(self):
         """fetch journal table"""
-        return self.data
+        return self.journal
             
             
     def displayJournal(self):
         """display journal table on screen"""
         header = ("id", "file name", "m [mg]", "C [mAh/g]", "A [cm²]", "V [µL]", "L [mg/cm²]",
                   "file size", "data points", "yyyy-mm-dd hh:mm:ss", "device", "electrode", "comment")
-        if len(self.data) > 0:
-            self.__printSql(self.data, header)
+        if len(self.journal) > 0:
+            self.__printSql(self.journal, header)
         print('''Journal file: "%s".''' % self.journalPath)
-    
+        
         
     def exportJournal(self):
         """export journal table to csv file"""
-        journalCSV = self.journalPath[:-3]+"csv"
+        journalCSV = self.journalPath.split('.')[0]+".csv"
         header = ",".join(["id", "file name", "mass", "capacity", "area", "volume", "loading",
                   "file size", "data points", "date", "device", "electrode", "comment"])+"\r\n"
         header += ",".join(["", "", "mg", "mAh/g", "cm²", "µL", "mg/cm²", "", "", "", "", "", ""])+"\r\n"
         with open(journalCSV, "w", encoding='utf-8') as fh:
             fh.write(header)
             writer = csv.writer(fh)
-            writer.writerows(self.data)
+            writer.writerows(self.journal)
             fh.close()
         print('''Journal export written to "%s".''' % journalCSV)
     
     
-    def deleteRowJournal(self, row):
+    def deleteJournalRow(self):
         """delete row from journal table"""
-        select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(row)
-        delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(row)
+        select_query = '''SELECT Row_ID FROM Journal_Table WHERE rowid = {0}'''.format(self.args.journalDelete)
+        delete_query = '''DELETE FROM Journal_Table WHERE rowid = {0}'''.format(self.args.journalDelete)
         
         # check if row with rowid exists
         self.query(select_query)
         data = self.fetchone()
         
         if data is None:
-            print("INFO: Row ID %d does not exist." % row)
+            print("INFO: Row ID %d does not exist." % self.args.journalDelete)
         else:
             self.query(delete_query)
-            print("INFO: Row ID %d deleted." % row)
+            print("INFO: Row ID %d deleted." % self.args.journalDelete)
             
 
-    def setID(self):
+    def setJournalID(self):
         """row ID"""
         self.query('''SELECT row_ID FROM Journal_Table''')
-        self.id = list(map(itemgetter(0),self.fetchall()))
+        self.journalID = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getID(self):
+    def getJournalID(self):
         """row ID"""
-        return self.id
+        return self.journalID
     
     
-    def setFileName(self):
+    def setJournalFileName(self):
         """file name"""
         self.query('''SELECT File_Name FROM Journal_Table''')
-        self.fileName = list(map(itemgetter(0),self.fetchall()))
+        self.journalFileName = list(map(itemgetter(0),self.fetchall()))
         
 
     def getFileName(self):
         """file name"""
-        return self.fileName
+        return self.journalFileName
     
 
-    def setFileSize(self):
+    def setJournalFileSize(self):
         """file size"""
         self.query('''SELECT File_Size FROM Journal_Table''')
-        self.fileSize = list(map(itemgetter(0),self.fetchall()))
+        self.journalFileSize = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getFileSize(self):
+    def getJournalFileSize(self):
         """file size"""
-        return self.fileSize
+        return self.journalFileSize
             
 
-    def setPoints(self):
+    def setJournalPoints(self):
         """data points"""
         self.query('''SELECT Data_Points FROM Journal_Table''')
-        self.points = list(map(itemgetter(0),self.fetchall()))
+        self.journalPoints = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getPoints(self):
+    def getJournalPoints(self):
         """data points"""
-        return self.points
+        return self.journalPoints
     
 
-    def setDate(self):
+    def setJournalDate(self):
         """battery creation date"""
         self.query('''SELECT Start_DateTime FROM Journal_Table''')
-        self.date = [str(datetime.datetime.fromtimestamp(x[0])) for x in self.fetchall()]
+        self.journalDate = [str(datetime.datetime.fromtimestamp(x[0])) for x in self.fetchall()]
         
 
-    def getDate(self):
+    def getJournalDate(self):
         """battery creation date"""
-        return self.date
+        return self.journalDate
 
 
-    def setDevice(self):
+    def setJournalDevice(self):
         """device"""
         self.query('''SELECT Device FROM Journal_Table''')
-        self.device = list(map(itemgetter(0),self.fetchall()))
+        self.journalDevice = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getDevice(self):
+    def getJournalDevice(self):
         """device"""
-        return self.device
+        return self.journalDevice
     
     
-    def setElectrode(self):
+    def setJournalElectrode(self):
         """working or counter electrode"""
         self.query('''SELECT Electrode FROM Journal_Table''')
-        self.electrode = list(map(itemgetter(0),self.fetchall()))
+        self.journalElectrode = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getElectrode(self):
+    def getJournalElectrode(self):
         """working or counter electrode"""
-        return self.electrode
+        return self.journalElectrode
     
     
-    def setComments(self):
+    def setJournalComments(self):
         """comment"""
         self.query('''SELECT Comments FROM Journal_Table''')
-        self.comments = list(map(itemgetter(0),self.fetchall()))
+        self.journalComments = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getComments(self):
+    def getJournalComments(self):
         """comment"""
-        return self.comments
+        return self.journalComments
     
     
-    def setMass(self):
+    def setJournalMass(self):
         """mass in mg"""
         self.query('''SELECT Mass FROM Journal_Table''')
-        self.mass = list(map(itemgetter(0),self.fetchall()))
+        self.journalMass = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getMass(self):
+    def getJournalMass(self):
         """mass in mg"""
-        return self.mass
+        return self.journalMass
     
     
-    def setTheoCapacity(self):
+    def setJournalTheoCapacity(self):
         """theoretical capacity in mAh/g"""
         self.query('''SELECT Capacity FROM Journal_Table''')
-        self.theoCapacity = list(map(itemgetter(0),self.fetchall()))
+        self.journalTheoCapacity = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getTheoCapacity(self):
+    def getJournalTheoCapacity(self):
         """theoretical capacity in mAh/g"""
-        return self.theoCapacity
+        return self.journalTheoCapacity
 
 
-    def setArea(self):
+    def setJournalArea(self):
         """area in cm²"""
         self.query('''SELECT Area FROM Journal_Table''')
-        self.area = list(map(itemgetter(0),self.fetchall()))
+        self.journalArea = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getArea(self):
+    def getJournalArea(self):
         """area in cm²"""
-        return self.area
+        return self.journalArea
 
 
-    def setVolume(self):
+    def setJournalVolume(self):
         """volume in µL"""
         self.query('''SELECT Volume FROM Journal_Table''')
-        self.volume = list(map(itemgetter(0),self.fetchall()))
+        self.journalVolume = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getVolume(self):
+    def getJournalVolume(self):
         """volume in µL"""
-        return self.volume
+        return self.journalVolume
     
     
-    def setLoading(self):
+    def setJournalLoading(self):
         """mass loading in mg/cm²"""
         self.query('''SELECT Loading FROM Journal_Table''')
-        self.loading = list(map(itemgetter(0),self.fetchall()))
+        self.journalLoading = list(map(itemgetter(0),self.fetchall()))
         
 
-    def getLoading(self):
+    def getJournalLoading(self):
         """mass loading in mg/cm²"""
-        return self.loading
+        return self.journalLoading
     
+   ### journal merge table methods ###
     
-    ### merged files table methods ###
-    
-    def getMergeOutputPath(self):
-        """set the filename of the merge output file"""
+    def displayMergeFiles(self):
+        """display merged files"""
         
-        if self.args.mergeOutput:
-            filename = self.args.mergeOutput
-            if filename.split('.')[-1] != "sqlite":
-                filename += ".sqlite"
+        # test if battery exists and is a merged file
+        self.query('''SELECT Device FROM Journal_Table WHERE row_ID = {0}'''.format(self.args.journalShow))
+        result = self.fetchone()
+        if not result:
+            sys.exit("INFO: Row ID %d does not exist." % self.args.journalShow)
+        if not result[0] == "merged":
+            sys.exit("INFO: Row ID %d is not a merged file." % self.args.journalShow)
             
-        elif self.args.mergeList:
-            filename = self.args.mergeList.split('.')[0]+".sqlite"
+        # display merge files table
+        listOfVars = ["File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "DateTime",
+                      "Data_Points", "Test_Time", "Comment"]
+        header = ("id", "file name", "device", "plot", "size", "date",
+                  "points", "test time", "comment")
+        self.query('''SELECT {0} FROM Merge_Table WHERE Merge_ID = {1}'''.format(','.join(listOfVars), self.args.journalShow))
+        data = [list(x) for x in self.fetchall()]
+        for i,j in enumerate(data):
+            # convert timestamp to date string
+            data[i][5] = datetime.datetime.fromtimestamp(j[5])
+        if len(data) > 0:
+            self.__printSql(data, header)
             
-        elif self.args.mergeFileNames:
-            filename = self.args.mergeFileNames[0].split('.')[0]+".sqlite"
             
-        return filename
+    def exportMergeFiles(self):
+        """export merge files table"""
+        mergeCSV = self.journalPath.split('.')[0]+".csv"
+        listOfVars = ["Row_ID", "File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "DateTime",
+                      "Data_Points", "Test_Time", "Comment"]
+        self.query('''SELECT {0} FROM Merge_Table'''.format(','.join(listOfVars)))
+        data = self.fetchall()
+        
+        if len(data) > 0:
+            with open(mergeCSV, "a", encoding='utf-8') as fh:
+                fh.write("\r\n"+','.join(listOfVars)+"\r\n")
+                writer = csv.writer(fh)
+                writer.writerows(data)
+                fh.close()
+        
     
+    ### battery file table methods ###
 
     def setMergeFiles(self):
         """fetch merged files table"""
@@ -438,55 +454,30 @@ class Journal(DbManager):
         self.setMergeDevice()
         self.setMergePlot()
         self.setMergeFileSize()
-        self.setMergeTimeStamp()
+        self.setMergeDateTime()
         self.setMergeDate()
         self.setMergePoints()
         self.setMergeTestTime()
         self.setMergeComment()
         
         self.mergeFiles = list(zip(self.mergeID, self.mergeFileID, self.mergeFileName, self.mergeDevice,
-                                   self.mergePlot, self.mergeFileSize, self.mergeTimeStamp,
+                                   self.mergePlot, self.mergeFileSize, self.mergeDateTime,
                                    self.mergePoints, self.mergeTestTime, self.mergeComment))
         
-    
-    def getMergeFiles(self):
-        """fetch merged files table"""
-        return self.mergeFiles
-
-    
-    def displayMergeFiles(self, row):
-        """display merged files table for a merged battery on screen"""
         
-        # test if battery is a merged file
-        self.query('''SELECT Device FROM Journal_Table WHERE row_ID = {0}'''.format(self.args.journalShow))
-        result = self.fetchone()
-        if not result:
-            sys.exit("INFO: Row ID %d does not exist." % row)
-        if not result[0] == "merged":
-            sys.exit("INFO: Row ID %d is not a merged file." % row)
-        listOfVars = ["File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "Timestamp",
-                      "Data_Points", "Test_Time", "Comment"]
-        header = ("id", "file name", "device", "plot", "size", "date",
-                  "points", "test time", "comment")
-        self.query('''SELECT {0} FROM Merge_Table WHERE Merge_ID = {1}'''.format(','.join(listOfVars), row))
-        data = [list(x) for x in self.fetchall()]
-        for i,j in enumerate(data):
-            # convert timestamp to date string
-            data[i][5] = datetime.datetime.fromtimestamp(j[5])
-            # convert test time from [s] to [h]
-            data[i][7] = round(j[7]/3.6e3,2)
-        if len(data) > 0:
-            self.__printSql(data, header)
-            
-            
+    def getMergeFiles(self):
+        """return merged files table"""
+        return self.mergeFiles
+    
+
     def insertMergeFiles(self):
         """insert file details into merge table"""
-        listOfVars = ["Merge_ID", "File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "Timestamp",
+        listOfVars = ["Merge_ID", "File_ID", "File_Name", "Device", "Plot_Type", "File_Size", "DateTime",
                       "Data_Points", "Test_Time", "Comment"]
         insert_query = '''INSERT INTO Merge_Table ({0}) VALUES ({1})'''.format(
                 (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
         self.querymany(insert_query, self.mergeFiles)
-            
+
         
     def setMergeID(self):
         """fetch row id of battery from journal table"""
@@ -497,8 +488,8 @@ class Journal(DbManager):
     
     def getMergeID(self):
         """return row id of battery"""
-        return self.mergeID
-    
+        return self.mergeID    
+
     
     def setMergeFileID(self):
         """file id"""
@@ -521,61 +512,7 @@ class Journal(DbManager):
         """file id"""
         return self.mergeFileName
     
-    
-    def setMergeFileSize(self):
-        """file size"""
-        self.bat.query('''SELECT File_Size FROM File_Table''')
-        self.mergeFileSize = list(map(itemgetter(0),self.bat.fetchall()))
-        
-    
-    def getMergeFileSize(self):
-        """file size"""
-        return self.mergeFileSize
-    
-    
-    def setMergePoints(self):
-        """data points"""
-        self.bat.query('''SELECT Data_Points FROM File_Table''')
-        self.mergePoints = list(map(itemgetter(0),self.bat.fetchall()))
-        
-    
-    def getMergePoints(self):
-        """data points"""
-        return self.mergePoints
 
-
-    def setMergeTimeStamp(self):
-        """creation time in secs since epoch"""
-        self.bat.query('''SELECT Start_DateTime FROM File_Table''')
-        self.mergeTimeStamp = list(map(itemgetter(0),self.bat.fetchall()))
-        
-    
-    def getMergeTimeStamp(self):
-        """creation time in secs since epoch"""
-        return self.mergeTimeStamp
-    
-    
-    def setMergeDate(self):
-        """battery creation date"""
-        self.mergeDate = [datetime.datetime.fromtimestamp(x) for x in self.mergeTimeStamp]
-        
-
-    def getMergeDate(self):
-        """battery creation date"""
-        return self.mergeDate
-    
-    
-    def setMergeComment(self):
-        """comment"""
-        self.bat.query('''SELECT Comment FROM File_Table''')
-        self.mergeComment = list(map(itemgetter(0),self.bat.fetchall()))
-        
-    
-    def getMergeComment(self):
-        """comment"""
-        return self.mergeComment
-    
-    
     def setMergeDevice(self):
         """device"""
         self.bat.query('''SELECT Device FROM File_Table''')
@@ -598,18 +535,118 @@ class Journal(DbManager):
         return self.mergePlot
     
     
+    def setMergeFileSize(self):
+        """file size"""
+        self.bat.query('''SELECT File_Size FROM File_Table''')
+        self.mergeFileSize = list(map(itemgetter(0),self.bat.fetchall()))
+        
+    
+    def getMergeFileSize(self):
+        """file size"""
+        return self.mergeFileSize
+    
+
+    def setMergeDateTime(self):
+        """creation time in secs since epoch"""
+        self.bat.query('''SELECT Start_DateTime FROM File_Table''')
+        self.mergeDateTime = list(map(itemgetter(0),self.bat.fetchall()))
+        
+    
+    def getMergeDateTime(self):
+        """creation time in secs since epoch"""
+        return self.mergeDateTime
+    
+
+    def setMergeDate(self):
+        """battery creation date"""
+        self.mergeDate = [datetime.datetime.fromtimestamp(x) for x in self.mergeDateTime]
+        
+
+    def getMergeDate(self):
+        """battery creation date"""
+        return self.mergeDate
+    
+    
+    def setMergePoints(self):
+        """data points"""
+        self.bat.query('''SELECT Data_Points FROM File_Table''')
+        self.mergePoints = list(map(itemgetter(0),self.bat.fetchall()))
+        
+    
+    def getMergePoints(self):
+        """data points"""
+        return self.mergePoints
+    
+    
     def setMergeTestTime(self):
-        """test time"""
+        """test time in hours"""
         self.bat.query('''SELECT Test_Time FROM File_Table''')
         self.mergeTestTime = list(map(itemgetter(0),self.bat.fetchall()))
+        self.mergeTestTime = [round(x/3.6e3,2) for x in self.mergeTestTime]
         
     
     def getMergeTestTime(self):
-        """test time"""
+        """test time in hours"""
         return self.mergeTestTime
+    
+    
+    def setMergeComment(self):
+        """comment"""
+        self.bat.query('''SELECT Comment FROM File_Table''')
+        self.mergeComment = list(map(itemgetter(0),self.bat.fetchall()))
         
     
+    def getMergeComment(self):
+        """comment"""
+        return self.mergeComment
+    
+    
     ### battery methods ###
+    
+    def setBattery(self):
+        """battery details"""
+        
+        self.setBatFileCount()
+        self.setBatIsFullCell()        
+        self.setBatFileSize()
+        self.setBatDate()
+        self.setBatPoints()
+        self.setBatDevice()
+        self.setBatComment()
+        self.setBatProperties()
+        
+        self.battery = [self.batFileName, self.batFileSize, self.batDate, self.batPoints,
+                        self.batDevice, self.batElectrode, self.batComment,
+                        self.mass, self.theoCapacity, self.area, self.volume, self.loading]
+        
+        
+    def getBattery(self):
+        """return battery details"""
+        return self.battery
+    
+    
+    def setBatFileName(self):
+        """set the filename of the battery"""
+        
+        if self.showArgs:
+            self.batFileName = self.showArgs['dataFile']
+        
+        elif self.args.mergeOutput:
+            self.batFileName = self.args.mergeOutput
+            if self.batFileName.split('.')[-1] != "sqlite":
+                self.batFileName += ".sqlite"
+            
+        elif self.args.mergeList:
+            self.batFileName = self.args.mergeList.split('.')[0]+".sqlite"
+            
+        elif self.args.mergeFileNames:
+            self.batFileName = self.args.mergeFileNames[0].split('.')[0]+".sqlite"
+            
+    
+    def getBatFileName(self):
+        """return filename of the battery"""
+        return self.batFileName
+        
 
     def setBatFileCount(self):
         """number of files used to create battery"""
@@ -653,13 +690,12 @@ class Journal(DbManager):
         self.query('''
                    SELECT Mass,Capacity,Area,Volume,Loading FROM Journal_Table WHERE 
                    File_Name = "{0}" AND Start_DateTime = {1} AND Electrode = "{2}"'''.format(
-                        self.batFilename,
+                        self.batFileName,
                         self.batDate,
                         self.batElectrode))
         properties = self.fetchone()
         # battery not found in journal
         if properties is None:
-            self.mass = 0; self.theoCapacity = 0; self.area = 0; self.volume = 0; self.loading = 0
             return False
         # fetch battery properties from journal
         else:
@@ -682,7 +718,7 @@ class Journal(DbManager):
                     self.area,
                     self.volume,
                     self.loading,
-                    self.batFilename,
+                    self.batFileName,
                     self.batDate,
                     self.batElectrode))
         
@@ -705,9 +741,7 @@ class Journal(DbManager):
         insert_query = '''INSERT INTO Journal_Table ({0}) VALUES ({1})'''.format(
                 (','.join(listOfVars)), ','.join('?'*len(listOfVars)))
         
-        self.query(insert_query, (self.batFilename, self.batFileSize, self.batDate, self.batPoints,
-                                  self.batDevice, self.batElectrode, self.batComment,
-                                  self.mass, self.theoCapacity, self.area, self.volume, self.loading))
+        self.query(insert_query, self.battery)
         #print("INFO: Created new record in journal file.")
 
 

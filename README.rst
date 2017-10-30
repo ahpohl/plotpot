@@ -63,8 +63,8 @@ usage message without errors about missing packages.
 Usage
 -----
 
-Plotpot currently knows two sub-commands ``show`` and ``journal``. A detailed help of the 
-sub-command options are printed with ``plotpot <sub-command> -h``
+Plotpot currently knows two sub-commands ``show``, ``merge`` and ``journal``. A detailed 
+help of the sub-command options are printed with ``plotpot <sub-command> -h``
 
 An example plot generated with ``plotpot show arbintest.res`` looks like this:
 
@@ -143,6 +143,25 @@ This generates files in `csv format <https://en.wikipedia.org/wiki/Comma-separat
 further processing with e.g. `Microcal Origin <http://www.originlab.com/>`__ or similar software. 
 Data per cycle is packed into a zip archive and png snapshots of the plots genererated on screen are created.
 
+Merge Files
+~~~~~~~~~~~
+
+A battery which consists of many individual data files (which is common for the Gamry instruments) can be merged together to a single data file with the "merge" sub-command.
+
+To process multiple files
+
+```
+plotpot merge arbin-merge_1.res arbin-merge_2.res
+```
+
+Alternatively, the files to merge can be given in a text file listed one by line. Lines starting with the "!" character are ignored.
+
+```
+plotpot merge --list arbin-merge.txt
+```
+
+The output file name can be changed with the `--output` option.
+
 The journal
 ~~~~~~~~~~~
 
@@ -163,6 +182,12 @@ A particular entry can be removed from the journal with:
 ::
 
     plotpot journal --delete <row_ID>
+
+The individual raw data files of a merged battery can be shown with
+
+::
+
+	plotpot journal --show <row_ID>
     
 The journal file can be exported to a csv file:
 

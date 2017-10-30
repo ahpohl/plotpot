@@ -1,10 +1,11 @@
 Plotpot changelog
 =================
 
-v1.2.0 - upcoming
+v1.2.0 - 2017-10-30
 -----------------
 -  add merge subcommand
--  kepp records in merge table
+-  keep records in merge table
+-  show merged files from journal
 
 v1.1.0 - 2017-10-22
 -------------------
