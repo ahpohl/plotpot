@@ -47,44 +47,62 @@ def main():
     )
  
     # positional plot argument
-    parser_show.add_argument('filename', help="data file name")    
+    parser_show.add_argument('showFileName', metavar="filename", help="data file name")    
     
     # optional plot arguments
     parser_show.add_argument('-q', '--quiet', action='store_true',
-                    help="do not show plots")
+                    help="do not show plots", dest="showQuiet")
     parser_show.add_argument('-e', '--export', action='store_true',
-                    help="export data, statistics and figures")
+                    help="export data, statistics and figures", dest="showExport")
     parser_show.add_argument('-f', '--force', action='store_true',
-                    help="skip up-to-date check")
+                    help="skip up-to-date check", dest="showForce")
     parser_show.add_argument('-p', '--plot', default='1', metavar='N',
-                    help="select plot type")
-    parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,6),
+                    help="select plot type", dest="showPlot")
+    parser_show.add_argument('-s', '--smooth', type=int, choices=range(1,6), dest="showSmooth",
                     metavar='N', help="smooth dQ/dV plot [%(choices)s]") # window length
     
     # mutually exclusive arguments for plot command
     group_select = parser_show.add_mutually_exclusive_group()
     
     group_select.add_argument('-c', '--cycles', metavar='N',
-                    help="select cycles")
+                    help="select cycles", dest="showCycles")
     group_select.add_argument('-t', '--time', metavar='N',
-                    help="select time [in hours]")
+                    help="select time [in hours]", dest="showTime")
     group_select.add_argument('-d', '--data', metavar='N',
-                    help="select data points")   
+                    help="select data points", dest="showData") 
+    
+    # create the parser for the "merge" command
+    parser_merge = subparsers.add_parser('merge', help='merge files')
+    
+    parser_merge.add_argument('mergeFileNames', metavar='file', nargs='*',
+                    help="filenames of data to merge")
+    parser_merge.add_argument('-l', '--list', metavar='FN',
+                    dest='mergeList', help="text file with filenames")
+    parser_merge.add_argument('-o', '--output', metavar='FN',
+                    dest='mergeOutput', help="change output filename") 
     
     # create the parser for the "journal" command
-    parser_journal = subparsers.add_parser('journal', help='manipulate journal')
+    parser_journal = subparsers.add_parser('journal', help='display journal')
 
     parser_journal.add_argument('-e', '--export', action='store_true',
                     dest='journalExport', help="export journal to csv file")    
     parser_journal.add_argument('-d', '--delete', type=int, metavar='ID',
                     dest='journalDelete', help="delete a row from journal")
+    parser_journal.add_argument('-s', '--show', type=int, metavar='ID',
+                    dest='journalShow', help="show merged files for row")    
     
     # parse command line
     args = parser.parse_args()
     
     # print help if no subcommand is given
-    if args.subcommand is None:
+    if not args.subcommand:
         parser.print_help()
+        parser.exit()
+        
+    # print merge subcommand help
+    if args.subcommand == "merge" and not (args.mergeFileNames or args.mergeList):
+        parser_merge.print_help()
+        parser.exit()
     
     # run main program
     Plotpot(args)

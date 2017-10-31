@@ -1,8 +1,14 @@
 Plotpot changelog
 =================
 
+v1.2.0 - upcoming
+-------------------
+-  add merge subcommand
+-  keep records in merge table
+-  show merged files from journal
+
 v1.1.0 - 2017-10-22
--------------------------
+-------------------
 -  needs minimum Convpot version v1.2.0
 -  support for full cells (remove --bio_ce)
 -  plots showing working and counter electrode

@@ -6,9 +6,8 @@ import matplotlib.pyplot as plt
 
 class Plot(object):
 
-    def __init__(self, args, showArgs, bat):
+    def __init__(self, args, bat):
         self.args = args
-        self.showArgs = showArgs
         self.bat = bat
         
     
@@ -21,7 +20,7 @@ class Plot(object):
         # set plot range according to show arguments cycles, time and points
         self.setPlotRange()
         
-        for n in self.bat.showArgs['plots']:
+        for n in self.bat.globalArgs['plots']:
             if n == 1:
                 self.figVoltageCapacity()
             elif n == 2:
@@ -57,7 +56,7 @@ class Plot(object):
     def savePlots(self):
         """save plots into png images"""
 
-        stem = self.args.filename.split('.')[0]
+        stem = self.args.showFileName.split('.')[0]
         ext = '.png'
         
         suffix = {1: '_voltage_vs_capacity',
@@ -75,7 +74,7 @@ class Plot(object):
                   13: '_hysteresis',
                   14: '_c_rate'}
 
-        for n in self.showArgs['plots']:
+        for n in self.bat.globalArgs['plots']:
             plt.figure(n)
             plt.savefig(stem + suffix[n] + ext)
            
@@ -89,21 +88,21 @@ class Plot(object):
         """set plot range according to show arguments cycles, time and points"""
         
         # get indices of full cycle limits
-        if self.bat.showArgs['cycles'] is not None:
+        if self.bat.globalArgs['cycles'] is not None:
             # convert cycles to zero based index
-            self.c = (self.bat.showArgs['cycles'][0]-1, self.bat.showArgs['cycles'][1])
+            self.c = (self.bat.globalArgs['cycles'][0]-1, self.bat.globalArgs['cycles'][1])
             # get indices of half cycle limits
             # convert full cycles into half cycles (with zero based index)
-            self.h = ((2*(self.bat.showArgs['cycles'][0])-1)-1, 2*(self.bat.showArgs['cycles'][1]))
+            self.h = ((2*(self.bat.globalArgs['cycles'][0])-1)-1, 2*(self.bat.globalArgs['cycles'][1]))
             #self.h = (2*self.c[0]-1, 2*self.c[1])
             # get indices of data point limits
             self.p = (self.bat.statPoints[self.c[0]:self.c[1]].flatten()[0],
                       self.bat.statPoints[self.c[0]:self.c[1]].flatten()[-1])
         
         # get indices with --time argument
-        elif self.bat.showArgs['time'] is not None:
+        elif self.bat.globalArgs['time'] is not None:
             # get indices of data point limits
-            self.p = np.searchsorted(self.bat.testTime[:,0], self.bat.showArgs['time'])
+            self.p = np.searchsorted(self.bat.testTime[:,0], self.bat.globalArgs['time'])
             # get indices of half cycle limits
             self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
             self.h[1] += 1 
@@ -112,9 +111,9 @@ class Plot(object):
             self.c[1] += 1
             
         # get indices with --data argument
-        elif self.bat.showArgs['points'] is not None:
+        elif self.bat.globalArgs['points'] is not None:
             # get indices of data point limits
-            self.p = self.bat.showArgs['points']
+            self.p = self.bat.globalArgs['points']
             # get indices of half cycle limits
             self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
             self.h[1] += 1 
@@ -323,8 +322,8 @@ class Plot(object):
 
         # translate smooth level to window length (odd integer)
         level = 0
-        if self.args.smooth:
-            level = (self.args.smooth-1) * 6 + 5
+        if self.args.showSmooth:
+            level = (self.args.showSmooth-1) * 6 + 5
             
         # half cell
         if not self.bat.isFullCell:
@@ -341,13 +340,13 @@ class Plot(object):
                 if a < self.p[0]: a = self.p[0]
                 if b > self.p[1]: b = self.p[1]
                 # charge
-                if s > 0 and (self.args.smooth is not None):
+                if s > 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b,0], window_len=level, window='hamming'),
                              self.smooth(self.bat.we.dqdv[a:b,0], window_len=level, window='hamming'), 'k-')
                 elif s > 0:
                     ax1.plot(self.bat.we.voltage[a:b], self.bat.we.dqdv[a:b], 'k-')
                 # discharge
-                elif s < 0 and (self.args.smooth is not None):
+                elif s < 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b,0], window_len=level, window='hamming'),
                              self.smooth(-1*self.bat.we.dqdv[a:b,0], window_len=level, window='hamming'), 'k-')
                 elif s < 0:
@@ -376,7 +375,7 @@ class Plot(object):
                 if a < self.p[0]: a = self.p[0]
                 if b > self.p[1]: b = self.p[1]
 
-                if s > 0 and (self.args.smooth is not None):
+                if s > 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
                              self.smooth(self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
                     ax2.plot(self.smooth(self.bat.ce.voltage[a:b], window_len=level, window='hamming'),
@@ -384,7 +383,7 @@ class Plot(object):
                 elif s > 0:
                     ax1.plot(self.bat.we.voltage[a:b], self.bat.we.dqdv[a:b], 'k-')
                     ax2.plot(self.bat.ce.voltage[a:b], self.bat.ce.dqdv[a:b], 'k-')
-                elif s < 0 and (self.args.smooth is not None):
+                elif s < 0 and (self.args.showSmooth is not None):
                     ax1.plot(self.smooth(self.bat.we.voltage[a:b], window_len=level, window='hamming'),
                              self.smooth(-1*self.bat.we.dqdv[a:b], window_len=level, window='hamming'), 'k-')
                     ax2.plot(self.smooth(self.bat.ce.voltage[a:b], window_len=level, window='hamming'),

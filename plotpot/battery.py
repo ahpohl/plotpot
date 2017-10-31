@@ -12,10 +12,10 @@ from plotpot.electrode import Electrode
 class Battery(DbManager):
     """A class for implementing an electrochemical device"""
     
-    def __init__(self, args, showArgs):
+    def __init__(self, args, globalArgs):
         self.args = args
-        self.showArgs = showArgs
-        super().__init__(showArgs['dataFile'])
+        self.globalArgs = globalArgs
+        super().__init__(globalArgs['dataFileName'])
     
         # set electrodes
         self.setIsFullCell()
@@ -44,12 +44,12 @@ class Battery(DbManager):
         """create electode objects"""
         
         print("*** Working electrode ***")
-        self.we = Electrode(self.args, self.showArgs, "we")
+        self.we = Electrode(self.args, self.globalArgs, "working")
         self.ce = None
  
         if self.isFullCell:
             print("*** Counter electrode ***")
-            self.ce = Electrode(self.args, self.showArgs, "ce")
+            self.ce = Electrode(self.args, self.globalArgs, "counter")
           
             
     def getElectrodes(self):
@@ -65,7 +65,7 @@ class Battery(DbManager):
             properties.append(["counter"]+self.ce.getProperties())
         header = ",".join(["electrode", "mass", "capacity", "area", "volume", "loading"])+"\r\n"
         header += ",".join(["", "mg", "mAh/g", "cm²", "µL", "mg/cm²"])+"\r\n"
-        with open(self.args.filename.split('.')[0]+'_properties.csv', "w", encoding='utf-8') as fh:
+        with open(self.args.showFileName.split('.')[0]+'_properties.csv', "w", encoding='utf-8') as fh:
             fh.write(header)
             writer = csv.writer(fh)
             writer.writerows(properties)
@@ -123,7 +123,7 @@ class Battery(DbManager):
                             "mA", "mAh/g", "mAh/g", "V", "V",
                             "Wh/kg", "Wh/kg", "As/V", "As/V"])+"\r\n"
     
-        with open(self.args.filename.split('.')[0]+'_data.csv', "wb") as fh:
+        with open(self.args.showFileName.split('.')[0]+'_data.csv', "wb") as fh:
             fh.write(header.encode('utf-8'))
             np.savetxt(fh, self.data, delimiter=',', newline="\r\n", 
                    fmt=['%d','%d','%d','%f','%f','%d','%f',
@@ -139,7 +139,7 @@ class Battery(DbManager):
         # create temporary directory
         cwd = os.getcwd() # save current directory
         os.chdir(tempfile.gettempdir()) # change to tmp dir
-        filestem = self.args.filename.split('.')[0] # create filename
+        filestem = self.args.showFileName.split('.')[0] # create filename
         if not os.path.exists(filestem):
             os.makedirs(filestem) # create directory
         path = os.path.abspath(filestem) # change to directory
@@ -388,7 +388,7 @@ class Battery(DbManager):
                  "V", "", "V", "", 
                  "V", "V"])+"\r\n"
     
-        with open(self.args.filename.split('.')[0]+'_statistics.csv', "wb") as fh:
+        with open(self.args.showFileName.split('.')[0]+'_statistics.csv', "wb") as fh:
             fh.write(header.encode('utf-8'))
             np.savetxt(fh, self.statistics, delimiter=',', newline="\r\n", fmt='%f')
             fh.close()

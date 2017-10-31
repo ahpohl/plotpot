@@ -15,11 +15,8 @@ class Plotpot(object):
     
     def __init__(self, args):
         self.args = args
-        self.runSubcommands()        
-
-    
-    def runSubcommands(self):
-        """run plotpot subcommands"""
+        self.setConvpotPath()
+        self.setGlobalArgs()
         
         if self.args.subcommand == "show":
             self.subcommandShow()
@@ -27,7 +24,34 @@ class Plotpot(object):
         if self.args.subcommand == "journal":
             self.subcommandJournal()
             
+        if self.args.subcommand == "merge":
+            self.subcommandMerge()
+            
 
+    def subcommandShow(self):
+        """run show subcommand"""
+        
+        # call convpot to convert raw data
+        self.callConvpot()
+        
+        # create battery object
+        bat = Battery(self.args, self.globalArgs)
+        
+        # create figures
+        plot = Plot(self.args, bat)
+        plot.drawPlots()
+        
+        # export data and statistics  
+        if self.args.showExport:
+            print("INFO: Exporting data, statistics and figures.")
+            bat.export()
+            plot.savePlots()
+        
+        # show plots if quiet option not given
+        if not self.args.showQuiet:
+            plot.showPlots()
+
+            
     def subcommandJournal(self):
         """run journal subcommand"""
         
@@ -35,55 +59,120 @@ class Plotpot(object):
         journal = Journal(self.args)
         
         # display plotpot journal file on screen
-        if not (self.args.journalDelete or self.args.journalExport):
-            journal.display()
+        if not (self.args.journalDelete or self.args.journalExport or 
+                self.args.journalShow):
+            journal.displayJournal()
 
         # delete journal entry
         if self.args.journalDelete:
-            journal.deleteRow(self.args.journalDelete)
+            journal.deleteJournalRow()
             
         # export journal
         if self.args.journalExport:
-            journal.export()
+            journal.exportJournal()
+            #journal.exportMergeFiles()
+            
+        # display merged files
+        if self.args.journalShow:
+            journal.displayMergeFiles()
         
-        sys.exit() 
+        
+    def subcommandMerge(self):
+        """run merge subcommand"""
 
+        # # construct call to convpot
+        convpotArgs = []
+        convpotArgs.append(self.convpotPath)
+        
+        # verbose arg
+        if self.args.verbose:
+            convpotArgs.append("-{0}".format(self.args.verbose * 'v'))
+        
+        # output filename
+        if self.args.mergeOutput:
+            convpotArgs.extend(["-o", self.args.mergeOutput])
+        
+        # merge list
+        if self.args.mergeList:
+            convpotArgs.extend(["-m", self.args.mergeList])
+        
+        # files given after merge subcommand
+        elif self.args.mergeFileNames:
+            convpotArgs.extend(self.args.mergeFileNames)
+        
+        # call external Convpot program
+        if len(convpotArgs) > 1:
+            try:
+                subprocess.check_call(convpotArgs)
+            except subprocess.CalledProcessError as e:
+                sys.exit(e)
+        
+        # journal
+        journal = Journal(self.args, None, "working")
+        if journal.batIsFullCell:
+            Journal(self.args, None, "counter")
     
-    def subcommandShow(self):
-        """run show subcommand"""
-        
-        # get name of sqlite file from raw file
-        self.dataFileName = self.getDataFile()
-        
-        # parse show command line options
-        showArgs = {'plots': self.getPlotsOption(), 
-                    'time': self.getTimeOption(),
-                    'points': self.getDataOption(),
-                    'cycles': self.getCyclesOption(),
-                    'dataFile': self.dataFileName}
-        
-        
-        # call convpot to convert raw data
-        self.callConvpot()
-        
-        # create battery object
-        bat = Battery(self.args, showArgs)
-        
-        # create figures
-        plot = Plot(self.args, showArgs, bat)
-        plot.drawPlots()
-        
-        # export data and statistics  
-        if self.args.export:
-            print("INFO: Exporting data, statistics and figures.")
-            bat.export()
-            plot.savePlots()
-        
-        # show plots if quiet option not given
-        if not self.args.quiet:
-            plot.showPlots()
     
     ### internal methods ###
+
+    def setGlobalArgs(self):
+        """set global arguments"""
+        self.globalArgs = None
+
+        # show subcommand
+        if self.args.subcommand == "show":
+            try:
+                open(os.path.abspath(self.args.showFileName), "r")
+            except IOError as e:
+                sys.exit(e)
+                
+            self.globalArgs = {'dataFileName': self.args.showFileName.rsplit('.')[0]+'.sqlite',
+                               'plots': self.getPlotsOption(), 
+                               'time': self.getTimeOption(),
+                               'points': self.getDataOption(),
+                               'cycles': self.getCyclesOption()}
+        
+        # merge subcommand
+        elif self.args.subcommand == "merge":
+            if self.args.mergeOutput:
+                self.globalArgs = {'dataFileName': self.args.mergeOutput}
+                if self.globalArgs['dataFileName'].split('.')[-1] != "sqlite":
+                    self.globalArgs['dataFileName'] += ".sqlite"
+                
+            elif self.args.mergeList:
+                self.globalArgs = {'dataFileName': self.args.mergeList.split('.')[0]+".sqlite"}
+            
+            elif self.args.mergeFileNames:
+                self.globalArgs = {'dataFileName': self.args.mergeFileNames[0].split('.')[0]+".sqlite"}
+            
+    
+    def getGlobalArgs(self):
+        """return global args"""
+        return self.globalArgs
+
+
+    def setConvpotPath(self):
+        """check if Convpot is installed and return path of executable"""
+        
+        # search path for Convpot program
+        self.convpotPath = find_executable("convpot")
+        
+        # search in current dir
+        if self.convpotPath is None:
+            self.convpotPath = find_executable("convpot", sys.argv[0])
+        
+        if not self.convpotPath:
+            sys.exit("ERROR: Convpot program not installed.")
+            
+        # test if convpot is executable
+        if not os.access(self.convpotPath, os.X_OK):
+            sys.exit("ERROR: Convpot program not executable.")
+            
+
+    def getConvpotPath(self):
+        """return Convpot path"""
+        return self.convpotPath
+
     
     def isNumber(self, s):
         """This function tests if string s is a number."""
@@ -108,7 +197,7 @@ class Plotpot(object):
                 sys.exit(errormsg_not_recognised)
         elif len(string) == 1:
             if self.isNumber(string[0]):
-                if self.args.time is not None:    
+                if self.args.showTime is not None:    
                     interval = (0,string[0])
                 else:
                     interval = (1,string[0])
@@ -126,9 +215,9 @@ class Plotpot(object):
         # init cycles
         cycles = None
         
-        if self.args.cycles:
+        if self.args.showCycles:
             # parse cycles option
-            cycles = self.parseRange(self.args.cycles)
+            cycles = self.parseRange(self.args.showCycles)
             cycles = [int(x) for x in cycles] # now list of integers
             
             # sanity checks
@@ -144,9 +233,9 @@ class Plotpot(object):
         # init points
         points = None
     
-        if self.args.data:
+        if self.args.showData:
             # parse data point option
-            points = self.parseRange(self.args.data)
+            points = self.parseRange(self.args.showData)
             points = [int(x) for x in points] # now list of integers
             
             #sanity checks
@@ -162,9 +251,9 @@ class Plotpot(object):
         # init time
         time = None
         
-        if self.args.time:
+        if self.args.showTime:
             # parse time option
-            time = self.parseRange(self.args.time)
+            time = self.parseRange(self.args.showTime)
             time = [float(x) for x in time] # now list of floats
             
             # sanity checks
@@ -181,7 +270,7 @@ class Plotpot(object):
         errormsg_range_error = "ERROR: Plot number out of range."
         
         plots = []
-        string_sequence = self.args.plot.split(',')
+        string_sequence = self.args.showPlot.split(',')
         for s in string_sequence:
             if self.isNumber(s):
                 plots.append(int(s))
@@ -201,23 +290,6 @@ class Plotpot(object):
                 sys.exit(errormsg_not_recognised)
             
         return sorted(set(plots)) # remove duplicates and sort
-        
-        
-    def getDataFile(self):
-        """check if filename with raw data exists"""
-
-        # ckeck if raw file exists        
-        rawFileFullPath = os.path.abspath(self.args.filename)
-        
-        try:
-            open(rawFileFullPath, "r")
-        except IOError as e:
-            sys.exit(e)
-            
-        # construct sqlite filename 
-        dataFileName = self.args.filename.rsplit('.')[0]+'.sqlite'        
-        
-        return dataFileName
     
     
     def callConvpot(self):
@@ -225,38 +297,24 @@ class Plotpot(object):
         data. Check if sqlite file is up-to-date and skip conversion 
         if necessary."""
         
-        # search path for Convpot program
-        convpotPath = find_executable("convpot")
-        
-        # search in current dir
-        if convpotPath is None:
-            convpotPath = find_executable("convpot", sys.argv[0])
-        
-        if not convpotPath:
-            sys.exit("ERROR: Convpot program not installed.")
-            
-        # test if convpot is executable
-        if not os.access(convpotPath, os.X_OK):
-            sys.exit("ERROR: Convpot program not executable.")
-        
         # get extension of raw file
-        rawFileExtension = self.args.filename.rsplit('.')[1]
+        rawFileExtension = self.args.showFileName.rsplit('.')[1]
         
         # test if sqlite file needs updating
         isUpToDate = self.checkRawFileSize()
         
-        if (self.args.force or not isUpToDate) and (rawFileExtension != "sqlite"):
+        if (self.args.showForce or not isUpToDate) and (rawFileExtension != "sqlite"):
         
             # construct call to convpot
             convpotArgs = []
-            convpotArgs.append(convpotPath)
+            convpotArgs.append(self.convpotPath)
         
             # verbose arg
             if self.args.verbose:
                 convpotArgs.append("-{0}".format(self.args.verbose * 'v'))
                 
             # filename arg 
-            convpotArgs.append(self.args.filename)
+            convpotArgs.append(self.args.showFileName)
         
             # call external Convpot program
             try:
@@ -270,10 +328,10 @@ class Plotpot(object):
            sqlite file. Return True if file is up-to-date and False
            if sizes differ."""
            
-        db = DbManager(self.dataFileName)
+        db = DbManager(self.globalArgs['dataFileName'])
 
         currentSize = 0
-        with open(self.args.filename, 'r') as fh:
+        with open(self.args.showFileName, 'r') as fh:
             fh.seek(0, os.SEEK_END)
             currentSize = fh.tell()
             fh.close()
