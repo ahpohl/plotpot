@@ -374,7 +374,8 @@ class Electrode(DbManager):
         # calculate C-rate / t
         # t = C / I [Ah / A = h]
         if self.mass and self.theoCapacity:
-            self.statCRate = np.abs(self.mass * self.theoCapacity * 1e-6 / self.statCRate)
+            with np.errstate(invalid='ignore', divide='ignore'):
+                self.statCRate = np.abs(self.mass * self.theoCapacity * 1e-6 / self.statCRate)
             
             
     def getStatCRate(self):
