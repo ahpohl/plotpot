@@ -11,22 +11,18 @@ from plotpot.dbmanager import DbManager
 class Journal(DbManager):
     """class for manipulating the journal"""
     
-    def __init__(self, args, showArgs=None, electrode="working"):
+    def __init__(self, args, globalArgs=None, electrode="working"):
         self.args = args
-        self.showArgs = showArgs
+        self.globalArgs = globalArgs
         self.batElectrode = electrode
-        self.journalPath = self.getJournalPath()
+        self.setJournalPath()
         super().__init__(self.journalPath)
         self.createSchema()
         self.setJournal()
         self.setMergeFiles()
         
         if self.args.subcommand == "show" or self.args.subcommand == "merge":
-            self.setBatFileName()
-            if self.args.subcommand == "show":
-                self.bat = DbManager(self.showArgs["dataFile"])
-            else:
-                self.bat = DbManager(self.batFileName)
+            self.bat = DbManager(self.globalArgs["dataFileName"])
             self.setBattery()
             if not self.searchBatProperties():
                 self.insertBat()
@@ -78,30 +74,33 @@ class Journal(DbManager):
 
     ### general methods ###
 
-    def getJournalPath(self):
+    def setJournalPath(self):
         """create journal database in program directory or path specified with
            PLOTPOT_JOURNAL environment variable if the file does not exist
            already"""
         
-        journalPath = os.environ.get('PLOTPOT_JOURNAL')
+        self.journalPath = os.environ.get('PLOTPOT_JOURNAL')
         journalFile = "plotpot-journal.dat"
         
-        if journalPath:
-            journalFullPath = os.path.join(journalPath, journalFile)
+        if self.journalPath:
+            self.journalPath = os.path.join(self.journalPath, journalFile)
         else:
             home = os.getenv('USERPROFILE') or os.getenv('HOME')
-            journalFullPath = os.path.join(home, journalFile)
+            self.journalPath = os.path.join(home, journalFile)
             
         # check if journal file exists
         try:
-            open(journalFullPath, "r")
+            open(self.journalPath, "r")
         except IOError as e:
             print(e)
             create = input("Do you want to create a new journal file (Y,n)? ")
             if create == 'n':
                 sys.exit()
                 
-        return journalFullPath
+    
+    def getJournalPath(self):
+        """return journal path"""
+        return self.journalPath
     
         
     def createSchema(self):
@@ -575,24 +574,6 @@ class Journal(DbManager):
     
     
     ### battery methods ###
-
-    def setBatFileName(self):
-        """set the filename of the battery"""
-        
-        if self.showArgs:
-            self.batFileName = self.args.showFileName
-        
-        elif self.args.mergeOutput:
-            self.batFileName = self.args.mergeOutput
-            if self.batFileName.split('.')[-1] != "sqlite":
-                self.batFileName += ".sqlite"
-            
-        elif self.args.mergeList:
-            self.batFileName = self.args.mergeList.split('.')[0]+".sqlite"
-            
-        elif self.args.mergeFileNames:
-            self.batFileName = self.args.mergeFileNames[0].split('.')[0]+".sqlite"
-
     
     def copyBatteryFiles(self):
         """copy battery file table in journal merge table"""
@@ -688,6 +669,7 @@ class Journal(DbManager):
     def setBattery(self):
         """battery details"""
         
+        self.setBatFileName()
         self.setBatFileCount()
         self.setBatIsFullCell()        
         self.setBatFileSize()
@@ -705,6 +687,16 @@ class Journal(DbManager):
     def getBattery(self):
         """return battery details"""
         return self.battery
+    
+    
+    def setBatFileName(self):
+        """set file name of battery"""
+    
+        if self.args.subcommand == "show":
+            self.batFileName = self.args.showFileName
+            
+        elif self.args.subcommand == "merge":
+           self.batFileName = self.globalArgs['dataFileName'] 
             
     
     def getBatFileName(self):

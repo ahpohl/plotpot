@@ -6,9 +6,8 @@ import matplotlib.pyplot as plt
 
 class Plot(object):
 
-    def __init__(self, args, showArgs, bat):
+    def __init__(self, args, bat):
         self.args = args
-        self.showArgs = showArgs
         self.bat = bat
         
     
@@ -21,7 +20,7 @@ class Plot(object):
         # set plot range according to show arguments cycles, time and points
         self.setPlotRange()
         
-        for n in self.bat.showArgs['plots']:
+        for n in self.bat.globalArgs['plots']:
             if n == 1:
                 self.figVoltageCapacity()
             elif n == 2:
@@ -75,7 +74,7 @@ class Plot(object):
                   13: '_hysteresis',
                   14: '_c_rate'}
 
-        for n in self.showArgs['plots']:
+        for n in self.bat.globalArgs['plots']:
             plt.figure(n)
             plt.savefig(stem + suffix[n] + ext)
            
@@ -89,21 +88,21 @@ class Plot(object):
         """set plot range according to show arguments cycles, time and points"""
         
         # get indices of full cycle limits
-        if self.bat.showArgs['cycles'] is not None:
+        if self.bat.globalArgs['cycles'] is not None:
             # convert cycles to zero based index
-            self.c = (self.bat.showArgs['cycles'][0]-1, self.bat.showArgs['cycles'][1])
+            self.c = (self.bat.globalArgs['cycles'][0]-1, self.bat.globalArgs['cycles'][1])
             # get indices of half cycle limits
             # convert full cycles into half cycles (with zero based index)
-            self.h = ((2*(self.bat.showArgs['cycles'][0])-1)-1, 2*(self.bat.showArgs['cycles'][1]))
+            self.h = ((2*(self.bat.globalArgs['cycles'][0])-1)-1, 2*(self.bat.globalArgs['cycles'][1]))
             #self.h = (2*self.c[0]-1, 2*self.c[1])
             # get indices of data point limits
             self.p = (self.bat.statPoints[self.c[0]:self.c[1]].flatten()[0],
                       self.bat.statPoints[self.c[0]:self.c[1]].flatten()[-1])
         
         # get indices with --time argument
-        elif self.bat.showArgs['time'] is not None:
+        elif self.bat.globalArgs['time'] is not None:
             # get indices of data point limits
-            self.p = np.searchsorted(self.bat.testTime[:,0], self.bat.showArgs['time'])
+            self.p = np.searchsorted(self.bat.testTime[:,0], self.bat.globalArgs['time'])
             # get indices of half cycle limits
             self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
             self.h[1] += 1 
@@ -112,9 +111,9 @@ class Plot(object):
             self.c[1] += 1
             
         # get indices with --data argument
-        elif self.bat.showArgs['points'] is not None:
+        elif self.bat.globalArgs['points'] is not None:
             # get indices of data point limits
-            self.p = self.bat.showArgs['points']
+            self.p = self.bat.globalArgs['points']
             # get indices of half cycle limits
             self.h = np.searchsorted(self.bat.halfStatPoints[:,1], self.p)
             self.h[1] += 1 

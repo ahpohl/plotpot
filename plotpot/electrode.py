@@ -9,14 +9,14 @@ from plotpot.journal import Journal
 
 class Electrode(DbManager):
     
-    def __init__(self, args, showArgs, electrode = "working"):
+    def __init__(self, args, globalArgs, electrode = "working"):
         self.args = args
-        self.showArgs = showArgs
+        self.globalArgs = globalArgs
         self.electrode = electrode
-        super().__init__(showArgs['dataFile'])
+        super().__init__(globalArgs['dataFileName'])
         
         # create journal object
-        self.journal = Journal(args, showArgs, electrode)
+        self.journal = Journal(args, globalArgs, electrode)
         
         # set electrode properties
         self.setProperties()
@@ -42,16 +42,16 @@ class Electrode(DbManager):
         self.mass, self.theoCapacity, self.area, self.volume, self.loading = self.journal.getBatProperties()
         
         # mass 
-        if any([x in [1,2,6,8,10,12] for x in self.showArgs['plots']]):
+        if any([x in [1,2,6,8,10,12] for x in self.globalArgs['plots']]):
             self.setMass()
         # capacity
-        if 12 in self.showArgs['plots']:
+        if 12 in self.globalArgs['plots']:
             self.setTheoCapacity()
         # area
-        if 11 in self.showArgs['plots']:
+        if 11 in self.globalArgs['plots']:
             self.setArea()
         # volume
-        if any([x in [7,9] for x in self.showArgs['plots']]):
+        if any([x in [7,9] for x in self.globalArgs['plots']]):
             self.setVolume()
         # loading
         self.setLoading()

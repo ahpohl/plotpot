@@ -12,10 +12,10 @@ from plotpot.electrode import Electrode
 class Battery(DbManager):
     """A class for implementing an electrochemical device"""
     
-    def __init__(self, args, showArgs):
+    def __init__(self, args, globalArgs):
         self.args = args
-        self.showArgs = showArgs
-        super().__init__(showArgs['dataFile'])
+        self.globalArgs = globalArgs
+        super().__init__(globalArgs['dataFileName'])
     
         # set electrodes
         self.setIsFullCell()
@@ -44,12 +44,12 @@ class Battery(DbManager):
         """create electode objects"""
         
         print("*** Working electrode ***")
-        self.we = Electrode(self.args, self.showArgs, "working")
+        self.we = Electrode(self.args, self.globalArgs, "working")
         self.ce = None
  
         if self.isFullCell:
             print("*** Counter electrode ***")
-            self.ce = Electrode(self.args, self.showArgs, "counter")
+            self.ce = Electrode(self.args, self.globalArgs, "counter")
           
             
     def getElectrodes(self):
