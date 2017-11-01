@@ -1,7 +1,7 @@
 Plotpot changelog
 =================
 
-v1.2.0 - upcoming
+v1.2.0 - 2017-11-01
 -------------------
 -  add merge subcommand
 -  keep records in merge table
