@@ -415,9 +415,9 @@ class Plot(object):
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
-            if plotnum in [6,7,8,9]:
-                ylim = ax1.get_ylim()
-                ax1.set_ylim([0,ylim[1]])
+            #if plotnum in [6,7,8,9]:
+            #    ylim = ax1.get_ylim()
+            #    ax1.set_ylim([0,ylim[1]])
             
             # Put a legend below current axis
             ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.11), ncol=2, fontsize=12)
@@ -436,9 +436,9 @@ class Plot(object):
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],0], 'ko-', label='charge')
             ax1.plot(self.bat.statCycles[self.c[0]:self.c[1]]+1, 
                      getattr(self.bat.we, y)[self.c[0]:self.c[1],1], 'kD-', label='discharge')
-            if plotnum in [6,7,8,9]:
-                ylim = ax1.get_ylim()
-                ax1.set_ylim([0,ylim[1]])
+            #if plotnum in [6,7,8,9]:
+            #    ylim = ax1.get_ylim()
+            #    ax1.set_ylim([0,ylim[1]])
             
             # counter electrode
             ax2 = fig.add_subplot(122)

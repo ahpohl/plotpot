@@ -1,6 +1,12 @@
 Plotpot changelog
 =================
 
+v1.2.1 - 2017-11-01
+-------------------
+-  remove y-min in plots 6-9
+-  fix journal global args
+-  new sample data (NMC pouch cell)
+
 v1.2.0 - 2017-11-01
 -------------------
 -  add merge subcommand

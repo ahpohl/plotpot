@@ -1,0 +1,12 @@
+! NMC pouch cell
+! theoretical capacity 180 mAh/g
+! area 25 cm²
+! thickness 100 µm
+! volume 250 µL
+! active mass 1000 mg
+gamrytest_1.DTA
+gamrytest_2.DTA
+gamrytest_3.DTA
+gamrytest_4.DTA
+gamrytest_5.DTA
+gamrytest_6.DTA

@@ -81,17 +81,17 @@ By default all available data is plotted. The range can be selected by
 * time (in hours) (``--time``)
 * data points (``--data``)
 
-For example to plot data up to cycle 10:
+For example to plot data up to cycle 5:
 
 ::
 
-    plotpot show arbintest.res --cycles 10
+    plotpot show arbintest.res --cycles 5
     
-To plot from cycle 3 to 6:
+To plot from cycle 2 to 10:
 
 ::
 
-    plotpot show arbintest.res --cycles 3,6
+    plotpot show arbintest.res --cycles 2,10
 
 Select plots
 ~~~~~~~~~~~~
@@ -100,7 +100,7 @@ Plots are selected with the ``--plot`` option, *e.g.*
 
 ::
    
-    plotpot show arbintest.res --plot 1,8-9
+    plotpot show arbintest.res --cycles 2,10 --plot 8-9,14
        
 It is possible to give a comma separated list of plots and ranges separated with "-". If no plots are
 selected, the voltage versus specific capacity (1) is plotted by default. Plotpot currently supports 
@@ -130,7 +130,7 @@ translates to the widths of the window.
 
 ::
 
-   plotpot show arbintest.res --cycle 2,2 --plot 5 --smooth 5
+   plotpot show arbintest.res --cycle 2,2 --plot 5 --smooth 2
 
 Export data
 ~~~~~~~~~~~
@@ -154,13 +154,13 @@ To process multiple files
 
 ::
     
-    plotpot merge arbin-merge_1.res arbin-merge_2.res
+    plotpot merge gamrytest_1.DTA gamrytest_2.DTA
 
 Alternatively, the files to merge can be given in a text file listed one by line. Lines starting with the "!" character are ignored.
 
 ::
 
-    plotpot merge --list arbin-merge.txt
+    plotpot merge --list gamrytest.txt
 
 The output file name can be changed with the ``--output`` option.
 

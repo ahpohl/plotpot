@@ -108,9 +108,9 @@ class Plotpot(object):
                 sys.exit(e)
         
         # journal
-        journal = Journal(self.args, None, "working")
+        journal = Journal(self.args, self.globalArgs, "working")
         if journal.batIsFullCell:
-            Journal(self.args, None, "counter")
+            Journal(self.args, self.globalArgs, "counter")
     
     
     ### internal methods ###
