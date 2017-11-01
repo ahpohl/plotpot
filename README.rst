@@ -50,8 +50,10 @@ a normal user):
 
        conda create -n plotpot-env numpy matplotlib
        activate plotpot-env
+       
+5. Create a shortcut for ``plotpot-env`` on the desktop as described in the `wiki <https://github.com/ahpohl/plotpot/wiki/Create-a-shortcut-to-plotpot-Python-environment>`__.
 
-5. Download and install Plotpot by typing:
+6. Download and install Plotpot by typing:
 
    ::
 
