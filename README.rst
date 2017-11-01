@@ -152,17 +152,17 @@ A battery which consists of many individual data files (which is common for the 
 
 To process multiple files
 
-```
-plotpot merge arbin-merge_1.res arbin-merge_2.res
-```
+::
+    
+    plotpot merge arbin-merge_1.res arbin-merge_2.res
 
 Alternatively, the files to merge can be given in a text file listed one by line. Lines starting with the "!" character are ignored.
 
-```
-plotpot merge --list arbin-merge.txt
-```
+::
 
-The output file name can be changed with the `--output` option.
+    plotpot merge --list arbin-merge.txt
+
+The output file name can be changed with the ``--output`` option.
 
 The journal
 ~~~~~~~~~~~
