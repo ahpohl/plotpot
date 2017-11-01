@@ -53,11 +53,11 @@ a normal user):
        
 5. Create a shortcut for ``plotpot-env`` on the desktop as described in the `wiki <https://github.com/ahpohl/plotpot/wiki/Create-a-shortcut-to-plotpot-Python-environment>`__.
 
-6. Download and install Plotpot by typing:
+6. Download and install (or upgrade) Plotpot by typing:
 
    ::
 
-       pip install plotpot
+       pip install plotpot --upgrade
 
 If all goes well you should be able to type ``plotpot`` and get a
 usage message without errors about missing packages.
